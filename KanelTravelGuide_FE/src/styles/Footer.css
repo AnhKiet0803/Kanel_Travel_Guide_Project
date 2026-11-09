@@ -1,0 +1,35 @@
+
+.karnel-footer {
+    background-color: var(--color-primary);
+    color: #ffffff;
+}
+
+    .karnel-footer h5,
+    .karnel-footer h6 {
+        color: #ffffff;
+        margin-bottom: 18px;
+    }
+
+    .karnel-footer p {
+        color: rgba(255, 255, 255, 0.75);
+        line-height: 1.7;
+    }
+
+    .karnel-footer ul li {
+        margin-bottom: 12px;
+    }
+
+    .karnel-footer a {
+        color: rgba(255, 255, 255, 0.75);
+        transition: color 0.2s ease;
+    }
+
+        .karnel-footer a:hover {
+            color: var(--color-accent);
+        }
+
+.karnel-footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.875rem;
+}

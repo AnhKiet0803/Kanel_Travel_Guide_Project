@@ -1,0 +1,48 @@
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background-color: var(--color-background);
+    color: var(--color-text);
+}
+
+#root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+main {
+    flex: 1;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+a {
+    text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+:focus-visible {
+    outline: 2px solid var(--color-secondary);
+    outline-offset: 3px;
+}

@@ -1,0 +1,63 @@
+
+/* =========================================
+   KARNEL TRAVEL GUIDE
+   Global Design Variables
+   ========================================= */
+
+:root {
+    /* ===== COLORS ===== */
+    /* Primary */
+    --color-primary: #123B5D;
+    --color-primary-dark: #0B2942;
+    --color-primary-light: #E8F2FA;
+    /* Secondary */
+    --color-secondary: #19A7A0;
+    --color-secondary-dark: #128780;
+    /* Accent */
+    --color-accent: #F4A340;
+    --color-accent-hover: #E69225;
+    /* Background */
+    --color-background: #F5F8FA;
+    --color-white: #FFFFFF;
+    /* Text */
+    --color-text: #243746;
+    --color-text-muted: #64748B;
+    --color-heading: #123B5D;
+    /* Borders */
+    --color-border: #E2E8F0;
+    /* ===== TYPOGRAPHY ===== */
+
+    --font-primary: 'Inter', 'Segoe UI', sans-serif;
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    /* ===== SPACING ===== */
+
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-xxl: 48px;
+    /* ===== BORDER RADIUS ===== */
+
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-pill: 50px;
+    /* ===== SHADOW ===== */
+
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.10);
+    --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.14);
+    /* ===== TRANSITION ===== */
+
+    --transition-fast: 0.2s ease;
+    --transition-default: 0.3s ease;
+    /* ===== LAYOUT ===== */
+
+    --navbar-height: 76px;
+    --content-max-width: 1320px;
+}

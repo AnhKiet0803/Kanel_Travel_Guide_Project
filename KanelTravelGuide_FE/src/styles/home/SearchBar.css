@@ -1,0 +1,229 @@
+/* Karnel Travels — SearchBar.css | Scoped to Home */
+.karnel-home .home-search-section {
+    position: relative;
+    z-index: 3;
+    margin-top: -62px;
+    padding: 0 0 12px;
+}
+
+.karnel-home .home-search-panel {
+    background: #fff;
+    border: 1px solid #e5edf2;
+    border-radius: 22px;
+    box-shadow: 0 18px 50px rgba(11,45,69,.15);
+    padding: 20px 24px 24px;
+}
+
+.karnel-home .home-search-tabs {
+    display: grid;
+    grid-template-columns: repeat(6,minmax(0,1fr));
+    gap: 8px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #e5edf2;
+}
+
+.karnel-home .home-search-tab {
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #52677b;
+    padding: 13px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    font-size: .91rem;
+    font-weight: 650;
+    cursor: pointer;
+    transition: background .2s,color .2s;
+}
+
+    .karnel-home .home-search-tab i {
+        font-size: 1.2rem
+    }
+
+    .karnel-home .home-search-tab:hover {
+        background: #f1f7f8;
+        color: #123b5d
+    }
+
+    .karnel-home .home-search-tab.is-active {
+        background: #e6f5f4;
+        color: #078b89
+    }
+
+.karnel-home .home-search-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    padding-top: 20px;
+}
+
+.karnel-home .home-search-input-group {
+    flex: 1;
+    min-width: 0
+}
+
+.karnel-home .home-search-primary {
+    flex: 1.7
+}
+
+.karnel-home .home-search-secondary {
+    flex: 1.15
+}
+
+.karnel-home .home-search-guests {
+    flex: .85
+}
+
+.karnel-home .home-search-input-group label {
+    display: block;
+    margin: 0 0 8px;
+    color: #123b5d;
+    font-size: .81rem;
+    font-weight: 750;
+    text-align: left;
+}
+
+.karnel-home .home-search-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 54px;
+    border: 1px solid #dce7ed;
+    border-radius: 11px;
+    padding: 0 14px;
+    background: #fff;
+    min-width: 0;
+}
+
+    .karnel-home .home-search-control:focus-within {
+        border-color: #0e9996;
+        box-shadow: 0 0 0 3px rgba(14,153,150,.12)
+    }
+
+    .karnel-home .home-search-control i {
+        color: #0e9996;
+        font-size: 1.12rem;
+        flex-shrink: 0
+    }
+
+    .karnel-home .home-search-control input,
+    .karnel-home .home-search-control select {
+        width: 100%;
+        min-width: 0;
+        height: 100%;
+        border: 0;
+        background: transparent;
+        outline: 0;
+        color: #20394b;
+        font-size: .91rem;
+        text-align: left;
+    }
+
+        .karnel-home .home-search-control input::placeholder {
+            color: #8799a7
+        }
+
+.karnel-home .home-search-submit-new {
+    height: 54px;
+    min-width: 142px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    border: 0;
+    border-radius: 11px;
+    background: #0e9996;
+    color: #fff;
+    font-weight: 750;
+    cursor: pointer;
+    padding: 0 22px;
+}
+
+    .karnel-home .home-search-submit-new:hover {
+        background: #087e7b
+    }
+
+/* Keep the first content section visually close to the search panel. */
+.karnel-home .home-search-section + .home-section {
+    padding-top: 40px
+}
+
+@media(max-width:1199.98px) {
+    .karnel-home .home-search-tab {
+        flex-direction: column;
+        gap: 5px;
+        font-size: .8rem
+    }
+
+    .karnel-home .home-search-form {
+        flex-wrap: wrap
+    }
+
+    .karnel-home .home-search-primary {
+        flex: 1 1 45%
+    }
+
+    .karnel-home .home-search-secondary {
+        flex: 1 1 25%
+    }
+
+    .karnel-home .home-search-guests {
+        flex: 1 1 20%
+    }
+
+    .karnel-home .home-search-submit-new {
+        flex: 1 1 150px
+    }
+}
+
+@media(max-width:767.98px) {
+    .karnel-home .home-search-section {
+        margin-top: -30px;
+        padding-bottom: 8px
+    }
+
+    .karnel-home .home-search-panel {
+        padding: 14px;
+        border-radius: 17px
+    }
+
+    .karnel-home .home-search-tabs {
+        grid-template-columns: repeat(3,minmax(0,1fr));
+        gap: 5px;
+        padding-bottom: 12px
+    }
+
+    .karnel-home .home-search-tab {
+        font-size: .75rem;
+        padding: 10px 3px
+    }
+
+    .karnel-home .home-search-form {
+        display: grid;
+        grid-template-columns: minmax(0,1fr);
+        gap: 14px;
+        padding-top: 16px
+    }
+
+    .karnel-home .home-search-submit-new {
+        width: 100%
+    }
+
+    .karnel-home .home-search-section + .home-section {
+        padding-top: 32px
+    }
+}
+
+@media(max-width:380px) {
+    .karnel-home .home-search-tab {
+        font-size: .69rem
+    }
+}
+
+@media(prefers-reduced-motion:reduce) {
+    .karnel-home .home-search-tab {
+        transition: none
+    }
+}

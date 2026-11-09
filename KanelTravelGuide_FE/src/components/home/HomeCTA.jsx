@@ -1,0 +1,2 @@
+import { Link } from 'react-router-dom';
+export default function HomeCTA(){return <section className="home-cta" aria-labelledby="home-cta-title"><div className="container home-cta-inner"><div><span className="home-eyebrow home-eyebrow-light">READY TO GO?</span><h2 id="home-cta-title">Let's make your next journey unforgettable.</h2><p>Start exploring places and experiences with Karnel Travels.</p></div><Link className="home-btn home-btn-light" to="/destinations">Start exploring <i className="bi bi-arrow-right"/></Link></div></section>}

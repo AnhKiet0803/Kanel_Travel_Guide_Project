@@ -1,0 +1,704 @@
+
+/* ==========================================
+   KARNEL TRAVELS - NAVBAR FULL WIDTH
+========================================== */
+
+.karnel-header {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    width: 100%;
+    padding: 0;
+    background: #fff;
+}
+
+.karnel-navbar {
+    width: 100%;
+    padding: 0;
+    background: #fff;
+    border-bottom: 1px solid #e8edf2;
+}
+
+.karnel-nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    width: 100%;
+    max-width: none;
+    min-height: 76px;
+    margin: 0;
+    padding: 12px 48px;
+    background: #fff;
+    border-radius: 0;
+    box-shadow: none;
+    box-sizing: border-box;
+}
+
+/* ==========================================
+   BRAND
+========================================== */
+
+.karnel-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    color: #123b5d;
+    font-size: 1.35rem;
+    font-weight: 750;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+    .karnel-brand:hover {
+        color: #123b5d;
+    }
+
+.karnel-brand-icon {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    background: #eaf3f9;
+    color: #123b5d;
+    font-size: 1.35rem;
+}
+
+/* ==========================================
+   MAIN NAVIGATION
+========================================== */
+
+.karnel-menu {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+    min-width: 0;
+    gap: 24px;
+}
+
+.karnel-menu-list {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
+}
+
+.karnel-menu-item {
+    flex-shrink: 0;
+}
+
+.karnel-menu-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: #243b4d;
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+    .karnel-menu-link:hover,
+    .karnel-menu-link.active {
+        color: #159e9a;
+        background: transparent;
+    }
+
+    .karnel-menu-link i {
+        font-size: 0.72rem;
+    }
+
+/* ==========================================
+   NAV ACTIONS
+========================================== */
+
+.karnel-nav-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 24px;
+}
+
+.karnel-search-btn {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    color: #123b5d;
+    font-size: 1.3rem;
+    text-decoration: none;
+    transition: 0.2s ease;
+}
+
+    .karnel-search-btn:hover {
+        background: #edf7f8;
+        color: #159e9a;
+    }
+
+.karnel-signin-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 13px 26px;
+    border-radius: 50px;
+    background: #123b5d;
+    color: #fff;
+    font-size: 0.94rem;
+    font-weight: 650;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: 0.2s ease;
+}
+
+    .karnel-signin-btn:hover {
+        background: #0d2f4d;
+        color: #fff;
+    }
+
+.karnel-menu-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 10px;
+    background: #edf5fa;
+    color: #123b5d;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+/* ==========================================
+   FULL WIDTH MEGA MENU
+========================================== */
+
+.karnel-mega-panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1040;
+    width: 100%;
+    max-height: calc(100dvh - 90px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: #fff;
+    border-top: 1px solid #eaf0f5;
+    box-shadow: 0 20px 35px rgba(18, 59, 93, 0.12);
+    animation: karnelPanelIn 0.2s ease-out;
+}
+
+.karnel-mega-container {
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 22px 32px 16px;
+    box-sizing: border-box;
+}
+
+/* ==========================================
+   MEGA HEADER
+========================================== */
+
+.karnel-mega-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e9eef3;
+}
+
+
+.karnel-mega-heading h2 {
+    margin: 0 0 7px;
+    color: #123b5d;
+    font-size: 1.35rem;
+    font-weight: 750;
+    line-height: 1.3;
+}
+
+.karnel-mega-heading p {
+    margin: 0;
+    color: #78899a;
+    font-size: 0.88rem;
+}
+
+.karnel-mega-close {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #123b5d;
+    cursor: pointer;
+}
+
+    .karnel-mega-close:hover {
+        background: #e5edf4;
+    }
+
+/* ==========================================
+   MEGA BODY
+========================================== */
+
+.karnel-mega-body {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 24px;
+    padding: 20px 0;
+}
+
+/* LEFT SIDEBAR */
+
+.karnel-mega-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding-right: 20px;
+    border-right: 1px solid #e7edf3;
+}
+
+.karnel-mega-category {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 13px 15px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: #526477;
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+    .karnel-mega-category i {
+        font-size: 0.75rem;
+        opacity: 0;
+    }
+
+    .karnel-mega-category:hover {
+        background: #f4f8fb;
+        color: #123b5d;
+    }
+
+    .karnel-mega-category.active {
+        background: #eaf5f6;
+        color: #138f8c;
+    }
+
+        .karnel-mega-category.active i {
+            opacity: 1;
+        }
+
+/* ==========================================
+   RIGHT CONTENT
+========================================== */
+
+.karnel-mega-content {
+    min-width: 0;
+}
+
+.karnel-mega-content-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+    .karnel-mega-content-title span {
+        color: #123b5d;
+        font-size: 1.05rem;
+        font-weight: 700;
+    }
+
+    .karnel-mega-content-title small {
+        color: #8493a1;
+        font-size: 0.8rem;
+    }
+
+.karnel-mega-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+/* ==========================================
+   SERVICE / BOOKING CARDS
+========================================== */
+
+.karnel-mega-card {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    min-width: 0;
+    min-height: 80px;
+    padding: 12px 14px;
+    border: 1px solid #edf1f5;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #243b4d;
+    text-align: left;
+    text-decoration: none;
+    transition: 0.2s ease;
+}
+
+    .karnel-mega-card:hover,
+    .karnel-mega-card.active {
+        transform: translateY(-2px);
+        border-color: #bde3e0;
+        background: #eff9f8;
+        box-shadow: 0 8px 22px rgba(18, 59, 93, 0.07);
+    }
+
+.karnel-mega-card-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: #e8f1f8;
+    color: #123b5d;
+    font-size: 1.25rem;
+}
+
+.karnel-mega-card:hover .karnel-mega-card-icon {
+    background: #dcf3ef;
+    color: #159e9a;
+}
+
+.karnel-mega-card-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    min-width: 0;
+    text-align: left;
+}
+
+    .karnel-mega-card-text strong {
+        color: #20394b;
+        font-size: 0.91rem;
+        font-weight: 700;
+    }
+
+    .karnel-mega-card-text small {
+        color: #7a8998;
+        font-size: 0.77rem;
+        line-height: 1.45;
+    }
+
+.karnel-mega-card-arrow {
+    flex-shrink: 0;
+    color: #159e9a;
+    font-size: 0.85rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.karnel-mega-card:hover .karnel-mega-card-arrow,
+.karnel-mega-card:focus-visible .karnel-mega-card-arrow {
+    opacity: 1;
+}
+
+/* ==========================================
+   MEGA FOOTER
+========================================== */
+
+.karnel-mega-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 12px 0 0;
+    border-top: 1px solid #e9eef3;
+    color: #7a8998;
+    font-size: 0.83rem;
+}
+
+    .karnel-mega-footer span,
+    .karnel-mega-footer a {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+    }
+
+        .karnel-mega-footer span i {
+            color: #159e9a;
+        }
+
+    .karnel-mega-footer a {
+        color: #123b5d;
+        font-weight: 650;
+        text-decoration: none;
+    }
+
+        .karnel-mega-footer a:hover {
+            color: #159e9a;
+        }
+
+/* ==========================================
+   ANIMATION
+========================================== */
+
+@keyframes karnelPanelIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ==========================================
+   MEDIUM DESKTOP
+========================================== */
+
+@media (max-width: 1399.98px) {
+    .karnel-nav-inner {
+        gap: 14px;
+        padding: 12px 24px;
+    }
+
+    .karnel-brand {
+        font-size: 1.18rem;
+    }
+
+    .karnel-menu-list {
+        gap: 3px;
+    }
+
+    .karnel-menu-link {
+        padding: 10px 8px;
+        font-size: 0.88rem;
+    }
+
+    .karnel-nav-actions {
+        gap: 12px;
+    }
+
+    .karnel-signin-btn {
+        padding: 12px 18px;
+    }
+
+    .karnel-mega-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* ==========================================
+   TABLET
+========================================== */
+
+@media (max-width: 1199.98px) {
+    .karnel-nav-inner {
+        flex-wrap: wrap;
+        min-height: 72px;
+        padding: 12px 24px;
+    }
+
+    .karnel-menu-toggle {
+        display: flex;
+    }
+
+    .karnel-menu {
+        display: none;
+        flex-basis: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding-top: 16px;
+        border-top: 1px solid #edf1f5;
+    }
+
+        .karnel-menu.is-open {
+            display: flex;
+        }
+
+    .karnel-menu-list {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 4px;
+        margin: 0;
+    }
+
+    .karnel-menu-item {
+        width: 100%;
+    }
+
+    .karnel-menu-link {
+        justify-content: space-between;
+        width: 100%;
+        padding: 13px 10px;
+        font-size: 0.95rem;
+    }
+
+    .karnel-nav-actions {
+        justify-content: space-between;
+        width: 100%;
+        padding: 10px 0 4px;
+    }
+
+    .karnel-mega-panel {
+        max-height: calc(100dvh - 90px);
+    }
+
+    .karnel-mega-container {
+        padding: 24px;
+    }
+
+    .karnel-mega-body {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .karnel-mega-sidebar {
+        flex-direction: row;
+        gap: 8px;
+        padding: 0 0 12px;
+        overflow-x: auto;
+        border-right: none;
+        border-bottom: 1px solid #e7edf3;
+    }
+
+    .karnel-mega-category {
+        flex-shrink: 0;
+        width: auto;
+        white-space: nowrap;
+    }
+
+        .karnel-mega-category i {
+            display: none;
+        }
+
+    .karnel-mega-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* ==========================================
+   MOBILE
+========================================== */
+
+@media (max-width: 767.98px) {
+    .karnel-nav-inner {
+        min-height: 64px;
+        padding: 10px 16px;
+    }
+
+    .karnel-brand {
+        font-size: 1.05rem;
+        gap: 8px;
+    }
+
+    .karnel-brand-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        font-size: 1.15rem;
+    }
+
+    .karnel-mega-panel {
+        max-height: calc(100dvh - 80px);
+    }
+
+    .karnel-mega-container {
+        padding: 20px 16px;
+    }
+
+    .karnel-mega-heading h2 {
+        font-size: 1.25rem;
+    }
+
+    .karnel-mega-heading p {
+        font-size: 0.8rem;
+    }
+
+    .karnel-mega-body {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        padding: 20px 0;
+    }
+
+    .karnel-mega-category {
+        padding: 11px 14px;
+        font-size: 0.83rem;
+    }
+
+    .karnel-mega-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .karnel-mega-card {
+        min-height: 78px;
+        padding: 12px;
+    }
+
+    .karnel-mega-card-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.15rem;
+    }
+
+    .karnel-mega-footer {
+        flex-wrap: wrap;
+        font-size: 0.76rem;
+    }
+}
+
+/* ==========================================
+   ACCESSIBILITY
+========================================== */
+
+.karnel-menu-link:focus-visible,
+.karnel-menu-toggle:focus-visible,
+.karnel-mega-category:focus-visible,
+.karnel-mega-card:focus-visible,
+.karnel-mega-close:focus-visible,
+.karnel-search-btn:focus-visible,
+.karnel-signin-btn:focus-visible {
+    outline: 2px solid #159e9a;
+    outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .karnel-mega-panel {
+        animation: none;
+    }
+
+    .karnel-mega-card,
+    .karnel-menu-link {
+        transition: none;
+    }
+}
