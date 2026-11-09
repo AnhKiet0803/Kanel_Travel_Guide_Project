@@ -1,6 +1,6 @@
 @KanelTravelGuide_BE_HostAddress = http://localhost:5011
 
-GET {{KanelTravelGuide_BE_HostAddress}}/weatherforecast/
+GET {{KanelTravelGuide_BE_HostAddress}}/api/health
 Accept: application/json
 
 ###
