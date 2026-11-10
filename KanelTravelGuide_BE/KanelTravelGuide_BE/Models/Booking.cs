@@ -14,8 +14,8 @@ public class Booking
     public DateOnly StartDate { get; set; }
     public int TotalPassengers { get; set; }
     public decimal TotalAmount { get; set; }
-    public string PaymentStatus { get; set; } = "Chưa thanh toán";
-    public string BookingStatus { get; set; } = "Chờ duyệt";
+    public string PaymentStatus { get; set; } = "Unpaid";
+    public string BookingStatus { get; set; } = "Pending";
     public string? Notes { get; set; }
 
     public ICollection<BookingDetail> Details { get; set; } = new List<BookingDetail>();

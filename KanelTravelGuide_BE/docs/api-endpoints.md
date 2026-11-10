@@ -1,68 +1,70 @@
-# Karnel Travel Guide — Tài liệu API (backend, hạn 09/11)
+# Karnel Travel Guide — API documentation (backend, due 09/11)
 
-Tài liệu này thuộc repo backend. Frontend dùng JSON mẫu để làm giao diện, không nằm trong repo này.
+This document belongs to the backend repository. The frontend uses these JSON samples and is not included here.
 
-Cột và ràng buộc lấy theo `docs/Thiet_Ke_CSDL_Karnel_Travel_Guide.xlsx`. Tên cột trong SQL Server là snake_case (`user_id`, `spot_name`). JSON bên dưới dùng camelCase.
+Columns and constraints follow `docs/Thiet_Ke_CSDL_Karnel_Travel_Guide.xlsx`. SQL Server column names are snake_case (`user_id`, `spot_name`). The JSON below uses camelCase.
 
-Base URL khi chạy local: `http://localhost:5011`
+Stored text values are English, including status values.
+
+Local base URL: `http://localhost:5011`
 
 OpenAPI: `http://localhost:5011/openapi/v1.json`
 
-Múi giờ trong dữ liệu mẫu là UTC. Tiền dùng VND, kiểu số.
+Sample timestamps are UTC. Amounts are VND numbers.
 
-API nghiệp vụ (điểm du lịch, tour, đặt dịch vụ, tìm kiếm) do **Đoàn Anh Kiệt** viết. API tài khoản, liên hệ, phản hồi, thông báo, backup do **Vũ Hoàng Giáp** viết. Tài liệu này chốt JSON để frontend làm trước.
+Business APIs (tourist spots, tours, bookings, search) are implemented by Doan Anh Kiet. Account, contact, feedback, notification, and backup APIs are implemented by Vu Hoang Giap. This document fixes the JSON contract before those APIs are written.
 
-## Chạy database
+## Run the database
 
-Cần SQL Server LocalDB.
+SQL Server LocalDB is required.
 
 ```powershell
 dotnet run --project KanelTravelGuide_BE/KanelTravelGuide_BE/KanelTravelGuide_BE.csproj --launch-profile http
 ```
 
-Lần chạy đầu tự tạo database `KarnelTravelGuide`, chạy migration và đổ dữ liệu mẫu.
+The first run creates the `KarnelTravelGuide` database, applies the migration, and loads sample data.
 
-Tài khoản mẫu:
+Sample accounts:
 
-| Vai trò | Username | Email | Mật khẩu |
+| Role | Username | Email | Password |
 |---|---|---|---|
 | Admin | admin | admin@karnel.local | Admin@123 |
 | User | minhan | user@karnel.local | User@123 |
 
-CORS đang mở cho `http://localhost:5173`, `http://localhost:3000`, `http://localhost:4200`.
+CORS allows `http://localhost:5173`, `http://localhost:3000`, and `http://localhost:4200`.
 
-Sau khi đăng nhập, các API cần quyền gửi header:
+Protected APIs send this header after login:
 
 ```http
 Authorization: Bearer {token}
 ```
 
-`token` có ở hạn 13/11. Trước đó frontend có thể gắn giao diện với JSON mẫu bên dưới.
+The token arrives with the 13/11 login API. Until then, the frontend can build screens from the JSON samples below.
 
-## Giá trị dùng chung
+## Shared values
 
 - `role`: `Admin`, `User`
-- Liên hệ `isResponded`: `false` chưa xử lý, `true` đã phản hồi
-- Phản hồi `isApproved`: `true` hiện trên web, `false` đang ẩn hoặc chờ duyệt
-- Thông báo `notificationType`: `BOOKING`, `PROMOTION`, `SYSTEM`
-- Dịch vụ `serviceType`: `Hotel`, `Resort`, `Restaurant`
-- Xe `vehicleType`: ví dụ `Bus`, `Limousine`, `Ô tô du lịch`
-- Lịch chạy `status`: `Đang chạy`, `Tạm ngưng`
-- Đơn `bookingType`: `Tour`, `Transport`, `Combo`
-- Đơn `paymentStatus`: `Chưa thanh toán`, `Đã thanh toán`
-- Đơn `bookingStatus`: `Chờ duyệt`, `Đã xác nhận`, `Hoàn tất`, `Hủy`
-- Dòng đơn gắn một trong ba khóa: `tourId`, `scheduleId`, `serviceItemId`
-- Vùng miền `region`: `Miền Bắc`, `Miền Trung`, `Miền Nam`
+- Contact `isResponded`: `false` means not handled, `true` means replied
+- Feedback `isApproved`: `true` is visible on the site, `false` is hidden or waiting for review
+- `notificationType`: `BOOKING`, `PROMOTION`, `SYSTEM`
+- `serviceType`: `Hotel`, `Resort`, `Restaurant`
+- `vehicleType`: for example `Bus`, `Limousine`, `Tourist car`
+- Schedule `status`: `Running`, `Suspended`
+- `bookingType`: `Tour`, `Transport`, `Combo`
+- `paymentStatus`: `Unpaid`, `Paid`
+- `bookingStatus`: `Pending`, `Confirmed`, `Completed`, `Cancelled`
+- A booking line sets one of `tourId`, `scheduleId`, or `serviceItemId`
+- `region`: `North`, `Central`, `South`
 
-Lỗi dùng chung:
+Shared error body:
 
 ```json
 {
-  "message": "Mô tả lỗi"
+  "message": "Error description"
 }
 ```
 
-## Kiểm tra server
+## Health check
 
 `GET /api/health`
 
@@ -73,30 +75,30 @@ Lỗi dùng chung:
 }
 ```
 
-## Tài khoản — Giáp (code hạn 13/11 và 15/11)
+## Accounts — Giap (code due 13/11 and 15/11)
 
-### Đăng ký
+### Register
 
 `POST /api/auth/register`
 
 ```json
 {
   "username": "minhan2",
-  "fullName": "Nguyễn Minh An",
+  "fullName": "Nguyen Minh An",
   "email": "an.nguyen@example.com",
   "password": "User@123",
   "phone": "0901000002",
-  "address": "Sơn Trà, Đà Nẵng"
+  "address": "Son Tra, Da Nang"
 }
 ```
 
-Trả về `201`:
+Returns `201`:
 
 ```json
 {
   "userId": 3,
   "username": "minhan2",
-  "fullName": "Nguyễn Minh An",
+  "fullName": "Nguyen Minh An",
   "email": "an.nguyen@example.com",
   "phone": "0901000002",
   "role": "User",
@@ -104,7 +106,7 @@ Trả về `201`:
 }
 ```
 
-### Đăng nhập
+### Login
 
 `POST /api/auth/login`
 
@@ -117,22 +119,22 @@ Trả về `201`:
 
 ```json
 {
-  "token": "jwt-se-co-o-han-13-11",
+  "token": "jwt-will-be-added-on-13-11",
   "user": {
     "userId": 1,
     "username": "admin",
-    "fullName": "Quản trị Karnel",
+    "fullName": "Karnel Admin",
     "email": "admin@karnel.local",
     "role": "Admin"
   }
 }
 ```
 
-### Đăng xuất
+### Logout
 
-`POST /api/auth/logout` — cần đăng nhập. Trả về `204`.
+`POST /api/auth/logout` requires login. Returns `204`.
 
-### Đổi mật khẩu
+### Change password
 
 `POST /api/auth/change-password`
 
@@ -143,7 +145,7 @@ Trả về `201`:
 }
 ```
 
-### Quên mật khẩu và đặt lại
+### Forgot and reset password
 
 `POST /api/auth/forgot-password`
 
@@ -158,14 +160,14 @@ Trả về `201`:
 ```json
 {
   "email": "user@karnel.local",
-  "token": "ma-trong-email",
+  "token": "token-from-email",
   "newPassword": "User@456"
 }
 ```
 
-Hai API này đi cùng gửi email, hạn 17/11.
+These two APIs ship with email delivery, due 17/11.
 
-### Hồ sơ
+### Profile
 
 `GET /api/account/profile`
 
@@ -173,10 +175,10 @@ Hai API này đi cùng gửi email, hạn 17/11.
 {
   "userId": 2,
   "username": "minhan",
-  "fullName": "Nguyễn Minh An",
+  "fullName": "Nguyen Minh An",
   "email": "user@karnel.local",
   "phone": "0901000002",
-  "address": "Sơn Trà, Đà Nẵng",
+  "address": "Son Tra, Da Nang",
   "role": "User",
   "deviceToken": null,
   "isActive": true
@@ -187,14 +189,14 @@ Hai API này đi cùng gửi email, hạn 17/11.
 
 ```json
 {
-  "fullName": "Nguyễn Minh An",
+  "fullName": "Nguyen Minh An",
   "phone": "0901000009",
-  "address": "Hải Châu, Đà Nẵng",
+  "address": "Hai Chau, Da Nang",
   "deviceToken": null
 }
 ```
 
-### Quản lý tài khoản (Admin)
+### Account management (Admin)
 
 `GET /api/account/users`
 
@@ -203,7 +205,7 @@ Hai API này đi cùng gửi email, hạn 17/11.
   {
     "userId": 2,
     "username": "minhan",
-    "fullName": "Nguyễn Minh An",
+    "fullName": "Nguyen Minh An",
     "email": "user@karnel.local",
     "phone": "0901000002",
     "role": "User",
@@ -221,19 +223,19 @@ Hai API này đi cùng gửi email, hạn 17/11.
 }
 ```
 
-## Liên hệ và phản hồi — Giáp (code hạn 11/11 và 15/11)
+## Contacts and feedback — Giap (code due 11/11 and 15/11)
 
-### Gửi liên hệ
+### Send a contact message
 
 `POST /api/contacts`
 
 ```json
 {
-  "fullName": "Trần Thu Hà",
+  "fullName": "Tran Thu Ha",
   "email": "ha.tran@example.com",
   "phone": "0912000001",
-  "subject": "Hỏi tour Hội An",
-  "message": "Cho mình xin lịch tour cuối tuần."
+  "subject": "Hoi An tour question",
+  "message": "Please send me the weekend tour schedule."
 }
 ```
 
@@ -245,7 +247,7 @@ Hai API này đi cùng gửi email, hạn 17/11.
 }
 ```
 
-### Danh sách liên hệ (Admin)
+### Contact list (Admin)
 
 `GET /api/contacts`
 
@@ -253,32 +255,32 @@ Hai API này đi cùng gửi email, hạn 17/11.
 [
   {
     "contactId": 1,
-    "fullName": "Trần Thu Hà",
+    "fullName": "Tran Thu Ha",
     "email": "ha.tran@example.com",
     "phone": "0912000001",
-    "subject": "Hỏi tour Hội An",
-    "message": "Cho mình xin lịch tour cuối tuần.",
+    "subject": "Hoi An tour question",
+    "message": "Please send me the weekend tour schedule.",
     "isResponded": false,
     "createdAt": "2026-11-08T08:00:00"
   }
 ]
 ```
 
-### Đánh dấu đã xử lý (Admin)
+### Mark a contact as replied (Admin)
 
-`PUT /api/contacts/{id}/responded` — đặt `isResponded = true`. Trả về `204`.
+`PUT /api/contacts/{id}/responded` sets `isResponded` to `true`. Returns `204`.
 
-### Gửi phản hồi
+### Send feedback
 
 `POST /api/feedbacks`
 
 ```json
 {
-  "fullName": "Nguyễn Minh An",
+  "fullName": "Nguyen Minh An",
   "email": "user@karnel.local",
   "rating": 5,
-  "title": "Cầu Vàng",
-  "content": "Cầu Vàng rất đẹp."
+  "title": "Golden Bridge",
+  "content": "The Golden Bridge is beautiful."
 }
 ```
 
@@ -289,7 +291,7 @@ Hai API này đi cùng gửi email, hạn 17/11.
 }
 ```
 
-### Phản hồi đã duyệt (trang công khai)
+### Approved feedback (public page)
 
 `GET /api/feedbacks`
 
@@ -297,18 +299,18 @@ Hai API này đi cùng gửi email, hạn 17/11.
 [
   {
     "feedbackId": 1,
-    "fullName": "Nguyễn Minh An",
+    "fullName": "Nguyen Minh An",
     "rating": 5,
-    "title": "Cầu Vàng",
-    "content": "Cầu Vàng rất đẹp.",
+    "title": "Golden Bridge",
+    "content": "The Golden Bridge is beautiful.",
     "createdAt": "2026-11-06T08:00:00"
   }
 ]
 ```
 
-Chỉ trả bản ghi `isApproved = true`.
+Only records with `isApproved = true` are returned.
 
-### Quản lý phản hồi (Admin)
+### Feedback management (Admin)
 
 `GET /api/feedbacks/manage`
 
@@ -320,7 +322,7 @@ Chỉ trả bản ghi `isApproved = true`.
 }
 ```
 
-## Thông báo, nhật ký, backup — Giáp (code hạn 17/11)
+## Notifications, logs, and backup — Giap (code due 17/11)
 
 `GET /api/notifications`
 
@@ -328,8 +330,8 @@ Chỉ trả bản ghi `isApproved = true`.
 [
   {
     "notificationId": 1,
-    "title": "Đơn đã được xác nhận",
-    "message": "Đơn BK20261108-001 đã được xác nhận.",
+    "title": "Booking confirmed",
+    "message": "Booking BK20261108-001 has been confirmed.",
     "notificationType": "BOOKING",
     "referenceId": "BK20261108-001",
     "isRead": false,
@@ -338,7 +340,7 @@ Chỉ trả bản ghi `isApproved = true`.
 ]
 ```
 
-`PUT /api/notifications/{id}/read` — trả về `204`.
+`PUT /api/notifications/{id}/read` returns `204`.
 
 `GET /api/system/logs` (Admin)
 
@@ -348,15 +350,15 @@ Chỉ trả bản ghi `isApproved = true`.
     "logId": 1,
     "userId": 1,
     "actionType": "INSERT",
-    "actionDescription": "Khởi tạo dữ liệu mẫu.",
+    "actionDescription": "Seeded sample data.",
     "createdAt": "2026-11-08T08:00:00"
   }
 ]
 ```
 
-`POST /api/system/backup` và `POST /api/system/restore` (Admin). Restore nhận file backup. Chi tiết file chốt khi làm CN24.
+`POST /api/system/backup` and `POST /api/system/restore` (Admin). Restore accepts a backup file. The file format will be fixed with CN24.
 
-## Trang chủ, điểm du lịch, loại hình — Kiệt
+## Home, tourist spots, and categories — Kiet
 
 `GET /api/home`
 
@@ -365,9 +367,9 @@ Chỉ trả bản ghi `isApproved = true`.
   "spots": [
     {
       "spotId": 1,
-      "spotName": "Bà Nà Hills",
-      "locationName": "Đà Nẵng",
-      "categoryName": "Sinh thái",
+      "spotName": "Ba Na Hills",
+      "locationName": "Da Nang",
+      "categoryName": "Ecotourism",
       "thumbnailUrl": "/images/ba-na.jpg",
       "isFeatured": true
     }
@@ -375,8 +377,8 @@ Chỉ trả bản ghi `isApproved = true`.
   "tours": [
     {
       "tourId": 1,
-      "tourName": "Đà Nẵng 2 ngày 1 đêm",
-      "duration": "2 ngày 1 đêm",
+      "tourName": "Da Nang 2 days 1 night",
+      "duration": "2 days 1 night",
       "standardPrice": 2500000,
       "salePrice": 2250000,
       "isFeatured": true
@@ -385,7 +387,7 @@ Chỉ trả bản ghi `isApproved = true`.
   "promotions": [
     {
       "promotionId": 1,
-      "title": "Giảm tour Đà Nẵng",
+      "title": "Da Nang tour discount",
       "promoCode": "DANANG10",
       "discountPercent": 10
     }
@@ -393,13 +395,13 @@ Chỉ trả bản ghi `isApproved = true`.
 }
 ```
 
-Trang chủ lấy `TouristSpots.isFeatured = true` và `TourPackages.isFeatured = true`.
+The home page reads `TouristSpots.isFeatured = true` and `TourPackages.isFeatured = true`.
 
 `GET /api/locations`
 
 ```json
 [
-  { "locationId": 1, "locationName": "Đà Nẵng", "region": "Miền Trung" }
+  { "locationId": 1, "locationName": "Da Nang", "region": "Central" }
 ]
 ```
 
@@ -407,23 +409,23 @@ Trang chủ lấy `TouristSpots.isFeatured = true` và `TourPackages.isFeatured 
 
 ```json
 [
-  { "categoryId": 1, "categoryName": "Du lịch biển" }
+  { "categoryId": 1, "categoryName": "Beach" }
 ]
 ```
 
-`GET /api/tourist-spots?locationId=2&categoryId=2&q=Hội`
+`GET /api/tourist-spots?locationId=2&categoryId=2&q=Hoi`
 
 ```json
 [
   {
     "spotId": 3,
-    "spotName": "Phố cổ Hội An",
+    "spotName": "Hoi An Ancient Town",
     "locationId": 2,
-    "locationName": "Quảng Nam",
+    "locationName": "Quang Nam",
     "categoryId": 2,
-    "categoryName": "Văn hóa - Di tích",
+    "categoryName": "Culture and heritage",
     "thumbnailUrl": "/images/hoi-an.jpg",
-    "description": "Khu phố cổ bên sông Hoài.",
+    "description": "The ancient town along the Hoai River.",
     "isFeatured": true
   }
 ]
@@ -435,35 +437,35 @@ Trang chủ lấy `TouristSpots.isFeatured = true` và `TourPackages.isFeatured 
 {
   "spotId": 1,
   "locationId": 1,
-  "locationName": "Đà Nẵng",
+  "locationName": "Da Nang",
   "categoryId": 3,
-  "categoryName": "Sinh thái",
-  "spotName": "Bà Nà Hills",
+  "categoryName": "Ecotourism",
+  "spotName": "Ba Na Hills",
   "thumbnailUrl": "/images/ba-na.jpg",
-  "description": "Khu du lịch trên núi với cầu Vàng.",
-  "detailedContent": "Bà Nà Hills nằm ở Hòa Vang, Đà Nẵng.",
+  "description": "A mountain resort known for the Golden Bridge.",
+  "detailedContent": "Ba Na Hills is in Hoa Vang, Da Nang.",
   "isFeatured": true,
   "createdAt": "2026-11-08T08:00:00"
 }
 ```
 
-`POST /api/tourist-spots`, `PUT /api/tourist-spots/{id}`, `DELETE /api/tourist-spots/{id}` (Admin). Body tạo/sửa giống JSON chi tiết, bỏ `id` và các trường `*Name`.
+`POST /api/tourist-spots`, `PUT /api/tourist-spots/{id}`, `DELETE /api/tourist-spots/{id}` (Admin). The create and update body matches the detail JSON without `spotId` and without `*Name` display fields.
 
-## Tour và ưu đãi — Kiệt
+## Tours and promotions — Kiet
 
-`GET /api/tours` và `GET /api/tours/{id}`
+`GET /api/tours` and `GET /api/tours/{id}`
 
 ```json
 {
   "tourId": 1,
   "spotId": 1,
-  "spotName": "Bà Nà Hills",
+  "spotName": "Ba Na Hills",
   "promotionId": 1,
-  "tourName": "Đà Nẵng 2 ngày 1 đêm",
-  "duration": "2 ngày 1 đêm",
+  "tourName": "Da Nang 2 days 1 night",
+  "duration": "2 days 1 night",
   "standardPrice": 2500000,
   "salePrice": 2250000,
-  "itineraryDetail": "Ngày 1: Bà Nà Hills. Ngày 2: biển Mỹ Khê.",
+  "itineraryDetail": "Day 1: Ba Na Hills. Day 2: My Khe Beach.",
   "isFeatured": true
 }
 ```
@@ -477,7 +479,7 @@ Trang chủ lấy `TouristSpots.isFeatured = true` và `TourPackages.isFeatured 
   {
     "promotionId": 1,
     "promoCode": "DANANG10",
-    "title": "Giảm tour Đà Nẵng",
+    "title": "Da Nang tour discount",
     "discountPercent": 10,
     "discountAmount": null,
     "startDate": "2026-11-08T00:00:00",
@@ -489,11 +491,11 @@ Trang chủ lấy `TouristSpots.isFeatured = true` và `TourPackages.isFeatured 
 
 `POST /api/promotions`, `PUT /api/promotions/{id}`, `DELETE /api/promotions/{id}` (Admin).
 
-## Lưu trú và ẩm thực — Kiệt
+## Hotels, restaurants, and resorts — Kiet
 
 `GET /api/services?type=Hotel`
 
-`type` nhận `Hotel`, `Restaurant`, `Resort`. Bỏ trống thì trả cả ba.
+`type` accepts `Hotel`, `Restaurant`, or `Resort`. Omit it to return all three.
 
 ```json
 [
@@ -502,8 +504,8 @@ Trang chủ lấy `TouristSpots.isFeatured = true` và `TourPackages.isFeatured 
     "providerName": "Karnel Beach Hotel",
     "serviceType": "Hotel",
     "locationId": 1,
-    "locationName": "Đà Nẵng",
-    "address": "Võ Nguyên Giáp, Đà Nẵng",
+    "locationName": "Da Nang",
+    "address": "Vo Nguyen Giap, Da Nang",
     "phone": "02361111001",
     "starRating": 4,
     "minPrice": 1500000,
@@ -513,7 +515,7 @@ Trang chủ lấy `TouristSpots.isFeatured = true` và `TourPackages.isFeatured 
 ]
 ```
 
-`GET /api/services/{id}` kèm phòng hoặc bàn:
+`GET /api/services/{id}` includes rooms or tables:
 
 ```json
 {
@@ -521,9 +523,9 @@ Trang chủ lấy `TouristSpots.isFeatured = true` và `TourPackages.isFeatured 
   "providerName": "Karnel Beach Hotel",
   "serviceType": "Hotel",
   "locationId": 1,
-  "locationName": "Đà Nẵng",
-  "address": "Võ Nguyên Giáp, Đà Nẵng",
-  "description": "Khách sạn view biển.",
+  "locationName": "Da Nang",
+  "address": "Vo Nguyen Giap, Da Nang",
+  "description": "A sea-view hotel.",
   "phone": "02361111001",
   "website": "https://karnel.local/beach-hotel",
   "starRating": 4,
@@ -534,7 +536,7 @@ Trang chủ lấy `TouristSpots.isFeatured = true` và `TourPackages.isFeatured 
   "items": [
     {
       "itemId": 1,
-      "itemName": "Phòng Deluxe",
+      "itemName": "Deluxe room",
       "capacity": 2,
       "price": 1500000,
       "totalQuantity": 20,
@@ -548,9 +550,9 @@ Trang chủ lấy `TouristSpots.isFeatured = true` và `TourPackages.isFeatured 
 
 `POST /api/services/{id}/items`, `PUT /api/services/{serviceId}/items/{itemId}`, `DELETE /api/services/{serviceId}/items/{itemId}` (Admin).
 
-## Tìm kiếm — Kiệt
+## Search — Kiet
 
-`GET /api/search?q=Hội An`
+`GET /api/search?q=Hoi An`
 
 ```json
 {
@@ -560,13 +562,13 @@ Trang chủ lấy `TouristSpots.isFeatured = true` và `TourPackages.isFeatured 
 }
 ```
 
-Mỗi mảng dùng JSON rút gọn của danh sách tương ứng.
+Each array uses the short list JSON of that resource.
 
 `GET /api/search/advanced?locationId=1&serviceType=Hotel&minPrice=0&maxPrice=3000000&starRating=4&sort=price_asc`
 
-`sort` nhận `price_asc`, `price_desc`, `name_asc`.
+`sort` accepts `price_asc`, `price_desc`, or `name_asc`.
 
-## Vận chuyển — Kiệt
+## Transport — Kiet
 
 `GET /api/routes`
 
@@ -575,35 +577,35 @@ Mỗi mảng dùng JSON rút gọn của danh sách tương ứng.
   {
     "routeId": 1,
     "departureLocationId": 1,
-    "departureLocationName": "Đà Nẵng",
+    "departureLocationName": "Da Nang",
     "destinationLocationId": 2,
-    "destinationLocationName": "Quảng Nam",
+    "destinationLocationName": "Quang Nam",
     "distanceKm": 30,
-    "estimatedDuration": "1 giờ"
+    "estimatedDuration": "1 hour"
   }
 ]
 ```
 
-`GET /api/routes/{id}` kèm lịch chạy:
+`GET /api/routes/{id}` includes schedules:
 
 ```json
 {
   "routeId": 1,
   "departureLocationId": 1,
-  "departureLocationName": "Đà Nẵng",
+  "departureLocationName": "Da Nang",
   "destinationLocationId": 2,
-  "destinationLocationName": "Quảng Nam",
+  "destinationLocationName": "Quang Nam",
   "distanceKm": 30,
-  "estimatedDuration": "1 giờ",
+  "estimatedDuration": "1 hour",
   "schedules": [
     {
       "scheduleId": 1,
       "vehicleId": 3,
-      "vehicleName": "Ô tô du lịch 16 chỗ",
-      "vehicleType": "Ô tô du lịch",
+      "vehicleName": "16-seat tourist car",
+      "vehicleType": "Tourist car",
       "departureTime": "08:00:00",
       "ticketPrice": 150000,
-      "status": "Đang chạy"
+      "status": "Running"
     }
   ]
 }
@@ -617,8 +619,8 @@ Mỗi mảng dùng JSON rút gọn của danh sách tương ứng.
 
 ```json
 {
-  "vehicleName": "Ô tô du lịch 16 chỗ",
-  "vehicleType": "Ô tô du lịch",
+  "vehicleName": "16-seat tourist car",
+  "vehicleType": "Tourist car",
   "totalSeats": 16
 }
 ```
@@ -633,23 +635,23 @@ Mỗi mảng dùng JSON rút gọn của danh sách tương ứng.
   "vehicleId": 3,
   "departureTime": "08:00:00",
   "ticketPrice": 150000,
-  "status": "Đang chạy"
+  "status": "Running"
 }
 ```
 
-## Đặt dịch vụ — Kiệt
+## Bookings — Kiet
 
 `POST /api/bookings`
 
 ```json
 {
-  "customerName": "Nguyễn Minh An",
+  "customerName": "Nguyen Minh An",
   "customerPhone": "0901000002",
   "customerEmail": "user@karnel.local",
   "bookingType": "Tour",
   "startDate": "2026-11-16",
   "totalPassengers": 2,
-  "notes": "Đi 2 người.",
+  "notes": "Two travelers.",
   "details": [
     {
       "tourId": 2,
@@ -664,14 +666,14 @@ Mỗi mảng dùng JSON rút gọn của danh sách tương ứng.
   "bookingId": 1,
   "bookingCode": "BK20261108-001",
   "bookingType": "Tour",
-  "bookingStatus": "Chờ duyệt",
-  "paymentStatus": "Chưa thanh toán",
+  "bookingStatus": "Pending",
+  "paymentStatus": "Unpaid",
   "totalAmount": 1513000,
   "bookingDate": "2026-11-08T08:00:00"
 }
 ```
 
-`GET /api/bookings` — đơn của user đang đăng nhập.
+`GET /api/bookings` returns bookings for the signed-in user.
 
 `GET /api/bookings/{id}`
 
@@ -680,7 +682,7 @@ Mỗi mảng dùng JSON rút gọn của danh sách tương ứng.
   "bookingId": 1,
   "bookingCode": "BK20261108-001",
   "userId": 2,
-  "customerName": "Nguyễn Minh An",
+  "customerName": "Nguyen Minh An",
   "customerPhone": "0901000002",
   "customerEmail": "user@karnel.local",
   "bookingType": "Tour",
@@ -688,9 +690,9 @@ Mỗi mảng dùng JSON rút gọn của danh sách tương ứng.
   "startDate": "2026-11-16",
   "totalPassengers": 2,
   "totalAmount": 1513000,
-  "paymentStatus": "Đã thanh toán",
-  "bookingStatus": "Đã xác nhận",
-  "notes": "Đi 2 người.",
+  "paymentStatus": "Paid",
+  "bookingStatus": "Confirmed",
+  "notes": "Two travelers.",
   "details": [
     {
       "detailId": 1,
@@ -708,19 +710,19 @@ Mỗi mảng dùng JSON rút gọn của danh sách tương ứng.
 
 ```json
 {
-  "reason": "Đổi ngày đi"
+  "reason": "Change the travel date"
 }
 ```
 
-`GET /api/bookings/manage?bookingStatus=Chờ duyệt` (Admin).
+`GET /api/bookings/manage?bookingStatus=Pending` (Admin).
 
 `PUT /api/bookings/{id}/status` (Admin)
 
 ```json
 {
-  "bookingStatus": "Đã xác nhận",
-  "paymentStatus": "Đã thanh toán"
+  "bookingStatus": "Confirmed",
+  "paymentStatus": "Paid"
 }
 ```
 
-Khi tạo hoặc hủy đơn, API gọi sang phần thông báo và nhật ký của Giáp.
+Creating or cancelling a booking calls Giap's notification and system-log services.

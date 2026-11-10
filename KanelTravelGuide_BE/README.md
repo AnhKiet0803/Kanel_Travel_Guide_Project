@@ -1,28 +1,30 @@
-# Kanel Travel Guide — Backend (hạn 09/11)
+# Kanel Travel Guide — Backend (due 09/11)
 
-Phần này là backend trong repo chung. `KanelTravelGuide_FE` và `KanelTravelGuide_App` không nằm ở đây.
+This folder is the backend in the shared repository. `KanelTravelGuide_FE` and `KanelTravelGuide_App` are separate.
 
-Hạn 09/11 gồm:
+The 09/11 delivery includes:
 
-- `DbContext` cho 18 bảng
-- Migration `InitialCreate`
-- Dữ liệu mẫu
-- Danh sách API và JSON mẫu: `docs/api-endpoints.md`
-- File thiết kế CSDL: `docs/Thiet_Ke_CSDL_Karnel_Travel_Guide.xlsx`
+- A `DbContext` for 18 tables
+- The `InitialCreate` migration
+- Sample data
+- The API endpoint list and JSON samples: `docs/api-endpoints.md`
+- The database design file: `docs/Thiet_Ke_CSDL_Karnel_Travel_Guide.xlsx`
 
-Chưa có code API đăng nhập, liên hệ, điểm du lịch hay đặt dịch vụ.
+Login, contact, tourist-spot, and booking APIs are not implemented yet.
 
-## Chạy
+All sample text and status values are in English.
 
-Từ thư mục gốc của repo:
+## Run
+
+From the repository root:
 
 ```powershell
 dotnet run --project KanelTravelGuide_BE/KanelTravelGuide_BE/KanelTravelGuide_BE.csproj --launch-profile http
 ```
 
-API chạy tại `http://localhost:5011`. Lần chạy đầu tạo database `KarnelTravelGuide` trên LocalDB và đổ dữ liệu mẫu.
+The API runs at `http://localhost:5011`. The first run creates the `KarnelTravelGuide` database on LocalDB and loads the sample data.
 
-| Vai trò | Username | Mật khẩu |
+| Role | Username | Password |
 |---|---|---|
 | Admin | admin | Admin@123 |
 | User | minhan | User@123 |

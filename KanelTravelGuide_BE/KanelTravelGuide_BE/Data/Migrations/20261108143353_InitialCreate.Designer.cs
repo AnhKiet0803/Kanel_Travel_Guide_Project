@@ -51,7 +51,7 @@ namespace KanelTravelGuide_BE.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
-                        .HasDefaultValue("Chờ duyệt")
+                        .HasDefaultValue("Pending")
                         .HasColumnName("booking_status");
 
                     b.Property<string>("BookingType")
@@ -88,7 +88,7 @@ namespace KanelTravelGuide_BE.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
-                        .HasDefaultValue("Chưa thanh toán")
+                        .HasDefaultValue("Unpaid")
                         .HasColumnName("payment_status");
 
                     b.Property<DateOnly>("StartDate")
@@ -117,9 +117,9 @@ namespace KanelTravelGuide_BE.Data.Migrations
 
                     b.ToTable("Bookings", null, t =>
                         {
-                            t.HasCheckConstraint("CK_Bookings_Payment", "[payment_status] IN (N'Chưa thanh toán', N'Đã thanh toán')");
+                            t.HasCheckConstraint("CK_Bookings_Payment", "[payment_status] IN ('Unpaid', 'Paid')");
 
-                            t.HasCheckConstraint("CK_Bookings_Status", "[booking_status] IN (N'Chờ duyệt', N'Đã xác nhận', N'Hoàn tất', N'Hủy')");
+                            t.HasCheckConstraint("CK_Bookings_Status", "[booking_status] IN ('Pending', 'Confirmed', 'Completed', 'Cancelled')");
 
                             t.HasCheckConstraint("CK_Bookings_Type", "[booking_type] IN ('Tour', 'Transport', 'Combo')");
                         });
@@ -534,7 +534,7 @@ namespace KanelTravelGuide_BE.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
-                        .HasDefaultValue("Đang chạy")
+                        .HasDefaultValue("Running")
                         .HasColumnName("status");
 
                     b.Property<decimal>("TicketPrice")
@@ -554,7 +554,7 @@ namespace KanelTravelGuide_BE.Data.Migrations
 
                     b.ToTable("Schedules", null, t =>
                         {
-                            t.HasCheckConstraint("CK_Schedules_Status", "[status] IN (N'Đang chạy', N'Tạm ngưng')");
+                            t.HasCheckConstraint("CK_Schedules_Status", "[status] IN ('Running', 'Suspended')");
                         });
                 });
 

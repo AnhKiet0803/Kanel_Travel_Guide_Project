@@ -243,15 +243,15 @@ namespace KanelTravelGuide_BE.Data.Migrations
                     start_date = table.Column<DateOnly>(type: "date", nullable: false),
                     total_passengers = table.Column<int>(type: "int", nullable: false),
                     total_amount = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    payment_status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "Chưa thanh toán"),
-                    booking_status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "Chờ duyệt"),
+                    payment_status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "Unpaid"),
+                    booking_status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "Pending"),
                     notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Bookings", x => x.booking_id);
-                    table.CheckConstraint("CK_Bookings_Payment", "[payment_status] IN (N'Chưa thanh toán', N'Đã thanh toán')");
-                    table.CheckConstraint("CK_Bookings_Status", "[booking_status] IN (N'Chờ duyệt', N'Đã xác nhận', N'Hoàn tất', N'Hủy')");
+                    table.CheckConstraint("CK_Bookings_Payment", "[payment_status] IN ('Unpaid', 'Paid')");
+                    table.CheckConstraint("CK_Bookings_Status", "[booking_status] IN ('Pending', 'Confirmed', 'Completed', 'Cancelled')");
                     table.CheckConstraint("CK_Bookings_Type", "[booking_type] IN ('Tour', 'Transport', 'Combo')");
                     table.ForeignKey(
                         name: "FK_Bookings_Users_user_id",
@@ -375,12 +375,12 @@ namespace KanelTravelGuide_BE.Data.Migrations
                     vehicle_id = table.Column<int>(type: "int", nullable: false),
                     departure_time = table.Column<TimeOnly>(type: "time", nullable: false),
                     ticket_price = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "Đang chạy")
+                    status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "Running")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Schedules", x => x.schedule_id);
-                    table.CheckConstraint("CK_Schedules_Status", "[status] IN (N'Đang chạy', N'Tạm ngưng')");
+                    table.CheckConstraint("CK_Schedules_Status", "[status] IN ('Running', 'Suspended')");
                     table.ForeignKey(
                         name: "FK_Schedules_TransportRoutes_route_id",
                         column: x => x.route_id,
