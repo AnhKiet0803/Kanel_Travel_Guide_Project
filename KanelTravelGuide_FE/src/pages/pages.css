@@ -1,0 +1,157 @@
+/* Shared styles for the About / Contact / Feedback pages (Dũng).
+   Every class starts with "ktg-" so it does not clash with the shared layout CSS (Huyền). */
+
+.ktg-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+  text-align: left;
+}
+
+.ktg-narrow {
+  max-width: 520px;
+}
+
+.ktg-page-header h1 {
+  margin: 0 0 8px;
+}
+
+.ktg-page h2 {
+  margin: 40px 0 16px;
+}
+
+.ktg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.ktg-card {
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.ktg-card h3 {
+  margin: 0 0 8px;
+}
+
+.ktg-card p {
+  margin: 0;
+}
+
+.ktg-list {
+  padding-left: 20px;
+  line-height: 1.8;
+}
+
+.ktg-form {
+  display: grid;
+  gap: 16px;
+  max-width: 640px;
+}
+
+.ktg-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.ktg-field {
+  display: grid;
+  gap: 6px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.ktg-field label,
+.ktg-field legend {
+  font-weight: 600;
+  color: var(--color-heading, #123b5d);
+}
+
+.ktg-field input:not([type='radio']),
+.ktg-field textarea {
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ktg-field input[aria-invalid='true'],
+.ktg-field textarea[aria-invalid='true'] {
+  border-color: #d93025;
+}
+
+.ktg-rating {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+
+.ktg-rating legend {
+  width: 100%;
+}
+
+.ktg-rating-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.ktg-error {
+  margin: 0;
+  color: #d93025;
+  font-size: 0.9em;
+}
+
+.ktg-notice {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+
+.ktg-success {
+  background: rgba(30, 142, 62, 0.12);
+  color: #1e8e3e;
+}
+
+.ktg-error-box {
+  background: rgba(217, 48, 37, 0.12);
+  color: #d93025;
+}
+
+.ktg-button {
+  justify-self: start;
+  font: inherit;
+  padding: 10px 24px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--color-primary, #123b5d);
+  color: #fff;
+  cursor: pointer;
+}
+
+.ktg-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ktg-stars {
+  color: #f5a623;
+  letter-spacing: 2px;
+}
+
+.ktg-meta {
+  margin-top: 8px;
+  font-size: 0.9em;
+}
