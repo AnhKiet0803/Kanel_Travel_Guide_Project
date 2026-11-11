@@ -35,7 +35,7 @@ export default function SearchBar() {
   }
 
   return (
-    <section className="home-search-section" aria-label="Find travel services">
+    <section id="home-search" className="home-search-section" aria-label="Find travel services">
       <div className="container">
         <div className="home-search-panel">
           <div className="home-search-tabs" role="group" aria-label="Choose a service">

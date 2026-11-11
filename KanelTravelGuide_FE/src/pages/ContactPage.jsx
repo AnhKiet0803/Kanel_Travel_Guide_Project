@@ -2,6 +2,7 @@
 // Guests (no sign-in needed) send an enquiry; the data is stored in the Contacts table.
 import { useState } from 'react'
 import { sendContact } from '../api/publicApi.js'
+import FormField from '../components/FormField.jsx'
 import { LIMITS, validateContact } from '../utils/validators.js'
 import './pages.css'
 
@@ -42,96 +43,91 @@ export default function ContactPage() {
   }
 
   return (
-    <main className="ktg-page">
+    <section className="ktg-page ktg-contact-wrap">
       <header className="ktg-page-header">
+        <span className="ktg-eyebrow">Get In Touch</span>
         <h1>Contact Us</h1>
         <p>Need advice on tours, transport or accommodation? Leave your details and we will get back to you.</p>
       </header>
 
       <form className="ktg-form" onSubmit={handleSubmit} noValidate>
-        <div className="ktg-field">
-          <label htmlFor="contact-fullName">Full name *</label>
-          <input
-            id="contact-fullName"
-            name="fullName"
-            value={form.fullName}
-            onChange={handleChange}
-            maxLength={LIMITS.fullName}
-            aria-invalid={Boolean(errors.fullName)}
-            autoComplete="name"
-          />
-          {errors.fullName && <p className="ktg-error">{errors.fullName}</p>}
-        </div>
+        <FormField
+          id="contact-fullName"
+          name="fullName"
+          label="Full name"
+          placeholder="Your full name"
+          required
+          value={form.fullName}
+          onChange={handleChange}
+          error={errors.fullName}
+          maxLength={LIMITS.fullName}
+          autoComplete="name"
+        />
 
         <div className="ktg-row">
-          <div className="ktg-field">
-            <label htmlFor="contact-email">Email *</label>
-            <input
-              id="contact-email"
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              maxLength={LIMITS.email}
-              aria-invalid={Boolean(errors.email)}
-              autoComplete="email"
-            />
-            {errors.email && <p className="ktg-error">{errors.email}</p>}
-          </div>
-
-          <div className="ktg-field">
-            <label htmlFor="contact-phone">Phone number</label>
-            <input
-              id="contact-phone"
-              name="phone"
-              type="tel"
-              value={form.phone}
-              onChange={handleChange}
-              maxLength={LIMITS.phone}
-              aria-invalid={Boolean(errors.phone)}
-              autoComplete="tel"
-            />
-            {errors.phone && <p className="ktg-error">{errors.phone}</p>}
-          </div>
-        </div>
-
-        <div className="ktg-field">
-          <label htmlFor="contact-subject">Subject</label>
-          <input
-            id="contact-subject"
-            name="subject"
-            value={form.subject}
+          <FormField
+            id="contact-email"
+            name="email"
+            type="email"
+            label="Email"
+            placeholder="you@example.com"
+            required
+            value={form.email}
             onChange={handleChange}
-            maxLength={LIMITS.subject}
-            aria-invalid={Boolean(errors.subject)}
+            error={errors.email}
+            maxLength={LIMITS.email}
+            autoComplete="email"
           />
-          {errors.subject && <p className="ktg-error">{errors.subject}</p>}
+          <FormField
+            id="contact-phone"
+            name="phone"
+            type="tel"
+            label="Phone number"
+            placeholder="e.g. +84 912 345 678"
+            value={form.phone}
+            onChange={handleChange}
+            error={errors.phone}
+            maxLength={LIMITS.phone}
+            autoComplete="tel"
+          />
         </div>
 
-        <div className="ktg-field">
-          <label htmlFor="contact-message">Message *</label>
-          <textarea
-            id="contact-message"
-            name="message"
-            rows={6}
-            value={form.message}
-            onChange={handleChange}
-            maxLength={LIMITS.text}
-            aria-invalid={Boolean(errors.message)}
-          />
-          {errors.message && <p className="ktg-error">{errors.message}</p>}
-        </div>
+        <FormField
+          id="contact-subject"
+          name="subject"
+          label="Subject"
+          placeholder="What is your enquiry about?"
+          value={form.subject}
+          onChange={handleChange}
+          error={errors.subject}
+          maxLength={LIMITS.subject}
+        />
+
+        <FormField
+          id="contact-message"
+          name="message"
+          as="textarea"
+          rows={5}
+          label="Message"
+          placeholder="Tell us about your travel plans, dates, or questions..."
+          required
+          value={form.message}
+          onChange={handleChange}
+          error={errors.message}
+          maxLength={LIMITS.text}
+        />
 
         {result && (
           <p className={result.type === 'success' ? 'ktg-notice ktg-success' : 'ktg-notice ktg-error-box'} role="status">
-            {result.text}
+            <i className={`bi ${result.type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle'}`} aria-hidden="true" />
+            <span>{result.text}</span>
           </p>
         )}
 
-        <button type="submit" className="ktg-button" disabled={submitting}>
+        <button type="submit" className="ktg-button ktg-button-primary" disabled={submitting}>
           {submitting ? 'Sending...' : 'Send request'}
         </button>
       </form>
-    </main>
+    </section>
   )
 }

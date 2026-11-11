@@ -1,7 +1,8 @@
 // Sign In. variant="user": customers; variant="admin": admin area (CN17).
 // The admin page only accepts accounts with role 'Admin'. After a successful sign-in it calls
-// onSuccess(user) so the router can redirect (redirecting is handled by Huyền's layout/router).
+// onSuccess(user) so the router can redirect.
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import FormField from '../components/FormField.jsx'
 import { useAuth } from '../auth/useAuth.js'
 import { validateLogin } from '../utils/validators.js'
@@ -45,10 +46,15 @@ export default function LoginPage({ variant = 'user', onSuccess }) {
   }
 
   return (
-    <main className="ktg-page ktg-narrow">
+    <section className="ktg-page ktg-narrow">
       <header className="ktg-page-header">
+        <span className="ktg-eyebrow">{isAdmin ? 'Admin Portal' : 'Welcome Back'}</span>
         <h1>{isAdmin ? 'Admin Sign In' : 'Sign In'}</h1>
-        {!isAdmin && <p>Sign in to book services and track your orders.</p>}
+        <p>
+          {isAdmin
+            ? 'Sign in with an administrator account to manage Karnel Travels.'
+            : 'Sign in to book services and track your orders.'}
+        </p>
       </header>
 
       <form className="ktg-form" onSubmit={handleSubmit} noValidate>
@@ -56,6 +62,7 @@ export default function LoginPage({ variant = 'user', onSuccess }) {
           id="login-username"
           name="username"
           label="Username"
+          placeholder="Enter your username"
           required
           value={form.username}
           onChange={handleChange}
@@ -67,6 +74,7 @@ export default function LoginPage({ variant = 'user', onSuccess }) {
           name="password"
           type="password"
           label="Password"
+          placeholder="Enter your password"
           required
           value={form.password}
           onChange={handleChange}
@@ -74,16 +82,40 @@ export default function LoginPage({ variant = 'user', onSuccess }) {
           autoComplete="current-password"
         />
 
+        {!isAdmin && (
+          <div className="ktg-form-meta">
+            <Link to="/forgot-password" className="ktg-link">
+              Forgot password?
+            </Link>
+          </div>
+        )}
+
         {failure && (
           <p className="ktg-notice ktg-error-box" role="alert">
-            {failure}
+            <i className="bi bi-exclamation-triangle" aria-hidden="true" />
+            <span>{failure}</span>
           </p>
         )}
 
-        <button type="submit" className="ktg-button" disabled={submitting}>
+        <button type="submit" className="ktg-button ktg-button-primary ktg-button-block" disabled={submitting}>
           {submitting ? 'Signing in...' : 'Sign In'}
         </button>
+
+        <div className="ktg-form-footer">
+          {isAdmin ? (
+            <Link to="/" className="ktg-link">
+              ← Back to Karnel Travels
+            </Link>
+          ) : (
+            <>
+              <span>New to Karnel Travels?</span>
+              <Link to="/register" className="ktg-link">
+                Create an account
+              </Link>
+            </>
+          )}
+        </div>
       </form>
-    </main>
+    </section>
   )
 }

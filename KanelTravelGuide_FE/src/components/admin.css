@@ -1,17 +1,18 @@
-/* Admin page frame (Dũng). Classes start with "ktg-" so they do not clash with the shared layout CSS.
-   Imports pages.css to reuse the button, input and notice styles. */
+/* Admin page frame and Notifications styles. Classes start with "ktg-" so they stay scoped. */
 @import '../pages/pages.css';
 
 .ktg-admin {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 248px 1fr;
   min-height: 100vh;
+  background: var(--color-background, #f5f8fa);
   text-align: left;
 }
 
 .ktg-admin-sidebar {
-  border-right: 1px solid var(--color-border, #e2e8f0);
-  padding: 20px 12px;
+  background: #ffffff;
+  border-right: 1px solid #e2ebf2;
+  padding: 24px 14px;
 }
 
 .ktg-admin-sidebar ul {
@@ -19,28 +20,37 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 4px;
+  gap: 6px;
 }
 
 .ktg-admin-brand {
-  margin: 0 0 16px;
+  margin: 0 0 20px;
   padding: 0 12px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: var(--color-heading, #123b5d);
+  color: var(--color-primary, #123b5d);
 }
 
 .ktg-admin-link {
   display: block;
-  padding: 8px 12px;
-  border-radius: 6px;
-  color: inherit;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: #465b6e;
+  font-size: 0.94rem;
+  font-weight: 600;
   text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.ktg-admin-link:hover,
+.ktg-admin-link:hover {
+  background: #f2f7fa;
+  color: var(--color-primary, #123b5d);
+}
+
 .ktg-admin-link.active {
-  background: var(--color-primary-light, #e8f2fa);
-  color: var(--color-heading, #123b5d);
+  background: #e7f6f5;
+  color: #0b7f7c;
 }
 
 .ktg-admin-main {
@@ -53,24 +63,56 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 16px;
-  padding: 12px 24px;
-  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  gap: 14px;
+  padding: 14px 28px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2ebf2;
+  color: var(--color-primary, #123b5d);
+  font-weight: 600;
+  font-size: 0.92rem;
 }
 
 .ktg-admin-content {
-  padding: 24px;
+  padding: 28px 32px;
   min-width: 0;
 }
 
-.ktg-button-small {
-  padding: 6px 14px;
+.ktg-admin-content h1 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--color-primary, #123b5d);
+  margin: 0 0 16px;
 }
 
-.ktg-button-secondary {
-  background: transparent;
-  color: inherit;
-  border: 1px solid var(--color-border, #e2e8f0);
+.ktg-admin-content h2 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--color-primary, #123b5d);
+  margin: 28px 0 14px;
+}
+
+.ktg-button.ktg-button-small {
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.ktg-button.ktg-button-secondary {
+  background: #ffffff;
+  color: #364d63;
+  border: 1.5px solid #d5e2ec;
+  box-shadow: none;
+}
+
+.ktg-button.ktg-button-secondary:hover:not(:disabled) {
+  background: #f4f8fb;
+  border-color: #aec4d6;
+  color: #123b5d;
+  box-shadow: none;
 }
 
 .ktg-toolbar {
@@ -78,42 +120,78 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
-  margin: 16px 0;
+  margin: 18px 0;
+}
+
+.ktg-toolbar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #123b5d;
 }
 
 .ktg-toolbar input,
 .ktg-toolbar select {
   font: inherit;
-  padding: 6px 10px;
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
+  min-height: 40px;
+  padding: 7px 12px;
+  border: 1.5px solid #d5e2ec;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #20394b;
+  font-size: 0.92rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ktg-toolbar input {
+  min-width: 260px;
+}
+
+.ktg-toolbar input:focus,
+.ktg-toolbar select:focus {
+  outline: none;
+  border-color: #0e9996;
+  box-shadow: 0 0 0 3px rgba(14, 153, 150, 0.14);
+}
+
+.ktg-toolbar .ktg-button.ktg-button-small {
+  min-height: 40px;
 }
 
 .ktg-tabs {
   display: flex;
   gap: 8px;
-  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  border-bottom: 1px solid #e2ebf2;
 }
 
 .ktg-tab {
   font: inherit;
-  padding: 8px 16px;
+  padding: 10px 18px;
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
-  color: inherit;
+  color: #52677b;
+  font-weight: 600;
   cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.ktg-tab:hover {
+  color: #123b5d;
 }
 
 .ktg-tab.active {
-  border-bottom-color: var(--color-primary, #123b5d);
-  color: var(--color-heading, #123b5d);
-  font-weight: 600;
+  border-bottom-color: #0e9996;
+  color: #0b7f7c;
 }
 
 .ktg-table-wrap {
+  background: #ffffff;
+  border: 1px solid #e2ebf2;
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(18, 59, 93, 0.04);
   overflow-x: auto;
 }
 
@@ -126,8 +204,26 @@
 .ktg-table td {
   text-align: left;
   vertical-align: top;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  padding: 12px 14px;
+  border-bottom: 1px solid #ebf1f5;
+  font-size: 0.92rem;
+}
+
+.ktg-table th {
+  background: #f8fbfd;
+  color: #123b5d;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ktg-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.ktg-table tbody tr:hover {
+  background: #fafcfe;
 }
 
 .ktg-table p {
@@ -142,17 +238,20 @@
 
 .ktg-badge {
   display: inline-block;
-  padding: 2px 10px;
+  padding: 3px 10px;
   border-radius: 999px;
-  border: 1px solid var(--color-border, #e2e8f0);
-  font-size: 0.85em;
+  border: 1px solid #d5e2ec;
+  background: #f8fbfd;
+  color: #465b6e;
+  font-size: 0.8rem;
+  font-weight: 600;
   white-space: nowrap;
 }
 
 .ktg-badge-ok {
-  background: rgba(30, 142, 62, 0.12);
-  color: #1e8e3e;
-  border-color: transparent;
+  background: #ecfdf5;
+  color: #065f46;
+  border-color: #a7f3d0;
 }
 
 .ktg-notify-list {
@@ -160,22 +259,26 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .ktg-notify {
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 8px;
-  padding: 12px 16px;
+  background: #ffffff;
+  border: 1px solid #e2ebf2;
+  border-radius: 14px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 14px rgba(18, 59, 93, 0.04);
 }
 
 .ktg-notify.unread {
-  border-color: var(--color-secondary, #19a7a0);
-  background: var(--color-primary-light, #e8f2fa);
+  border-color: #0e9996;
+  background: #f2fbfa;
 }
 
 .ktg-notify p {
-  margin: 8px 0;
+  margin: 8px 0 12px;
+  color: #364d63;
+  line-height: 1.55;
 }
 
 .ktg-notify-head {
@@ -189,12 +292,15 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 16px;
+  margin-top: 18px;
+  font-size: 0.92rem;
+  color: #52677b;
 }
 
 .ktg-loading {
   padding: 32px 20px;
   text-align: center;
+  color: #52677b;
 }
 
 /* Narrow screens (phones): the sidebar stacks on top */
@@ -205,6 +311,16 @@
 
   .ktg-admin-sidebar {
     border-right: 0;
-    border-bottom: 1px solid var(--color-border, #e2e8f0);
+    border-bottom: 1px solid #e2ebf2;
+    padding: 16px 12px;
+  }
+
+  .ktg-admin-content {
+    padding: 20px 16px;
+  }
+
+  .ktg-toolbar input {
+    min-width: 0;
+    width: 100%;
   }
 }

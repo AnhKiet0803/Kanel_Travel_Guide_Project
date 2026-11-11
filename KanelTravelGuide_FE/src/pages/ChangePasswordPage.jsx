@@ -1,5 +1,6 @@
 // Change password while signed in: enter the current password + a new password.
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { changePassword } from '../api/authApi.js'
 import FormField from '../components/FormField.jsx'
 import { validateChangePassword } from '../utils/validators.js'
@@ -39,9 +40,11 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <main className="ktg-page ktg-narrow">
+    <section className="ktg-page ktg-narrow">
       <header className="ktg-page-header">
+        <span className="ktg-eyebrow">Security</span>
         <h1>Change Password</h1>
+        <p>Update your password to keep your account secure.</p>
       </header>
 
       <form className="ktg-form" onSubmit={handleSubmit} noValidate>
@@ -50,6 +53,7 @@ export default function ChangePasswordPage() {
           name="currentPassword"
           type="password"
           label="Current password"
+          placeholder="Enter current password"
           required
           value={form.currentPassword}
           onChange={handleChange}
@@ -61,6 +65,7 @@ export default function ChangePasswordPage() {
           name="newPassword"
           type="password"
           label="New password"
+          placeholder="Min. 8 chars, letters & digits"
           required
           value={form.newPassword}
           onChange={handleChange}
@@ -72,6 +77,7 @@ export default function ChangePasswordPage() {
           name="confirmPassword"
           type="password"
           label="Confirm new password"
+          placeholder="Re-enter new password"
           required
           value={form.confirmPassword}
           onChange={handleChange}
@@ -81,14 +87,21 @@ export default function ChangePasswordPage() {
 
         {result && (
           <p className={result.type === 'success' ? 'ktg-notice ktg-success' : 'ktg-notice ktg-error-box'} role="status">
-            {result.text}
+            <i className={`bi ${result.type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle'}`} aria-hidden="true" />
+            <span>{result.text}</span>
           </p>
         )}
 
-        <button type="submit" className="ktg-button" disabled={submitting}>
+        <button type="submit" className="ktg-button ktg-button-primary ktg-button-block" disabled={submitting}>
           {submitting ? 'Saving...' : 'Change Password'}
         </button>
+
+        <div className="ktg-form-footer">
+          <Link to="/profile" className="ktg-link">
+            ← Back to My Profile
+          </Link>
+        </div>
       </form>
-    </main>
+    </section>
   )
 }

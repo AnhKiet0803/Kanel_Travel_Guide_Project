@@ -2,86 +2,90 @@
 .karnel-home .home-search-section {
     position: relative;
     z-index: 3;
-    margin-top: -62px;
+    margin-top: -64px;
     padding: 0 0 12px;
+    scroll-margin-top: 96px;
 }
 
 .karnel-home .home-search-panel {
     background: #fff;
-    border: 1px solid #e5edf2;
+    border: 1px solid #e2ecf3;
     border-radius: 22px;
-    box-shadow: 0 18px 50px rgba(11,45,69,.15);
+    box-shadow: 0 20px 52px rgba(11, 45, 69, 0.14);
     padding: 20px 24px 24px;
+    text-align: left;
 }
 
 .karnel-home .home-search-tabs {
     display: grid;
-    grid-template-columns: repeat(6,minmax(0,1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 8px;
     padding-bottom: 18px;
-    border-bottom: 1px solid #e5edf2;
+    border-bottom: 1px solid #e7eff5;
 }
 
 .karnel-home .home-search-tab {
-    border: 0;
+    border: 1px solid transparent;
     border-radius: 12px;
     background: transparent;
     color: #52677b;
-    padding: 13px 8px;
+    padding: 12px 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 9px;
-    font-size: .91rem;
-    font-weight: 650;
+    font-size: 0.91rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: background .2s,color .2s;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    white-space: nowrap;
 }
 
-    .karnel-home .home-search-tab i {
-        font-size: 1.2rem
-    }
+.karnel-home .home-search-tab i {
+    font-size: 1.15rem;
+}
 
-    .karnel-home .home-search-tab:hover {
-        background: #f1f7f8;
-        color: #123b5d
-    }
+.karnel-home .home-search-tab:hover {
+    background: #f2f8fa;
+    color: #123b5d;
+}
 
-    .karnel-home .home-search-tab.is-active {
-        background: #e6f5f4;
-        color: #078b89
-    }
+.karnel-home .home-search-tab.is-active {
+    background: #e7f6f5;
+    border-color: rgba(14, 153, 150, 0.24);
+    color: #0b7f7c;
+}
 
 .karnel-home .home-search-form {
     display: flex;
     align-items: flex-end;
-    gap: 12px;
+    gap: 14px;
     padding-top: 20px;
 }
 
 .karnel-home .home-search-input-group {
     flex: 1;
-    min-width: 0
+    min-width: 0;
 }
 
 .karnel-home .home-search-primary {
-    flex: 1.7
+    flex: 1.7;
 }
 
 .karnel-home .home-search-secondary {
-    flex: 1.15
+    flex: 1.15;
 }
 
 .karnel-home .home-search-guests {
-    flex: .85
+    flex: 0.9;
 }
 
 .karnel-home .home-search-input-group label {
     display: block;
     margin: 0 0 8px;
     color: #123b5d;
-    font-size: .81rem;
-    font-weight: 750;
+    font-size: 0.82rem;
+    font-weight: 700;
     text-align: left;
 }
 
@@ -89,141 +93,170 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    height: 54px;
-    border: 1px solid #dce7ed;
-    border-radius: 11px;
+    height: 52px;
+    border: 1.5px solid #dbe6ee;
+    border-radius: 12px;
     padding: 0 14px;
-    background: #fff;
+    background: #f8fbfd;
     min-width: 0;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
-    .karnel-home .home-search-control:focus-within {
-        border-color: #0e9996;
-        box-shadow: 0 0 0 3px rgba(14,153,150,.12)
-    }
+.karnel-home .home-search-control:hover {
+    border-color: #b7ccdb;
+    background: #fff;
+}
 
-    .karnel-home .home-search-control i {
-        color: #0e9996;
-        font-size: 1.12rem;
-        flex-shrink: 0
-    }
+.karnel-home .home-search-control:focus-within {
+    background: #fff;
+    border-color: #0e9996;
+    box-shadow: 0 0 0 3.5px rgba(14, 153, 150, 0.14);
+}
 
-    .karnel-home .home-search-control input,
-    .karnel-home .home-search-control select {
-        width: 100%;
-        min-width: 0;
-        height: 100%;
-        border: 0;
-        background: transparent;
-        outline: 0;
-        color: #20394b;
-        font-size: .91rem;
-        text-align: left;
-    }
+.karnel-home .home-search-control i {
+    color: #0e9996;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
 
-        .karnel-home .home-search-control input::placeholder {
-            color: #8799a7
-        }
+.karnel-home .home-search-control input,
+.karnel-home .home-search-control select {
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    border: 0;
+    background: transparent;
+    outline: none;
+    color: #20394b;
+    font-size: 0.92rem;
+    text-align: left;
+    color-scheme: light;
+}
+
+.karnel-home .home-search-control select {
+    cursor: pointer;
+}
+
+.karnel-home .home-search-control input:focus-visible,
+.karnel-home .home-search-control select:focus-visible {
+    outline: none;
+}
+
+.karnel-home .home-search-control input::placeholder {
+    color: #8496a5;
+}
 
 .karnel-home .home-search-submit-new {
-    height: 54px;
-    min-width: 142px;
-    display: flex;
+    height: 52px;
+    min-width: 144px;
+    display: inline-flex;
     justify-content: center;
     align-items: center;
-    gap: 10px;
+    gap: 9px;
     border: 0;
-    border-radius: 11px;
+    border-radius: 12px;
     background: #0e9996;
     color: #fff;
-    font-weight: 750;
+    font-size: 0.95rem;
+    font-weight: 700;
     cursor: pointer;
-    padding: 0 22px;
+    padding: 0 24px;
+    box-shadow: 0 6px 16px rgba(14, 153, 150, 0.24);
+    transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
-    .karnel-home .home-search-submit-new:hover {
-        background: #087e7b
-    }
+.karnel-home .home-search-submit-new:hover {
+    background: #087e7b;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(8, 126, 123, 0.28);
+}
+
+.karnel-home .home-search-submit-new:active {
+    transform: translateY(0);
+}
 
 /* Keep the first content section visually close to the search panel. */
 .karnel-home .home-search-section + .home-section {
-    padding-top: 40px
+    padding-top: 40px;
 }
 
-@media(max-width:1199.98px) {
+@media (max-width: 1199.98px) {
     .karnel-home .home-search-tab {
         flex-direction: column;
         gap: 5px;
-        font-size: .8rem
+        font-size: 0.8rem;
+        padding: 10px 6px;
     }
 
     .karnel-home .home-search-form {
-        flex-wrap: wrap
+        flex-wrap: wrap;
     }
 
     .karnel-home .home-search-primary {
-        flex: 1 1 45%
+        flex: 1 1 45%;
     }
 
     .karnel-home .home-search-secondary {
-        flex: 1 1 25%
+        flex: 1 1 25%;
     }
 
     .karnel-home .home-search-guests {
-        flex: 1 1 20%
+        flex: 1 1 20%;
     }
 
     .karnel-home .home-search-submit-new {
-        flex: 1 1 150px
+        flex: 1 1 150px;
     }
 }
 
-@media(max-width:767.98px) {
+@media (max-width: 767.98px) {
     .karnel-home .home-search-section {
-        margin-top: -30px;
-        padding-bottom: 8px
+        margin-top: -36px;
+        padding-bottom: 8px;
     }
 
     .karnel-home .home-search-panel {
-        padding: 14px;
-        border-radius: 17px
+        padding: 16px;
+        border-radius: 18px;
     }
 
     .karnel-home .home-search-tabs {
-        grid-template-columns: repeat(3,minmax(0,1fr));
-        gap: 5px;
-        padding-bottom: 12px
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+        padding-bottom: 14px;
     }
 
     .karnel-home .home-search-tab {
-        font-size: .75rem;
-        padding: 10px 3px
+        font-size: 0.76rem;
+        padding: 10px 4px;
     }
 
     .karnel-home .home-search-form {
         display: grid;
-        grid-template-columns: minmax(0,1fr);
+        grid-template-columns: minmax(0, 1fr);
         gap: 14px;
-        padding-top: 16px
+        padding-top: 16px;
     }
 
     .karnel-home .home-search-submit-new {
-        width: 100%
+        width: 100%;
     }
 
     .karnel-home .home-search-section + .home-section {
-        padding-top: 32px
+        padding-top: 32px;
     }
 }
 
-@media(max-width:380px) {
+@media (max-width: 380px) {
     .karnel-home .home-search-tab {
-        font-size: .69rem
+        font-size: 0.7rem;
     }
 }
 
-@media(prefers-reduced-motion:reduce) {
-    .karnel-home .home-search-tab {
-        transition: none
+@media (prefers-reduced-motion: reduce) {
+    .karnel-home .home-search-tab,
+    .karnel-home .home-search-control,
+    .karnel-home .home-search-submit-new {
+        transition: none;
     }
 }

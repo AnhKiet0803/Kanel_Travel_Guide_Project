@@ -35,9 +35,11 @@ export default function AdminBackupPage() {
       <h1>Data Backup</h1>
       <p>Regular database backups protect your data in case of an incident. Back up before making major changes.</p>
 
-      <button type="button" className="ktg-button" onClick={handleBackup} disabled={running}>
-        {running ? 'Backing up...' : 'Backup now'}
-      </button>
+      <div className="ktg-toolbar">
+        <button type="button" className="ktg-button ktg-button-primary" onClick={handleBackup} disabled={running}>
+          {running ? 'Backing up...' : 'Backup now'}
+        </button>
+      </div>
 
       {result && (
         <p className={result.type === 'success' ? 'ktg-notice ktg-success' : 'ktg-notice ktg-error-box'} role="status">

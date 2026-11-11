@@ -14,7 +14,11 @@ export function UserLogin() {
 
 export function AdminLogin() {
   const navigate = useNavigate()
-  return <LoginPage variant="admin" onSuccess={() => navigate('/admin/feedbacks', { replace: true })} />
+  return (
+    <main className="ktg-standalone-auth">
+      <LoginPage variant="admin" onSuccess={() => navigate('/admin/feedbacks', { replace: true })} />
+    </main>
+  )
 }
 
 export function Register() {

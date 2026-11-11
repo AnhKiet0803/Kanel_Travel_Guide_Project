@@ -28,8 +28,9 @@ export default function NotificationsPage({ onOpen }) {
   }
 
   return (
-    <main className="ktg-page">
+    <section className="ktg-page">
       <header className="ktg-page-header">
+        <span className="ktg-eyebrow">Inbox</span>
         <h1>Notifications</h1>
         <p>{unreadCount > 0 ? `You have ${unreadCount} unread ${unreadCount === 1 ? 'notification' : 'notifications'}.` : 'You are all caught up.'}</p>
       </header>
@@ -97,6 +98,6 @@ export default function NotificationsPage({ onOpen }) {
       </ul>
 
       <Pagination page={page} pageSize={PAGE_SIZE} total={list.total} onChange={setPage} />
-    </main>
+    </section>
   )
 }

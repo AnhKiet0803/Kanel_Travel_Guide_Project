@@ -1,6 +1,6 @@
-
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/useAuth';
 import '../styles/Navbar.css';
 
 const services = [
@@ -104,7 +104,6 @@ const menuGroups = {
 };
 
 const mainLinks = [
-    //{ label: 'Home', path: '/' },
     { label: 'About Us', path: '/about' },
     { label: 'Services', menu: true },
     { label: 'Offers', path: '/promotions' },
@@ -112,51 +111,57 @@ const mainLinks = [
     { label: 'Contact Us', path: '/contact' },
 ];
 
+const CLOSED_NAV = {
+    mobileOpen: false,
+    activeMenu: null,
+    activeCategory: 'all',
+    userMenuOpen: false,
+};
+
 function Navbar() {
-    const [mobileOpen, setMobileOpen] = useState(false);
-    const [activeMenu, setActiveMenu] = useState(null);
-    const [activeCategory, setActiveCategory] = useState('all');
-
-    const navbarRef = useRef(null);
     const location = useLocation();
+    const navigate = useNavigate();
+    const { user, signOut } = useAuth();
+    const navbarRef = useRef(null);
 
-    const closeAll = () => {
-        setActiveMenu(null);
-        setActiveCategory('all');
-        setMobileOpen(false);
+    const [navState, setNavState] = useState({
+        path: location.pathname,
+        ...CLOSED_NAV,
+    });
+
+    const isSamePath = navState.path === location.pathname;
+    const mobileOpen = isSamePath ? navState.mobileOpen : false;
+    const activeMenu = isSamePath ? navState.activeMenu : null;
+    const activeCategory = isSamePath ? navState.activeCategory : 'all';
+    const userMenuOpen = isSamePath ? navState.userMenuOpen : false;
+
+    const updateNav = (patch) => {
+        setNavState((prev) => {
+            const base = prev.path === location.pathname ? prev : { path: location.pathname, ...CLOSED_NAV };
+            return { ...base, ...patch, path: location.pathname };
+        });
     };
+
+    const closeAll = () => updateNav(CLOSED_NAV);
 
     const toggleMegaMenu = (name) => {
-        if (activeMenu === name) {
-            setActiveMenu(null);
-            setActiveCategory('all');
-        } else {
-            setActiveMenu(name);
-            setActiveCategory('all');
-        }
+        updateNav({
+            activeMenu: activeMenu === name ? null : name,
+            activeCategory: 'all',
+            userMenuOpen: false,
+        });
     };
-
-    useEffect(() => {
-        setActiveMenu(null);
-        setActiveCategory('all');
-        setMobileOpen(false);
-    }, [location.pathname]);
 
     useEffect(() => {
         const handleOutsideClick = (event) => {
-            if (
-                navbarRef.current &&
-                !navbarRef.current.contains(event.target)
-            ) {
-                setActiveMenu(null);
-                setMobileOpen(false);
+            if (navbarRef.current && !navbarRef.current.contains(event.target)) {
+                setNavState((prev) => ({ ...prev, ...CLOSED_NAV }));
             }
         };
 
         const handleKeyDown = (event) => {
             if (event.key === 'Escape') {
-                setActiveMenu(null);
-                setMobileOpen(false);
+                setNavState((prev) => ({ ...prev, ...CLOSED_NAV }));
             }
         };
 
@@ -169,15 +174,11 @@ function Navbar() {
         };
     }, []);
 
-    const currentMenu = activeMenu
-        ? menuGroups[activeMenu]
-        : null;
+    const currentMenu = activeMenu ? menuGroups[activeMenu] : null;
 
     const visibleItems = currentMenu
         ? currentMenu.items.filter(
-            (item) =>
-                activeCategory === 'all' ||
-                item.category === activeCategory
+            (item) => activeCategory === 'all' || item.category === activeCategory
         )
         : [];
 
@@ -188,26 +189,22 @@ function Navbar() {
                 location.pathname.startsWith(`${item.path}/`)
         );
 
+    async function handleSignOut() {
+        closeAll();
+        await signOut();
+        navigate('/');
+    }
+
     return (
         <header className="karnel-header" ref={navbarRef}>
-
             {/* FULL WIDTH NAVBAR */}
-            <nav
-                className="karnel-navbar"
-                aria-label="Main navigation"
-            >
+            <nav className="karnel-navbar" aria-label="Main navigation">
                 <div className="karnel-nav-inner">
-
                     {/* LOGO */}
-                    <Link
-                        to="/"
-                        className="karnel-brand"
-                        onClick={closeAll}
-                    >
+                    <Link to="/" className="karnel-brand" onClick={closeAll}>
                         <span className="karnel-brand-icon">
                             <i className="bi bi-airplane-engines-fill"></i>
                         </span>
-
                         <span>Karnel Travels</span>
                     </Link>
 
@@ -218,53 +215,43 @@ function Navbar() {
                         aria-label="Toggle navigation"
                         aria-expanded={mobileOpen}
                         aria-controls="karnel-main-menu"
-                        onClick={() => {
-                            setMobileOpen((previous) => !previous);
-                            setActiveMenu(null);
-                            setActiveCategory('all');
-                        }}
+                        onClick={() =>
+                            updateNav({
+                                mobileOpen: !mobileOpen,
+                                activeMenu: null,
+                                activeCategory: 'all',
+                                userMenuOpen: false,
+                            })
+                        }
                     >
-                        <i
-                            className={`bi ${mobileOpen ? 'bi-x-lg' : 'bi-list'
-                                }`}
-                        ></i>
+                        <i className={`bi ${mobileOpen ? 'bi-x-lg' : 'bi-list'}`}></i>
                     </button>
 
                     {/* MAIN MENU */}
                     <div
                         id="karnel-main-menu"
-                        className={`karnel-menu ${mobileOpen ? 'is-open' : ''
-                            }`}
+                        className={`karnel-menu ${mobileOpen ? 'is-open' : ''}`}
                     >
                         <ul className="karnel-menu-list">
                             {mainLinks.map((item) => (
-                                <li
-                                    key={item.label}
-                                    className="karnel-menu-item"
-                                >
+                                <li key={item.label} className="karnel-menu-item">
                                     {item.menu ? (
                                         <button
                                             type="button"
-                                            className={`karnel-menu-link ${activeMenu === item.label ||
-                                                    isMenuActive(item.label)
+                                            className={`karnel-menu-link ${
+                                                activeMenu === item.label || isMenuActive(item.label)
                                                     ? 'active'
                                                     : ''
-                                                }`}
-                                            aria-expanded={
-                                                activeMenu === item.label
-                                            }
+                                            }`}
+                                            aria-expanded={activeMenu === item.label}
                                             aria-controls="karnel-mega-panel"
-                                            onClick={() =>
-                                                toggleMegaMenu(item.label)
-                                            }
+                                            onClick={() => toggleMegaMenu(item.label)}
                                         >
                                             <span>{item.label}</span>
-
                                             <i
-                                                className={`bi bi-chevron-${activeMenu === item.label
-                                                        ? 'up'
-                                                        : 'down'
-                                                    }`}
+                                                className={`bi bi-chevron-${
+                                                    activeMenu === item.label ? 'up' : 'down'
+                                                }`}
                                             ></i>
                                         </button>
                                     ) : (
@@ -273,8 +260,7 @@ function Navbar() {
                                             end={item.path === '/'}
                                             onClick={closeAll}
                                             className={({ isActive }) =>
-                                                `karnel-menu-link ${isActive ? 'active' : ''
-                                                }`
+                                                `karnel-menu-link ${isActive ? 'active' : ''}`
                                             }
                                         >
                                             {item.label}
@@ -286,25 +272,118 @@ function Navbar() {
 
                         {/* ACTION BUTTONS */}
                         <div className="karnel-nav-actions">
-
                             <Link
-                                to="/search"
+                                to="/#home-search"
                                 className="karnel-search-btn"
                                 aria-label="Search"
-                                onClick={closeAll}
+                                onClick={() => {
+                                    closeAll();
+                                    if (location.pathname === '/') {
+                                        document.getElementById('home-search')?.scrollIntoView({
+                                            behavior: 'smooth',
+                                            block: 'center',
+                                        });
+                                    }
+                                }}
                             >
                                 <i className="bi bi-search"></i>
                             </Link>
 
-                            <Link
-                                to="/login"
-                                className="karnel-signin-btn"
-                                onClick={closeAll}
-                            >
-                                <i className="bi bi-person-circle"></i>
-                                <span>Sign In</span>
-                            </Link>
+                            {user ? (
+                                <div className="karnel-user-menu">
+                                    <button
+                                        type="button"
+                                        className="karnel-signin-btn karnel-user-trigger"
+                                        aria-expanded={userMenuOpen}
+                                        aria-haspopup="menu"
+                                        onClick={() =>
+                                            updateNav({
+                                                userMenuOpen: !userMenuOpen,
+                                                activeMenu: null,
+                                            })
+                                        }
+                                    >
+                                        <i className="bi bi-person-circle"></i>
+                                        <span className="karnel-user-name">
+                                            {user.fullName || user.username}
+                                        </span>
+                                        <i
+                                            className={`bi bi-chevron-${
+                                                userMenuOpen ? 'up' : 'down'
+                                            } karnel-user-caret`}
+                                        ></i>
+                                    </button>
 
+                                    {userMenuOpen && (
+                                        <div className="karnel-user-dropdown" role="menu">
+                                            <div className="karnel-user-header">
+                                                <strong>{user.fullName || user.username}</strong>
+                                                {user.email && <small>{user.email}</small>}
+                                            </div>
+                                            <Link
+                                                to="/profile"
+                                                className="karnel-user-link"
+                                                role="menuitem"
+                                                onClick={closeAll}
+                                            >
+                                                <i className="bi bi-person"></i> My Profile
+                                            </Link>
+                                            <Link
+                                                to="/notifications"
+                                                className="karnel-user-link"
+                                                role="menuitem"
+                                                onClick={closeAll}
+                                            >
+                                                <i className="bi bi-bell"></i> Notifications
+                                            </Link>
+                                            <Link
+                                                to="/change-password"
+                                                className="karnel-user-link"
+                                                role="menuitem"
+                                                onClick={closeAll}
+                                            >
+                                                <i className="bi bi-shield-lock"></i> Change Password
+                                            </Link>
+                                            <Link
+                                                to="/feedback"
+                                                className="karnel-user-link"
+                                                role="menuitem"
+                                                onClick={closeAll}
+                                            >
+                                                <i className="bi bi-chat-heart"></i> Feedback
+                                            </Link>
+                                            {user.role === 'Admin' && (
+                                                <Link
+                                                    to="/admin/feedbacks"
+                                                    className="karnel-user-link"
+                                                    role="menuitem"
+                                                    onClick={closeAll}
+                                                >
+                                                    <i className="bi bi-speedometer2"></i> Admin Panel
+                                                </Link>
+                                            )}
+                                            <div className="karnel-user-divider" />
+                                            <button
+                                                type="button"
+                                                className="karnel-user-link karnel-user-signout"
+                                                role="menuitem"
+                                                onClick={handleSignOut}
+                                            >
+                                                <i className="bi bi-box-arrow-right"></i> Sign Out
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <Link
+                                    to="/login"
+                                    className="karnel-signin-btn"
+                                    onClick={closeAll}
+                                >
+                                    <i className="bi bi-person-circle"></i>
+                                    <span>Sign In</span>
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -312,12 +391,8 @@ function Navbar() {
 
             {/* FULL WIDTH MEGA MENU */}
             {currentMenu && (
-                <div
-                    id="karnel-mega-panel"
-                    className="karnel-mega-panel"
-                >
+                <div id="karnel-mega-panel" className="karnel-mega-panel">
                     <div className="karnel-mega-container">
-
                         {/* MEGA HEADER */}
                         <div className="karnel-mega-heading">
                             <div>
@@ -329,7 +404,7 @@ function Navbar() {
                                 type="button"
                                 className="karnel-mega-close"
                                 aria-label="Close menu"
-                                onClick={() => setActiveMenu(null)}
+                                onClick={() => updateNav({ activeMenu: null })}
                             >
                                 <i className="bi bi-x-lg"></i>
                             </button>
@@ -337,20 +412,16 @@ function Navbar() {
 
                         {/* MEGA BODY */}
                         <div className="karnel-mega-body">
-
                             {/* LEFT CATEGORIES */}
                             <aside className="karnel-mega-sidebar">
                                 {currentMenu.categories.map((category) => (
                                     <button
                                         key={category.id}
                                         type="button"
-                                        className={`karnel-mega-category ${activeCategory === category.id
-                                                ? 'active'
-                                                : ''
-                                            }`}
-                                        onClick={() =>
-                                            setActiveCategory(category.id)
-                                        }
+                                        className={`karnel-mega-category ${
+                                            activeCategory === category.id ? 'active' : ''
+                                        }`}
+                                        onClick={() => updateNav({ activeCategory: category.id })}
                                     >
                                         <span>{category.label}</span>
                                         <i className="bi bi-chevron-right"></i>
@@ -360,18 +431,16 @@ function Navbar() {
 
                             {/* RIGHT SERVICES */}
                             <div className="karnel-mega-content">
-
                                 <div className="karnel-mega-content-title">
                                     <span>
-                                        {currentMenu.categories.find(
-                                            (category) =>
-                                                category.id === activeCategory
-                                        )?.label}
+                                        {
+                                            currentMenu.categories.find(
+                                                (category) => category.id === activeCategory
+                                            )?.label
+                                        }
                                     </span>
 
-                                    <small>
-                                        {visibleItems.length} options
-                                    </small>
+                                    <small>{visibleItems.length} options</small>
                                 </div>
 
                                 <div className="karnel-mega-grid">
@@ -381,14 +450,11 @@ function Navbar() {
                                             to={item.path}
                                             onClick={closeAll}
                                             className={({ isActive }) =>
-                                                `karnel-mega-card ${isActive ? 'active' : ''
-                                                }`
+                                                `karnel-mega-card ${isActive ? 'active' : ''}`
                                             }
                                         >
                                             <span className="karnel-mega-card-icon">
-                                                <i
-                                                    className={`bi ${item.icon}`}
-                                                ></i>
+                                                <i className={`bi ${item.icon}`}></i>
                                             </span>
 
                                             <span className="karnel-mega-card-text">
@@ -405,22 +471,16 @@ function Navbar() {
 
                         {/* MEGA FOOTER */}
                         <div className="karnel-mega-footer">
-
                             <span>
                                 <i className="bi bi-stars"></i>
                                 Discover more with Karnel Travels
                             </span>
 
-                            <Link
-                                to="/contact"
-                                onClick={closeAll}
-                            >
+                            <Link to="/contact" onClick={closeAll}>
                                 Need help?
                                 <i className="bi bi-arrow-right"></i>
                             </Link>
-
                         </div>
-
                     </div>
                 </div>
             )}

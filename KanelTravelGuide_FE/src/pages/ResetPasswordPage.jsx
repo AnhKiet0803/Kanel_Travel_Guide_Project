@@ -1,6 +1,7 @@
 // Reset the password using the link in the email. `token` comes from the page URL (e.g. ?token=...),
 // passed in by the router: <ResetPasswordPage token={searchParams.get('token')} onSuccess={() => navigate('/login')} />
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { resetPassword } from '../api/authApi.js'
 import FormField from '../components/FormField.jsx'
 import { validateResetPassword } from '../utils/validators.js'
@@ -42,18 +43,32 @@ export default function ResetPasswordPage({ token, onSuccess }) {
 
   if (!token) {
     return (
-      <main className="ktg-page ktg-narrow">
-        <p className="ktg-notice ktg-error-box" role="alert">
-          This password reset link is invalid or has expired. Please request a new one on the Forgot Password page.
-        </p>
-      </main>
+      <section className="ktg-page ktg-narrow">
+        <header className="ktg-page-header">
+          <span className="ktg-eyebrow">Account Recovery</span>
+          <h1>Reset Password</h1>
+        </header>
+        <div className="ktg-form">
+          <p className="ktg-notice ktg-error-box" role="alert">
+            <i className="bi bi-exclamation-triangle" aria-hidden="true" />
+            <span>This password reset link is invalid or has expired. Please request a new one on the Forgot Password page.</span>
+          </p>
+          <div className="ktg-form-footer">
+            <Link to="/forgot-password" className="ktg-link">
+              Request new reset link
+            </Link>
+          </div>
+        </div>
+      </section>
     )
   }
 
   return (
-    <main className="ktg-page ktg-narrow">
+    <section className="ktg-page ktg-narrow">
       <header className="ktg-page-header">
+        <span className="ktg-eyebrow">Account Recovery</span>
         <h1>Reset Password</h1>
+        <p>Choose a strong new password for your account.</p>
       </header>
 
       <form className="ktg-form" onSubmit={handleSubmit} noValidate>
@@ -62,6 +77,7 @@ export default function ResetPasswordPage({ token, onSuccess }) {
           name="newPassword"
           type="password"
           label="New password"
+          placeholder="Min. 8 chars, letters & digits"
           required
           value={form.newPassword}
           onChange={handleChange}
@@ -73,6 +89,7 @@ export default function ResetPasswordPage({ token, onSuccess }) {
           name="confirmPassword"
           type="password"
           label="Confirm new password"
+          placeholder="Re-enter new password"
           required
           value={form.confirmPassword}
           onChange={handleChange}
@@ -82,14 +99,21 @@ export default function ResetPasswordPage({ token, onSuccess }) {
 
         {result && (
           <p className={result.type === 'success' ? 'ktg-notice ktg-success' : 'ktg-notice ktg-error-box'} role="status">
-            {result.text}
+            <i className={`bi ${result.type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle'}`} aria-hidden="true" />
+            <span>{result.text}</span>
           </p>
         )}
 
-        <button type="submit" className="ktg-button" disabled={submitting}>
+        <button type="submit" className="ktg-button ktg-button-primary ktg-button-block" disabled={submitting}>
           {submitting ? 'Saving...' : 'Reset Password'}
         </button>
+
+        <div className="ktg-form-footer">
+          <Link to="/login" className="ktg-link">
+            ← Back to Sign In
+          </Link>
+        </div>
       </form>
-    </main>
+    </section>
   )
 }

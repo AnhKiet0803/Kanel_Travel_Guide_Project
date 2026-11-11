@@ -1,6 +1,6 @@
 // View and update the personal profile (full name, phone number, address). Email and username are read-only.
-// Only use when signed in (place it behind the router's sign-in check).
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { getProfile, updateProfile } from '../api/authApi.js'
 import FormField from '../components/FormField.jsx'
 import { LIMITS, validateProfile } from '../utils/validators.js'
@@ -56,54 +56,68 @@ export default function ProfilePage() {
 
   if (loadError) {
     return (
-      <main className="ktg-page ktg-narrow">
-        <p className="ktg-notice ktg-error-box" role="alert">{loadError}</p>
-      </main>
+      <section className="ktg-page ktg-narrow-wide">
+        <p className="ktg-notice ktg-error-box" role="alert">
+          <i className="bi bi-exclamation-triangle" aria-hidden="true" />
+          <span>{loadError}</span>
+        </p>
+      </section>
     )
   }
   if (!profile) {
     return (
-      <main className="ktg-page ktg-narrow">
+      <section className="ktg-page ktg-narrow-wide">
         <p className="ktg-loading">Loading profile...</p>
-      </main>
+      </section>
     )
   }
 
   return (
-    <main className="ktg-page ktg-narrow">
+    <section className="ktg-page ktg-narrow-wide">
       <header className="ktg-page-header">
+        <span className="ktg-eyebrow">Account Settings</span>
         <h1>My Profile</h1>
+        <p>Keep your personal information up to date for smoother bookings.</p>
       </header>
 
       <form className="ktg-form" onSubmit={handleSubmit} noValidate>
-        <FormField id="pf-username" label="Username" value={profile.username ?? ''} readOnly />
-        <FormField id="pf-email" label="Email" value={profile.email ?? ''} readOnly />
-        <FormField
-          id="pf-fullName"
-          name="fullName"
-          label="Full name"
-          required
-          value={form.fullName}
-          onChange={handleChange}
-          error={errors.fullName}
-          maxLength={LIMITS.fullName}
-          autoComplete="name"
-        />
-        <FormField
-          id="pf-phone"
-          name="phone"
-          type="tel"
-          label="Phone number"
-          value={form.phone}
-          onChange={handleChange}
-          error={errors.phone}
-          maxLength={LIMITS.phone}
-          autoComplete="tel"
-        />
+        <div className="ktg-row">
+          <FormField id="pf-username" label="Username" value={profile.username ?? ''} readOnly hint="Username cannot be changed." />
+          <FormField id="pf-email" label="Email" value={profile.email ?? ''} readOnly hint="Email cannot be changed." />
+        </div>
+
+        <div className="ktg-row">
+          <FormField
+            id="pf-fullName"
+            name="fullName"
+            label="Full name"
+            placeholder="Your full name"
+            required
+            value={form.fullName}
+            onChange={handleChange}
+            error={errors.fullName}
+            maxLength={LIMITS.fullName}
+            autoComplete="name"
+          />
+          <FormField
+            id="pf-phone"
+            name="phone"
+            type="tel"
+            label="Phone number"
+            placeholder="e.g. +84 912 345 678"
+            value={form.phone}
+            onChange={handleChange}
+            error={errors.phone}
+            maxLength={LIMITS.phone}
+            autoComplete="tel"
+          />
+        </div>
+
         <FormField
           id="pf-address"
           name="address"
           label="Address"
+          placeholder="Street, city, province"
           value={form.address}
           onChange={handleChange}
           error={errors.address}
@@ -113,14 +127,24 @@ export default function ProfilePage() {
 
         {result && (
           <p className={result.type === 'success' ? 'ktg-notice ktg-success' : 'ktg-notice ktg-error-box'} role="status">
-            {result.text}
+            <i className={`bi ${result.type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle'}`} aria-hidden="true" />
+            <span>{result.text}</span>
           </p>
         )}
 
-        <button type="submit" className="ktg-button" disabled={submitting}>
+        <button type="submit" className="ktg-button ktg-button-primary" disabled={submitting}>
           {submitting ? 'Saving...' : 'Save changes'}
         </button>
+
+        <div className="ktg-form-footer">
+          <Link to="/change-password" className="ktg-link">
+            Change password
+          </Link>
+          <Link to="/notifications" className="ktg-link">
+            View notifications
+          </Link>
+        </div>
       </form>
-    </main>
+    </section>
   )
 }

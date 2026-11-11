@@ -1,10 +1,4 @@
-
-import {
-    BrowserRouter,
-    Routes,
-    Route,
-} from 'react-router-dom';
-
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import PlaceholderPage from './pages/PlaceholderPage';
 import Home from './pages/Home';
@@ -30,6 +24,11 @@ function App() {
                     <Route
                         path="/"
                         element={<Home />}
+                    />
+
+                    <Route
+                        path="/search"
+                        element={<Navigate to="/#home-search" replace />}
                     />
 
                     <Route

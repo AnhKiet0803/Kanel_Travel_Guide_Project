@@ -1,6 +1,7 @@
 // User account registration. The BE hashes the password (BCrypt) before storing it; the FE never stores it.
 // After a successful registration it calls onSuccess() so the router can go to the sign-in page.
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { register } from '../api/authApi.js'
 import FormField from '../components/FormField.jsx'
 import { LIMITS, validateRegister } from '../utils/validators.js'
@@ -49,101 +50,126 @@ export default function RegisterPage({ onSuccess }) {
   }
 
   return (
-    <main className="ktg-page ktg-narrow">
+    <section className="ktg-page ktg-narrow-wide">
       <header className="ktg-page-header">
+        <span className="ktg-eyebrow">Join Karnel Travels</span>
         <h1>Create an Account</h1>
         <p>Create an account to book tours and transport and track your orders.</p>
       </header>
 
       <form className="ktg-form" onSubmit={handleSubmit} noValidate>
-        <FormField
-          id="reg-username"
-          name="username"
-          label="Username"
-          required
-          value={form.username}
-          onChange={handleChange}
-          error={errors.username}
-          maxLength={50}
-          autoComplete="username"
-        />
-        <FormField
-          id="reg-fullName"
-          name="fullName"
-          label="Full name"
-          required
-          value={form.fullName}
-          onChange={handleChange}
-          error={errors.fullName}
-          maxLength={LIMITS.fullName}
-          autoComplete="name"
-        />
-        <FormField
-          id="reg-email"
-          name="email"
-          type="email"
-          label="Email"
-          required
-          value={form.email}
-          onChange={handleChange}
-          error={errors.email}
-          maxLength={LIMITS.email}
-          autoComplete="email"
-        />
-        <FormField
-          id="reg-phone"
-          name="phone"
-          type="tel"
-          label="Phone number"
-          value={form.phone}
-          onChange={handleChange}
-          error={errors.phone}
-          maxLength={LIMITS.phone}
-          autoComplete="tel"
-        />
+        <div className="ktg-row">
+          <FormField
+            id="reg-username"
+            name="username"
+            label="Username"
+            placeholder="e.g. nguyen_van_a"
+            required
+            value={form.username}
+            onChange={handleChange}
+            error={errors.username}
+            maxLength={50}
+            autoComplete="username"
+          />
+          <FormField
+            id="reg-fullName"
+            name="fullName"
+            label="Full name"
+            placeholder="Your full name"
+            required
+            value={form.fullName}
+            onChange={handleChange}
+            error={errors.fullName}
+            maxLength={LIMITS.fullName}
+            autoComplete="name"
+          />
+        </div>
+
+        <div className="ktg-row">
+          <FormField
+            id="reg-email"
+            name="email"
+            type="email"
+            label="Email"
+            placeholder="you@example.com"
+            required
+            value={form.email}
+            onChange={handleChange}
+            error={errors.email}
+            maxLength={LIMITS.email}
+            autoComplete="email"
+          />
+          <FormField
+            id="reg-phone"
+            name="phone"
+            type="tel"
+            label="Phone number"
+            placeholder="e.g. +84 912 345 678"
+            value={form.phone}
+            onChange={handleChange}
+            error={errors.phone}
+            maxLength={LIMITS.phone}
+            autoComplete="tel"
+          />
+        </div>
+
         <FormField
           id="reg-address"
           name="address"
           label="Address"
+          placeholder="Street, city, province"
           value={form.address}
           onChange={handleChange}
           error={errors.address}
           maxLength={255}
           autoComplete="street-address"
         />
-        <FormField
-          id="reg-password"
-          name="password"
-          type="password"
-          label="Password"
-          required
-          value={form.password}
-          onChange={handleChange}
-          error={errors.password}
-          autoComplete="new-password"
-        />
-        <FormField
-          id="reg-confirm"
-          name="confirmPassword"
-          type="password"
-          label="Confirm password"
-          required
-          value={form.confirmPassword}
-          onChange={handleChange}
-          error={errors.confirmPassword}
-          autoComplete="new-password"
-        />
+
+        <div className="ktg-row">
+          <FormField
+            id="reg-password"
+            name="password"
+            type="password"
+            label="Password"
+            placeholder="Min. 8 chars, letters & digits"
+            required
+            value={form.password}
+            onChange={handleChange}
+            error={errors.password}
+            autoComplete="new-password"
+          />
+          <FormField
+            id="reg-confirm"
+            name="confirmPassword"
+            type="password"
+            label="Confirm password"
+            placeholder="Re-enter password"
+            required
+            value={form.confirmPassword}
+            onChange={handleChange}
+            error={errors.confirmPassword}
+            autoComplete="new-password"
+          />
+        </div>
 
         {result && (
           <p className={result.type === 'success' ? 'ktg-notice ktg-success' : 'ktg-notice ktg-error-box'} role="status">
-            {result.text}
+            <i className={`bi ${result.type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle'}`} aria-hidden="true" />
+            <span>{result.text}</span>
           </p>
         )}
 
-        <button type="submit" className="ktg-button" disabled={submitting}>
-          {submitting ? 'Registering...' : 'Register'}
+        <button type="submit" className="ktg-button ktg-button-primary ktg-button-block" disabled={submitting}>
+          {submitting ? 'Registering...' : 'Create Account'}
         </button>
+
+        <div className="ktg-form-footer">
+          <span>Already have an account?</span>
+          <Link to="/login" className="ktg-link">
+            Sign in
+          </Link>
+        </div>
       </form>
-    </main>
+    </section>
   )
 }

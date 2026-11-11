@@ -1,6 +1,7 @@
 // Forgot password: enter an email and the BE sends a message with a password-reset link (see ResetPasswordPage).
 // Always reply "if this email is registered..." so we never reveal which emails have an account.
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { forgotPassword } from '../api/authApi.js'
 import FormField from '../components/FormField.jsx'
 import { LIMITS, validateForgotPassword } from '../utils/validators.js'
@@ -35,8 +36,9 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="ktg-page ktg-narrow">
+    <section className="ktg-page ktg-narrow">
       <header className="ktg-page-header">
+        <span className="ktg-eyebrow">Account Recovery</span>
         <h1>Forgot Password</h1>
         <p>Enter your registered email and we will send you a link to reset your password.</p>
       </header>
@@ -47,6 +49,7 @@ export default function ForgotPasswordPage() {
           name="email"
           type="email"
           label="Email"
+          placeholder="you@example.com"
           required
           value={form.email}
           onChange={(event) => {
@@ -60,14 +63,21 @@ export default function ForgotPasswordPage() {
 
         {result && (
           <p className={result.type === 'success' ? 'ktg-notice ktg-success' : 'ktg-notice ktg-error-box'} role="status">
-            {result.text}
+            <i className={`bi ${result.type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle'}`} aria-hidden="true" />
+            <span>{result.text}</span>
           </p>
         )}
 
-        <button type="submit" className="ktg-button" disabled={submitting}>
+        <button type="submit" className="ktg-button ktg-button-primary ktg-button-block" disabled={submitting}>
           {submitting ? 'Sending...' : 'Send reset link'}
         </button>
+
+        <div className="ktg-form-footer">
+          <Link to="/login" className="ktg-link">
+            ← Back to Sign In
+          </Link>
+        </div>
       </form>
-    </main>
+    </section>
   )
 }

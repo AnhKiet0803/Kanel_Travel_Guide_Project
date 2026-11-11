@@ -1,6 +1,7 @@
-
 import { Link } from 'react-router-dom';
 import '../styles/Footer.css';
+
+const CURRENT_YEAR = new Date().getFullYear();
 
 function Footer() {
     return (
@@ -28,8 +29,9 @@ function Footer() {
                     <div className="col-6 col-md-3 col-lg-4">
                         <h6>Information</h6>
                         <ul className="list-unstyled">
-                            <li><Link to="/information">About Us</Link></li>
+                            <li><Link to="/about">About Us</Link></li>
                             <li><Link to="/promotions">Special Offers</Link></li>
+                            <li><Link to="/feedback">Feedback</Link></li>
                             <li><Link to="/contact">Contact</Link></li>
                         </ul>
                     </div>
@@ -37,7 +39,7 @@ function Footer() {
             </div>
 
             <div className="karnel-footer-bottom text-center py-3">
-                © {new Date().getFullYear()} Karnel Travels. All rights reserved.
+                © {CURRENT_YEAR} Karnel Travels. All rights reserved.
             </div>
         </footer>
     );
