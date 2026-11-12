@@ -31,15 +31,9 @@ Sample accounts:
 | Admin | admin | admin@karnel.local | Admin@123 |
 | User | minhan | user@karnel.local | User@123 |
 
-CORS allows `http://localhost:5173`, `http://localhost:3000`, and `http://localhost:4200`.
+CORS allows `http://localhost:5173`, `http://localhost:3000`, and `http://localhost:4200`, with credentials.
 
-Protected APIs send this header after login:
-
-```http
-Authorization: Bearer {token}
-```
-
-The token arrives with the 13/11 login API. Until then, the frontend can build screens from the JSON samples below.
+Login sets an HttpOnly cookie named `karnel.auth` (7 days, sliding). The frontend sends it with `credentials: 'include'`. Protected APIs read that cookie. A missing or expired cookie returns `401`. A signed-in account with the wrong role returns `403`. Admin-only APIs use role `Admin`. Public registration always creates role `User`.
 
 ## Shared values
 
@@ -117,22 +111,27 @@ Returns `201`:
 }
 ```
 
+Returns `200` and sets the `karnel.auth` cookie:
+
 ```json
 {
-  "token": "jwt-will-be-added-on-13-11",
-  "user": {
-    "userId": 1,
-    "username": "admin",
-    "fullName": "Karnel Admin",
-    "email": "admin@karnel.local",
-    "role": "Admin"
-  }
+  "userId": 1,
+  "username": "admin",
+  "fullName": "Karnel Admin",
+  "email": "admin@karnel.local",
+  "role": "Admin"
 }
 ```
 
+A wrong username or password returns `401`. A disabled account returns `403`.
+
+### Current user
+
+`GET /api/auth/me` requires the login cookie. The body matches login. A missing cookie returns `401`.
+
 ### Logout
 
-`POST /api/auth/logout` requires login. Returns `204`.
+`POST /api/auth/logout` clears the login cookie and returns `204`.
 
 ### Change password
 
