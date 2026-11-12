@@ -293,7 +293,7 @@ These two APIs ship with email delivery, due 17/11.
 
 ### Approved feedback (public page)
 
-`GET /api/feedbacks`
+`GET /api/feedbacks/approved`
 
 ```json
 [
