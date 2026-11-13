@@ -127,7 +127,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Schedule>(entity =>
         {
-            entity.ToTable("Schedules", table => table.HasCheckConstraint("CK_Schedules_Status", "[status] IN ('Running', 'Suspended')"));
+            entity.ToTable("Schedules", table => table.HasCheckConstraint("CK_Schedules_Status", "[status] IN ('Running', 'Suspended', 'SoldOut', N'Đang chạy', N'Tạm ngưng', N'Hết vé')"));
             entity.HasKey(x => x.ScheduleId);
             entity.Property(x => x.TicketPrice).HasPrecision(18, 2);
             entity.Property(x => x.Status).HasMaxLength(50).HasDefaultValue("Running");
@@ -164,9 +164,9 @@ public class AppDbContext : DbContext
         {
             entity.ToTable("Bookings", table =>
             {
-                table.HasCheckConstraint("CK_Bookings_Type", "[booking_type] IN ('Tour', 'Transport', 'Combo')");
-                table.HasCheckConstraint("CK_Bookings_Payment", "[payment_status] IN ('Unpaid', 'Paid')");
-                table.HasCheckConstraint("CK_Bookings_Status", "[booking_status] IN ('Pending', 'Confirmed', 'Completed', 'Cancelled')");
+                table.HasCheckConstraint("CK_Bookings_Type", "[booking_type] IN ('Tour', 'Transport', 'Combo', 'Service')");
+                table.HasCheckConstraint("CK_Bookings_Payment", "[payment_status] IN ('Unpaid', 'Paid', 'Refunded', N'Chưa thanh toán', N'Đã thanh toán', N'Hoàn tiền')");
+                table.HasCheckConstraint("CK_Bookings_Status", "[booking_status] IN ('Pending', 'Confirmed', 'Completed', 'Cancelled', N'Chờ duyệt', N'Đã xác nhận', N'Hoàn tất', N'Hủy')");
             });
             entity.HasKey(x => x.BookingId);
             entity.HasIndex(x => x.BookingCode).IsUnique();
@@ -176,11 +176,13 @@ public class AppDbContext : DbContext
             entity.Property(x => x.CustomerEmail).HasMaxLength(100);
             entity.Property(x => x.BookingType).HasMaxLength(30);
             entity.Property(x => x.BookingDate).HasDefaultValueSql("GETDATE()");
+            entity.Property(x => x.DiscountAmount).HasPrecision(18, 2).HasDefaultValue(0);
             entity.Property(x => x.TotalAmount).HasPrecision(18, 2);
             entity.Property(x => x.PaymentStatus).HasMaxLength(50).HasDefaultValue("Unpaid");
             entity.Property(x => x.BookingStatus).HasMaxLength(50).HasDefaultValue("Pending");
             entity.Property(x => x.Notes).HasMaxLength(500);
             entity.HasOne(x => x.User).WithMany(x => x.Bookings).HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.Promotion).WithMany().HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<BookingDetail>(entity =>

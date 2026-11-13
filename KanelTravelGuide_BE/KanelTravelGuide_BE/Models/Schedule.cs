@@ -9,6 +9,7 @@ public class Schedule
     public Vehicle Vehicle { get; set; } = null!;
     public TimeOnly DepartureTime { get; set; }
     public decimal TicketPrice { get; set; }
+    public int? AvailableSeats { get; set; }
     public string Status { get; set; } = "Running";
 
     public ICollection<BookingDetail> BookingDetails { get; set; } = new List<BookingDetail>();
