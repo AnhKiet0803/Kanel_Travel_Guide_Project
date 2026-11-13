@@ -329,6 +329,14 @@ function Navbar() {
                                                 <i className="bi bi-person"></i> My Profile
                                             </Link>
                                             <Link
+                                                to="/my-bookings"
+                                                className="karnel-user-link"
+                                                role="menuitem"
+                                                onClick={closeAll}
+                                            >
+                                                <i className="bi bi-journal-check"></i> My Bookings
+                                            </Link>
+                                            <Link
                                                 to="/notifications"
                                                 className="karnel-user-link"
                                                 role="menuitem"
