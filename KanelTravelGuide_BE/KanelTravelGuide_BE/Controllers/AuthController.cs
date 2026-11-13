@@ -2,8 +2,7 @@ using System.Security.Claims;
 using KanelTravelGuide_BE.Contracts;
 using KanelTravelGuide_BE.Data;
 using KanelTravelGuide_BE.Models;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using KanelTravelGuide_BE.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,10 +14,12 @@ namespace KanelTravelGuide_BE.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly JwtTokenService _tokens;
 
-    public AuthController(AppDbContext db)
+    public AuthController(AppDbContext db, JwtTokenService tokens)
     {
         _db = db;
+        _tokens = tokens;
     }
 
     [HttpPost("register")]
@@ -87,14 +88,12 @@ public class AuthController : ControllerBase
             return StatusCode(StatusCodes.Status403Forbidden, new { message = "This account is disabled." });
         }
 
-        await SignInAsync(user);
-        return Ok(PublicUser(user));
+        return Ok(SignedInUser(user));
     }
 
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout()
+    public IActionResult Logout()
     {
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return NoContent();
     }
 
@@ -105,33 +104,10 @@ public class AuthController : ControllerBase
         var user = await CurrentUserAsync();
         if (user is null || !user.IsActive)
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return Unauthorized(new { message = "Sign in is required." });
         }
 
         return Ok(PublicUser(user));
-    }
-
-    private async Task SignInAsync(User user)
-    {
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-            new(ClaimTypes.Name, user.Username),
-            new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Role, user.Role)
-        };
-
-        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        await HttpContext.SignInAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme,
-            new ClaimsPrincipal(identity),
-            new AuthenticationProperties
-            {
-                IsPersistent = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7),
-                AllowRefresh = true
-            });
     }
 
     private async Task<User?> CurrentUserAsync()
@@ -144,6 +120,16 @@ public class AuthController : ControllerBase
 
         return await _db.Users.FirstOrDefaultAsync(user => user.UserId == userId);
     }
+
+    private object SignedInUser(User user) => new
+    {
+        token = _tokens.CreateToken(user),
+        user.UserId,
+        user.Username,
+        user.FullName,
+        user.Email,
+        user.Role
+    };
 
     private static object PublicUser(User user) => new
     {

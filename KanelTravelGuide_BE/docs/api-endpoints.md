@@ -31,9 +31,9 @@ Sample accounts:
 | Admin | admin | admin@karnel.local | Admin@123 |
 | User | minhan | user@karnel.local | User@123 |
 
-CORS allows `http://localhost:5173`, `http://localhost:3000`, and `http://localhost:4200`, with credentials.
+CORS allows `http://localhost:5173`, `http://localhost:3000`, and `http://localhost:4200`.
 
-Login sets an HttpOnly cookie named `karnel.auth` (7 days, sliding). The frontend sends it with `credentials: 'include'`. Protected APIs read that cookie. A missing or expired cookie returns `401`. A signed-in account with the wrong role returns `403`. Admin-only APIs use role `Admin`. Public registration always creates role `User`.
+Login returns a JWT in the `token` field. The token expires after 7 days. Protected APIs read `Authorization: Bearer <token>`. A missing or expired token returns `401`. A signed-in account with the wrong role returns `403`. Admin-only APIs use role `Admin`. Public registration always creates role `User` and does not return a token.
 
 ## Shared values
 
@@ -111,10 +111,11 @@ Returns `201`:
 }
 ```
 
-Returns `200` and sets the `karnel.auth` cookie:
+Returns `200`:
 
 ```json
 {
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "userId": 1,
   "username": "admin",
   "fullName": "Karnel Admin",
@@ -127,11 +128,11 @@ A wrong username or password returns `401`. A disabled account returns `403`.
 
 ### Current user
 
-`GET /api/auth/me` requires the login cookie. The body matches login. A missing cookie returns `401`.
+`GET /api/auth/me` requires `Authorization: Bearer <token>`. The body matches login without the `token` field. A missing or invalid token returns `401`.
 
 ### Logout
 
-`POST /api/auth/logout` clears the login cookie and returns `204`.
+`POST /api/auth/logout` returns `204`. The server does not store the JWT, so the client deletes the saved token. Sending the token again after logout still works until it expires.
 
 ### Change password
 
