@@ -1,8 +1,10 @@
 // CN10, CN11: Basic and Advanced Search Page
+// Maintained by Tiến (recca279)
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { basicSearch, advancedSearch } from '../api/searchApi.js'
 import { getLocations } from '../api/servicesApi.js'
+import '../styles/services.css'
 import './pages.css'
 
 export default function SearchPage() {
@@ -19,7 +21,7 @@ export default function SearchPage() {
   const [starRating, setStarRating] = useState('')
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
-  const [sortBy, setSortBy] = useState('')
+  const [sortBy, setSortBy] = useState('recommended')
 
   const [activeTab, setActiveTab] = useState('all') // 'all' | 'services' | 'tours' | 'spots'
   const [loading, setLoading] = useState(false)
@@ -28,7 +30,7 @@ export default function SearchPage() {
   const [searchResults, setSearchResults] = useState({
     spots: [],
     tours: [],
-    services: [],
+    services: []
   })
 
   useEffect(() => {
@@ -47,7 +49,6 @@ export default function SearchPage() {
     const q = searchParams.get('q') || searchParams.get('search') || ''
 
     try {
-      // If advanced filters are applied, use advanced search
       const hasAdvancedFilters =
         selectedLocation || serviceType || starRating || minPrice || maxPrice || sortBy
 
@@ -62,8 +63,7 @@ export default function SearchPage() {
         if (sortBy) advParams.sort = sortBy
 
         const advServices = await advancedSearch(advParams)
-        
-        // Also get basic search if there is a query string for spots/tours
+
         let basicData = { spots: [], tours: [], services: [] }
         if (q) {
           basicData = await basicSearch(q).catch(() => ({ spots: [], tours: [], services: [] }))
@@ -72,15 +72,14 @@ export default function SearchPage() {
         setSearchResults({
           spots: basicData.spots || [],
           tours: basicData.tours || [],
-          services: Array.isArray(advServices) ? advServices : [],
+          services: Array.isArray(advServices) ? advServices : []
         })
       } else {
-        // Standard basic search
         const data = await basicSearch(q)
         setSearchResults({
           spots: data.spots || [],
           tours: data.tours || [],
-          services: data.services || [],
+          services: data.services || []
         })
       }
     } catch (err) {
@@ -99,8 +98,19 @@ export default function SearchPage() {
     setSearchParams(nextParams)
   }
 
+  function handleQuickChip(term, loc = '', type = '') {
+    setKeyword(term)
+    if (loc) setSelectedLocation(loc)
+    if (type) setServiceType(type)
+    const nextParams = new URLSearchParams()
+    if (term) nextParams.set('q', term)
+    if (loc) nextParams.set('locationId', loc)
+    if (type) nextParams.set('serviceType', type)
+    setSearchParams(nextParams)
+  }
+
   function formatPrice(num) {
-    if (num == null) return 'N/A'
+    if (num == null || num === 0) return 'Free / Inquire'
     return Number(num).toLocaleString('vi-VN') + ' VND'
   }
 
@@ -108,284 +118,366 @@ export default function SearchPage() {
     searchResults.spots.length + searchResults.tours.length + searchResults.services.length
 
   return (
-    <div className="container py-4">
-      <div className="text-center mb-4">
-        <h1 className="fw-bold">Search Travel & Services</h1>
-        <p className="text-muted">
-          Find tourist attractions, guided tours, hotels, restaurants, and resorts across the country.
-        </p>
-      </div>
+    <div className="ktg-services-wrapper">
+      {/* Search Hero */}
+      <section className="ktg-services-hero">
+        <div className="container">
+          <span className="ktg-eyebrow" style={{ color: '#5eead4' }}>
+            Comprehensive Travel Search
+          </span>
+          <h1>Explore Vietnam Your Way</h1>
+          <p>
+            Instantly search tourist attractions, guided excursions, top-rated hotels, and authentic dining across Vietnam.
+          </p>
 
-      {/* Search Bar & Advanced Filter Form */}
-      <div className="card shadow-sm border-0 p-4 mb-4 bg-light">
-        <form onSubmit={handleSearchSubmit}>
-          <div className="input-group input-group-lg mb-3">
-            <span className="input-group-text bg-white border-end-0">
-              <i className="bi bi-search text-muted"></i>
-            </span>
-            <input
-              type="text"
-              className="form-control border-start-0"
-              placeholder="Search by spot name, tour, hotel, restaurant..."
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-            />
-            <button className="btn btn-primary px-4 fw-semibold" type="submit">
-              Search
+          {/* Quick Search Chips */}
+          <div className="d-flex flex-wrap gap-2 pt-2">
+            <span className="small text-white-50 align-self-center me-1">Popular:</span>
+            <button
+              type="button"
+              className="ktg-chip"
+              onClick={() => handleQuickChip('Beach', '1', 'Resort')}
+            >
+              🌊 Da Nang Beachfront
+            </button>
+            <button
+              type="button"
+              className="ktg-chip"
+              onClick={() => handleQuickChip('Heritage', '2', 'Hotel')}
+            >
+              🏮 Hoi An Ancient Town
+            </button>
+            <button
+              type="button"
+              className="ktg-chip"
+              onClick={() => handleQuickChip('Imperial', '3', 'Restaurant')}
+            >
+              👑 Hue Royal Dining
+            </button>
+            <button
+              type="button"
+              className="ktg-chip"
+              onClick={() => handleQuickChip('Luxury', '', 'Hotel')}
+            >
+              ⭐ 5-Star Luxury
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <div className="container" style={{ marginTop: '16px' }}>
+        {/* Main Search & Filter Form */}
+        <div className="ktg-filter-card">
+          <form onSubmit={handleSearchSubmit}>
+            <div className="input-group input-group-lg mb-3 shadow-none">
+              <span className="input-group-text bg-white border-end-0">
+                <i className="bi bi-search text-primary"></i>
+              </span>
+              <input
+                type="text"
+                className="form-control border-start-0 ps-0"
+                placeholder="Search by keywords, place name, hotel, or cuisine..."
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+              />
+              <button className="ktg-btn-teal px-4" type="submit">
+                Search Now
+              </button>
+            </div>
+
+            {/* Advanced Filters */}
+            <div className="row g-3 pt-3 border-top">
+              <div className="col-md-3">
+                <label className="form-label small fw-bold text-secondary mb-1">
+                  Category Type
+                </label>
+                <select
+                  className="form-select form-select-sm"
+                  value={serviceType}
+                  onChange={(e) => setServiceType(e.target.value)}
+                >
+                  <option value="">All Categories</option>
+                  <option value="Hotel">Hotels & Stays</option>
+                  <option value="Restaurant">Restaurants & Dining</option>
+                  <option value="Resort">Resorts & Villas</option>
+                </select>
+              </div>
+
+              <div className="col-md-3">
+                <label className="form-label small fw-bold text-secondary mb-1">
+                  Destination Region
+                </label>
+                <select
+                  className="form-select form-select-sm"
+                  value={selectedLocation}
+                  onChange={(e) => setSelectedLocation(e.target.value)}
+                >
+                  <option value="">All Destinations</option>
+                  {locations.map((loc) => (
+                    <option key={loc.locationId} value={loc.locationId}>
+                      {loc.locationName} ({loc.region})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-md-2">
+                <label className="form-label small fw-bold text-secondary mb-1">
+                  Min Rating
+                </label>
+                <select
+                  className="form-select form-select-sm"
+                  value={starRating}
+                  onChange={(e) => setStarRating(e.target.value)}
+                >
+                  <option value="">Any Star</option>
+                  <option value="5">5 Stars</option>
+                  <option value="4">4+ Stars</option>
+                  <option value="3">3+ Stars</option>
+                </select>
+              </div>
+
+              <div className="col-md-2">
+                <label className="form-label small fw-bold text-secondary mb-1">
+                  Max Budget (VND)
+                </label>
+                <input
+                  type="number"
+                  className="form-control form-control-sm"
+                  placeholder="e.g. 2000000"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                />
+              </div>
+
+              <div className="col-md-2 d-flex align-items-end">
+                <button
+                  type="submit"
+                  className="ktg-btn-navy w-100 justify-content-center py-2"
+                >
+                  <i className="bi bi-funnel-fill"></i> Apply
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {/* Results Navigation Tabs */}
+        <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 border-bottom pb-3">
+          <div className="d-flex gap-2">
+            <button
+              type="button"
+              className={`ktg-pill-tab ${activeTab === 'all' ? 'active' : ''}`}
+              onClick={() => setActiveTab('all')}
+            >
+              All Results <span className="badge bg-secondary ms-1">{totalResults}</span>
+            </button>
+            <button
+              type="button"
+              className={`ktg-pill-tab ${activeTab === 'services' ? 'active' : ''}`}
+              onClick={() => setActiveTab('services')}
+            >
+              Stays & Dining{' '}
+              <span className="badge bg-secondary ms-1">{searchResults.services.length}</span>
+            </button>
+            <button
+              type="button"
+              className={`ktg-pill-tab ${activeTab === 'tours' ? 'active' : ''}`}
+              onClick={() => setActiveTab('tours')}
+            >
+              Tours <span className="badge bg-secondary ms-1">{searchResults.tours.length}</span>
+            </button>
+            <button
+              type="button"
+              className={`ktg-pill-tab ${activeTab === 'spots' ? 'active' : ''}`}
+              onClick={() => setActiveTab('spots')}
+            >
+              Attractions{' '}
+              <span className="badge bg-secondary ms-1">{searchResults.spots.length}</span>
             </button>
           </div>
 
-          {/* Advanced Filters (CN11) */}
-          <div className="row g-2 pt-2 border-top">
-            <div className="col-md-3">
-              <label className="form-label small fw-semibold text-secondary">Service Type</label>
-              <select
-                className="form-select form-select-sm"
-                value={serviceType}
-                onChange={(e) => setServiceType(e.target.value)}
-              >
-                <option value="">All Services</option>
-                <option value="Hotel">Hotel</option>
-                <option value="Restaurant">Restaurant</option>
-                <option value="Resort">Resort</option>
-              </select>
-            </div>
-
-            <div className="col-md-3">
-              <label className="form-label small fw-semibold text-secondary">Destination</label>
-              <select
-                className="form-select form-select-sm"
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-              >
-                <option value="">All Locations</option>
-                {locations.map((loc) => (
-                  <option key={loc.locationId} value={loc.locationId}>
-                    {loc.locationName} ({loc.region})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="col-md-2">
-              <label className="form-label small fw-semibold text-secondary">Rating</label>
-              <select
-                className="form-select form-select-sm"
-                value={starRating}
-                onChange={(e) => setStarRating(e.target.value)}
-              >
-                <option value="">Any</option>
-                <option value="5">5 Stars</option>
-                <option value="4">4+ Stars</option>
-                <option value="3">3+ Stars</option>
-              </select>
-            </div>
-
-            <div className="col-md-2">
-              <label className="form-label small fw-semibold text-secondary">Max Budget</label>
-              <input
-                type="number"
-                className="form-control form-control-sm"
-                placeholder="VND"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-              />
-            </div>
-
-            <div className="col-md-2">
-              <label className="form-label small fw-semibold text-secondary">Sort By</label>
-              <select
-                className="form-select form-select-sm"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <option value="">Default</option>
-                <option value="price_asc">Price: Low to High</option>
-                <option value="price_desc">Price: High to Low</option>
-                <option value="name_asc">Name: A to Z</option>
-              </select>
-            </div>
+          <div className="text-muted small mt-2 mt-sm-0">
+            Showing results for: <strong>"{keyword || 'All Destinations'}"</strong>
           </div>
-        </form>
-      </div>
+        </div>
 
-      {/* Tabs */}
-      <ul className="nav nav-tabs mb-4">
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === 'all' ? 'active fw-bold' : ''}`}
-            onClick={() => setActiveTab('all')}
-          >
-            All Results ({totalResults})
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === 'services' ? 'active fw-bold' : ''}`}
-            onClick={() => setActiveTab('services')}
-          >
-            Stay & Dining ({searchResults.services.length})
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === 'tours' ? 'active fw-bold' : ''}`}
-            onClick={() => setActiveTab('tours')}
-          >
-            Tours ({searchResults.tours.length})
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === 'spots' ? 'active fw-bold' : ''}`}
-            onClick={() => setActiveTab('spots')}
-          >
-            Attractions ({searchResults.spots.length})
-          </button>
-        </li>
-      </ul>
-
-      {/* Status */}
-      {loading && (
-        <div className="text-center py-5">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Searching...</span>
+        {/* Loading Indicator */}
+        {loading && (
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary" style={{ width: '3rem', height: '3rem' }}></div>
+            <p className="mt-3 text-muted fw-semibold">Searching curated travel guide database...</p>
           </div>
-          <p className="mt-2 text-muted">Searching database...</p>
-        </div>
-      )}
+        )}
 
-      {error && (
-        <div className="alert alert-danger" role="alert">
-          {error}
-        </div>
-      )}
+        {/* Error Alert */}
+        {error && (
+          <div className="alert alert-danger rounded-4 shadow-sm" role="alert">
+            <i className="bi bi-exclamation-triangle-fill me-2"></i>
+            {error}
+          </div>
+        )}
 
-      {!loading && !error && totalResults === 0 && (
-        <div className="text-center py-5 bg-white rounded shadow-sm">
-          <i className="bi bi-search text-muted display-4"></i>
-          <h4 className="mt-3">No matching results found</h4>
-          <p className="text-muted">Try using different search keywords or clearing your filters.</p>
-        </div>
-      )}
+        {/* Empty State */}
+        {!loading && !error && totalResults === 0 && (
+          <div className="ktg-card text-center py-5">
+            <i className="bi bi-search text-muted" style={{ fontSize: '3rem' }}></i>
+            <h4 className="ktg-serif-title mt-3">No matching records found</h4>
+            <p className="text-muted small" style={{ maxWidth: '400px', margin: '0 auto 20px' }}>
+              We couldn't find any results matching your search terms. Try searching for "Da Nang", "Hotel", or clearing specific filters.
+            </p>
+            <button
+              type="button"
+              className="ktg-btn-navy"
+              onClick={() => {
+                setKeyword('')
+                setSelectedLocation('')
+                setServiceType('')
+                setStarRating('')
+                setMaxPrice('')
+                setSearchParams(new URLSearchParams())
+              }}
+            >
+              Clear All Searches
+            </button>
+          </div>
+        )}
 
-      {/* Results List */}
-      {!loading && !error && totalResults > 0 && (
-        <div className="d-flex flex-column gap-4">
-          {/* Services Section */}
-          {(activeTab === 'all' || activeTab === 'services') && searchResults.services.length > 0 && (
-            <div>
-              <h5 className="fw-bold mb-3 text-secondary">
-                <i className="bi bi-building me-2"></i> Stay & Dining ({searchResults.services.length})
-              </h5>
-              <div className="row g-3">
-                {searchResults.services.map((item) => (
-                  <div key={item.providerId} className="col-md-6 col-lg-4">
-                    <div className="card h-100 shadow-sm border-0">
-                      <div style={{ height: '160px', backgroundColor: '#eee' }}>
-                        <img
-                          src={item.imageUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=500&q=80'}
-                          alt={item.providerName}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          onError={(e) => {
-                            e.target.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=500&q=80'
-                          }}
-                        />
-                      </div>
-                      <div className="card-body">
-                        <span className="badge bg-primary text-uppercase mb-1">{item.serviceType}</span>
-                        <h6 className="fw-bold mb-1">{item.providerName}</h6>
-                        <p className="small text-muted mb-2">
-                          <i className="bi bi-geo-alt me-1"></i>
-                          {item.locationName}
-                        </p>
-                        <div className="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-                          <strong className="text-primary small">
-                            {formatPrice(item.minPrice)}
-                          </strong>
-                          <Link to={`/services/${item.providerId}`} className="btn btn-sm btn-outline-primary">
-                            Details
-                          </Link>
+        {/* Results Presentation */}
+        {!loading && !error && totalResults > 0 && (
+          <div className="row g-4">
+            {/* Services (Hotels, Restaurants, Resorts) */}
+            {(activeTab === 'all' || activeTab === 'services') &&
+              searchResults.services.map((svc) => (
+                <div key={`svc-${svc.providerId}`} className="col-md-6 col-lg-4">
+                  <div className="ktg-service-card">
+                    <div className="ktg-card-media">
+                      <img
+                        src={
+                          svc.imageUrl ||
+                          'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80'
+                        }
+                        alt={svc.providerName}
+                        onError={(e) => {
+                          e.target.src =
+                            'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80'
+                        }}
+                      />
+                      <span className="ktg-badge-type">{svc.serviceType}</span>
+                      <span className="ktg-badge-rating">
+                        <i className="bi bi-star-fill"></i> {svc.reviewScore || 9.2}
+                      </span>
+                    </div>
+                    <div className="ktg-card-body">
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                        <div className="ktg-stars">
+                          {Array.from({ length: svc.starRating || 5 }).map((_, i) => (
+                            <i key={i} className="bi bi-star-fill"></i>
+                          ))}
                         </div>
+                        <span className="badge bg-light text-secondary border">
+                          {svc.locationName}
+                        </span>
+                      </div>
+                      <h4 className="ktg-card-title">
+                        <Link to={`/services/${svc.providerId}`}>{svc.providerName}</Link>
+                      </h4>
+                      <p className="ktg-location-text text-truncate">{svc.address}</p>
+                      <div className="ktg-price-row">
+                        <div>
+                          <div className="ktg-price-label">Price from</div>
+                          <div className="ktg-price-val">{formatPrice(svc.minPrice)}</div>
+                        </div>
+                        <Link to={`/services/${svc.providerId}`} className="ktg-btn-navy">
+                          Details <i className="bi bi-arrow-right"></i>
+                        </Link>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                </div>
+              ))}
 
-          {/* Tours Section */}
-          {(activeTab === 'all' || activeTab === 'tours') && searchResults.tours.length > 0 && (
-            <div>
-              <h5 className="fw-bold mb-3 text-secondary">
-                <i className="bi bi-compass me-2"></i> Guided Tours ({searchResults.tours.length})
-              </h5>
-              <div className="row g-3">
-                {searchResults.tours.map((tour) => (
-                  <div key={tour.tourId} className="col-md-6 col-lg-4">
-                    <div className="card h-100 shadow-sm border-0 p-3">
-                      <h6 className="fw-bold text-dark">{tour.tourName}</h6>
-                      <p className="small text-muted mb-1">
-                        <i className="bi bi-clock me-1"></i> Duration: {tour.duration || 'Full day'}
+            {/* Tours */}
+            {(activeTab === 'all' || activeTab === 'tours') &&
+              searchResults.tours.map((tour) => (
+                <div key={`tour-${tour.tourId}`} className="col-md-6 col-lg-4">
+                  <div className="ktg-service-card">
+                    <div className="ktg-card-media">
+                      <img
+                        src={
+                          tour.imageUrl ||
+                          'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80'
+                        }
+                        alt={tour.tourName}
+                      />
+                      <span className="ktg-badge-type" style={{ background: 'rgba(14, 153, 150, 0.95)' }}>
+                        Tour
+                      </span>
+                    </div>
+                    <div className="ktg-card-body">
+                      <h4 className="ktg-card-title">{tour.tourName}</h4>
+                      <p className="ktg-location-text">
+                        <i className="bi bi-clock-history me-1"></i> Duration:{' '}
+                        <strong>{tour.duration || 'Full day'}</strong>
                       </p>
-                      {tour.spotName && (
-                        <p className="small text-muted mb-2">
-                          <i className="bi bi-geo-alt me-1"></i> Spot: {tour.spotName}
-                        </p>
-                      )}
-                      <div className="mt-auto pt-2 border-top d-flex justify-content-between align-items-center">
-                        <span className="fw-bold text-success">
-                          {formatPrice(tour.salePrice || tour.standardPrice)}
-                        </span>
+                      <div className="ktg-price-row">
+                        <div>
+                          <div className="ktg-price-label">Price per person</div>
+                          <div className="ktg-price-val">{formatPrice(tour.price)}</div>
+                        </div>
                         <Link
                           to={`/booking?type=Tour&tourId=${tour.tourId}&tourName=${encodeURIComponent(
                             tour.tourName
-                          )}&price=${tour.salePrice || tour.standardPrice}`}
-                          className="btn btn-sm btn-primary"
+                          )}&price=${tour.price}`}
+                          className="ktg-btn-teal"
                         >
                           Book Tour
                         </Link>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                </div>
+              ))}
 
-          {/* Tourist Spots Section */}
-          {(activeTab === 'all' || activeTab === 'spots') && searchResults.spots.length > 0 && (
-            <div>
-              <h5 className="fw-bold mb-3 text-secondary">
-                <i className="bi bi-geo-alt me-2"></i> Tourist Attractions ({searchResults.spots.length})
-              </h5>
-              <div className="row g-3">
-                {searchResults.spots.map((spot) => (
-                  <div key={spot.spotId} className="col-md-6 col-lg-4">
-                    <div className="card h-100 shadow-sm border-0 p-3">
-                      <h6 className="fw-bold text-dark mb-1">{spot.spotName}</h6>
-                      <span className="badge bg-secondary w-auto mb-2 align-self-start">
-                        {spot.categoryName || 'Sightseeing'}
+            {/* Tourist Spots */}
+            {(activeTab === 'all' || activeTab === 'spots') &&
+              searchResults.spots.map((spot) => (
+                <div key={`spot-${spot.spotId}`} className="col-md-6 col-lg-4">
+                  <div className="ktg-service-card">
+                    <div className="ktg-card-media">
+                      <img
+                        src={
+                          spot.imageUrl ||
+                          'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=800&q=80'
+                        }
+                        alt={spot.spotName}
+                      />
+                      <span className="ktg-badge-type" style={{ background: 'rgba(100, 116, 139, 0.95)' }}>
+                        Attraction
                       </span>
-                      <p className="small text-muted mb-2">
-                        <i className="bi bi-pin-map me-1"></i>
-                        {spot.locationName}
+                    </div>
+                    <div className="ktg-card-body">
+                      <h4 className="ktg-card-title">{spot.spotName}</h4>
+                      <p className="ktg-location-text text-truncate">
+                        <i className="bi bi-geo-alt-fill text-danger me-1"></i>
+                        {spot.locationName || spot.address}
                       </p>
-                      <p className="small text-muted text-truncate mb-2">{spot.description}</p>
-                      <div className="mt-auto pt-2 border-top">
-                        <Link to={`/destinations/${spot.spotId}`} className="btn btn-sm btn-outline-secondary w-100">
-                          View Destination
-                        </Link>
+                      <div className="ktg-price-row">
+                        <div>
+                          <div className="ktg-price-label">Entry ticket</div>
+                          <div className="ktg-price-val">{formatPrice(spot.entryFee)}</div>
+                        </div>
+                        <span className="badge bg-light text-secondary border p-2">
+                          Must Visit
+                        </span>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
