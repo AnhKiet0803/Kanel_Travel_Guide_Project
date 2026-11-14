@@ -1,1 +1,706 @@
-.promo-page{background:#f7fafc;color:#163b57;min-height:100vh;padding:36px 0 75px;font-family:Inter,'Segoe UI',sans-serif}.promo-page *{box-sizing:border-box}.promo-container{width:min(1420px,calc(100% - 64px));margin:auto}.promo-hero{background:linear-gradient(110deg,rgba(9,42,70,.96),rgba(10,98,112,.9)),url('/images/destinations/halong/main.jpg') center/cover;border-radius:24px;min-height:340px;padding:55px 65px;color:white;display:flex;justify-content:space-between;align-items:center;gap:30px;overflow:hidden}.promo-eyebrow{display:block;font-size:12px;font-weight:800;letter-spacing:2px;color:#079e9b}.promo-hero .promo-eyebrow{color:#81e2d9}.promo-hero h1{font:700 clamp(38px,4.5vw,66px)/1.1 Georgia,serif;letter-spacing:-1px;margin:17px 0}.promo-hero h1 em{color:#9be7dc;font-weight:400}.promo-hero p{color:#d5e7ee;font-size:16px;line-height:1.7;max-width:580px}.promo-hero-cta{display:inline-flex;align-items:center;gap:18px;margin-top:20px;background:#fff;color:#113f5c;border-radius:11px;padding:14px 22px;text-decoration:none;font-weight:800}.promo-hero-stat{min-width:150px;text-align:center;border:1px solid #ffffff50;background:#ffffff18;border-radius:18px;padding:28px 22px}.promo-hero-stat strong{display:block;font-size:58px;color:#fff}.promo-hero-stat span{font-size:13px;color:#d9eff0}.promo-intro{display:flex;justify-content:space-between;align-items:end;gap:20px;padding:46px 0 26px}.promo-intro h2,.promo-results-header h2{font:700 34px Georgia,serif;margin:10px 0;color:#123b5d}.promo-intro p,.promo-results-header p{color:#7890a2;margin:0;font-size:14px}.promo-demo-pill{background:#e9f5f4;color:#087e7a;border-radius:50px;padding:10px 15px;font-size:12px;font-weight:700;white-space:nowrap}.promo-toolbar{display:flex;align-items:center;justify-content:space-between;gap:18px;border-top:1px solid #e0eaf0;border-bottom:1px solid #e0eaf0;padding:19px 0}.promo-categories,.promo-tools{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.promo-categories button{border:1px solid #d8e7ed;border-radius:25px;background:#fff;padding:11px 17px;color:#355b72;cursor:pointer;font-weight:700;font-size:13px}.promo-categories button.active,.promo-categories button:hover{background:#079c98;border-color:#079c98;color:white}.promo-search{height:43px;display:flex;align-items:center;gap:9px;border:1px solid #d9e6ec;border-radius:10px;background:#fff;padding:0 13px}.promo-search span{font-size:23px;color:#079c98}.promo-search input{border:0;outline:0;min-width:0;width:210px;color:#163b57;font:inherit;font-size:13px}.promo-tools select{height:43px;border:1px solid #d9e6ec;background:#fff;border-radius:10px;padding:0 12px;color:#355b72;font-weight:600}.promo-results-header{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:33px 0 21px}.promo-results-header h2{font-size:28px;margin:0 0 7px}.promo-checkbox{display:flex;gap:8px;align-items:center;font-size:13px;color:#536e82;cursor:pointer}.promo-checkbox input{accent-color:#079c98}.promo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}.promo-card{min-width:0;background:#fff;border:1px solid #e0eaf0;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(14,61,90,.045);display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s}.promo-card:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(14,61,90,.11)}.promo-image-wrap{height:205px;background:linear-gradient(135deg,#d7eae9,#a4c6d6);position:relative;overflow:hidden}.promo-image-wrap img{display:block;width:100%;height:100%;object-fit:cover}.promo-type-tag,.promo-discount-tag{position:absolute;top:15px;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:800}.promo-type-tag{left:15px;background:#fff;color:#123b5d}.promo-discount-tag{right:15px;background:#ff8d34;color:#fff}.promo-card-body{padding:23px;display:flex;flex-direction:column;flex:1}.promo-card-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#0b9995;font-size:12px;font-weight:700}.promo-status{font-size:11px;white-space:nowrap}.promo-status.active{color:#069c76}.promo-status.upcoming{color:#d18c16}.promo-status.expired,.promo-status.inactive{color:#9c9c9c}.promo-card h3{font:700 22px/1.25 Georgia,serif;color:#123b5d;margin:13px 0 9px;min-height:54px}.promo-card-description{color:#738a9b;font-size:13px;line-height:1.6;margin:0 0 12px;min-height:42px}.promo-duration{color:#5d7688;font-size:12px;margin:0 0 13px}.promo-price-row{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid #e9eff2;padding-top:16px;margin-top:auto}.promo-price-label{display:block;color:#8b9daa;font-size:11px;margin-bottom:3px}.promo-price-row strong{display:block;font-size:23px;color:#079b98}.promo-price-row del{display:block;font-size:12px;color:#9cabb5;margin-top:4px}.promo-save{background:#e8f7f2;border-radius:20px;padding:7px 10px;color:#0a9474;font-weight:750;font-size:11px;text-align:center}.promo-code-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;background:#f2f9fa;border:1px dashed #addbd9;border-radius:9px;padding:10px 12px;font-size:12px;color:#607b8e}.promo-code-row strong{color:#087f7d;letter-spacing:.5px}.promo-code-row button{border:0;background:none;color:#008e8a;font-weight:800;cursor:pointer;white-space:nowrap}.promo-time{color:#d4772b;font-size:12px;margin:15px 0 0;font-weight:700}.promo-card-actions{display:flex;gap:10px;margin-top:17px}.promo-outline,.promo-primary{border-radius:10px;padding:13px 12px;font-weight:750;font-size:13px;cursor:pointer}.promo-outline{background:#fff;border:1px solid #cfe2e8;color:#17415c;flex:1}.promo-primary{background:#079b98;border:1px solid #079b98;color:#fff;flex:1}.promo-primary:hover:not(:disabled){background:#067d7a}.promo-primary:disabled{opacity:.4;cursor:not-allowed}.promo-info-strip{display:flex;gap:12px;align-items:flex-start;margin-top:35px;padding:17px 20px;background:#eaf5f6;border-radius:13px;color:#416e7b}.promo-info-strip>span{font-size:21px;color:#079b98}.promo-info-strip p{margin:0;line-height:1.6;font-size:13px}.promo-bottom-link{text-align:center;margin-top:30px;font-size:14px;color:#6d8495}.promo-bottom-link a{color:#079b98;font-weight:750;text-decoration:none}.promo-empty{text-align:center;background:white;border:1px solid #e2ebef;border-radius:18px;padding:70px 20px}.promo-empty span{font-size:36px;color:#079b98}.promo-empty h3{font:700 26px Georgia,serif}.promo-empty p{color:#72899b}.promo-empty button{border:0;background:#079b98;color:#fff;padding:11px 19px;border-radius:9px;cursor:pointer}.promo-modal-backdrop{position:fixed;inset:0;z-index:9999;background:#071b2ab8;display:grid;place-items:center;padding:20px}.promo-modal{width:min(570px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:20px;padding:34px;position:relative;box-shadow:0 20px 90px #0003}.promo-modal-close{position:absolute;top:13px;right:18px;font-size:29px;border:0;background:transparent;color:#597588;cursor:pointer}.promo-modal h2{font:700 30px Georgia,serif;color:#123b5d;margin:14px 0}.promo-modal>p{color:#6d8595;line-height:1.6}.promo-modal-details{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin:25px 0}.promo-modal-details>div{padding:13px;background:#f5f9fb;border-radius:9px;min-width:0}.promo-modal-details span,.promo-modal-details strong{display:block}.promo-modal-details span{color:#8095a3;font-size:12px;margin-bottom:8px}.promo-modal-details strong{color:#123b5d;font-size:15px;overflow-wrap:anywhere}.promo-modal-note{font-size:12px!important;background:#f2f9f8;border-radius:9px;padding:12px}.promo-modal-book{width:100%;margin-top:12px}@media(max-width:1200px){.promo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.promo-toolbar{flex-direction:column;align-items:stretch}.promo-tools{justify-content:space-between}.promo-search{flex:1}.promo-search input{width:100%}}@media(max-width:700px){.promo-container{width:calc(100% - 30px)}.promo-page{padding-top:15px}.promo-hero{padding:35px 25px;min-height:300px}.promo-hero-stat{display:none}.promo-intro{align-items:flex-start;flex-direction:column;padding-top:30px}.promo-intro h2{font-size:28px}.promo-grid{grid-template-columns:1fr}.promo-categories{gap:7px}.promo-categories button{padding:9px 13px}.promo-results-header{align-items:flex-start;flex-direction:column}.promo-tools{align-items:stretch}.promo-tools select{max-width:160px}.promo-image-wrap{height:220px}.promo-modal{padding:26px 20px}.promo-modal-details{gap:8px}.promo-modal-details strong{font-size:13px}}@media(max-width:420px){.promo-tools{flex-direction:column}.promo-tools select{max-width:none}.promo-hero h1{font-size:37px}.promo-card-actions{flex-direction:column}}
+.promo-page {
+    background: #f7fafc;
+    color: #163b57;
+    min-height: 100vh;
+    padding: 36px 0 75px;
+    font-family: Inter,'Segoe UI',sans-serif
+}
+
+    .promo-page * {
+        box-sizing: border-box
+    }
+
+.promo-container {
+    width: min(1420px,calc(100% - 64px));
+    margin: auto
+}
+
+.promo-hero {
+    background: linear-gradient(110deg,rgba(9,42,70,.96),rgba(10,98,112,.9)),url('/images/destinations/halong/main.jpg') center/cover;
+    border-radius: 24px;
+    min-height: 340px;
+    padding: 55px 65px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 30px;
+    overflow: hidden
+}
+
+.promo-eyebrow {
+    display: block;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #079e9b
+}
+
+.promo-hero .promo-eyebrow {
+    color: #81e2d9
+}
+
+.promo-hero h1 {
+    font: 700 clamp(38px,4.5vw,66px)/1.1 Georgia,serif;
+    letter-spacing: -1px;
+    margin: 17px 0
+}
+
+    .promo-hero h1 em {
+        color: #9be7dc;
+        font-weight: 400
+    }
+
+.promo-hero p {
+    color: #d5e7ee;
+    font-size: 16px;
+    line-height: 1.7;
+    max-width: 580px
+}
+
+.promo-hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 18px;
+    margin-top: 20px;
+    background: #fff;
+    color: #113f5c;
+    border-radius: 11px;
+    padding: 14px 22px;
+    text-decoration: none;
+    font-weight: 800
+}
+
+.promo-hero-stat {
+    min-width: 150px;
+    text-align: center;
+    border: 1px solid #ffffff50;
+    background: #ffffff18;
+    border-radius: 18px;
+    padding: 28px 22px
+}
+
+    .promo-hero-stat strong {
+        display: block;
+        font-size: 58px;
+        color: #fff
+    }
+
+    .promo-hero-stat span {
+        font-size: 13px;
+        color: #d9eff0
+    }
+
+.promo-intro {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 20px;
+    padding: 46px 0 26px
+}
+
+    .promo-intro h2, .promo-results-header h2 {
+        font: 700 34px Georgia,serif;
+        margin: 10px 0;
+        color: #123b5d
+    }
+
+    .promo-intro p, .promo-results-header p {
+        color: #7890a2;
+        margin: 0;
+        font-size: 14px
+    }
+
+.promo-demo-pill {
+    background: #e9f5f4;
+    color: #087e7a;
+    border-radius: 50px;
+    padding: 10px 15px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap
+}
+
+.promo-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    border-top: 1px solid #e0eaf0;
+    border-bottom: 1px solid #e0eaf0;
+    padding: 19px 0
+}
+
+.promo-categories, .promo-tools {
+    display: flex;
+    gap: 9px;
+    align-items: center;
+    flex-wrap: wrap
+}
+
+    .promo-categories button {
+        border: 1px solid #d8e7ed;
+        border-radius: 25px;
+        background: #fff;
+        padding: 11px 17px;
+        color: #355b72;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 13px
+    }
+
+        .promo-categories button.active, .promo-categories button:hover {
+            background: #079c98;
+            border-color: #079c98;
+            color: white
+        }
+
+.promo-search {
+    height: 43px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    border: 1px solid #d9e6ec;
+    border-radius: 10px;
+    background: #fff;
+    padding: 0 13px
+}
+
+    .promo-search span {
+        font-size: 23px;
+        color: #079c98
+    }
+
+    .promo-search input {
+        border: 0;
+        outline: 0;
+        min-width: 0;
+        width: 210px;
+        color: #163b57;
+        font: inherit;
+        font-size: 13px
+    }
+
+.promo-tools select {
+    height: 43px;
+    border: 1px solid #d9e6ec;
+    background: #fff;
+    border-radius: 10px;
+    padding: 0 12px;
+    color: #355b72;
+    font-weight: 600
+}
+
+.promo-results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    margin: 33px 0 21px
+}
+
+    .promo-results-header h2 {
+        font-size: 28px;
+        margin: 0 0 7px
+    }
+
+.promo-checkbox {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 13px;
+    color: #536e82;
+    cursor: pointer
+}
+
+    .promo-checkbox input {
+        accent-color: #079c98
+    }
+
+.promo-grid {
+    display: grid;
+    grid-template-columns: repeat(3,minmax(0,1fr));
+    gap: 22px
+}
+
+.promo-card {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid #e0eaf0;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(14,61,90,.045);
+    display: flex;
+    flex-direction: column;
+    transition: transform .2s,box-shadow .2s
+}
+
+    .promo-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 14px 34px rgba(14,61,90,.11)
+    }
+
+.promo-image-wrap {
+    height: 205px;
+    background: linear-gradient(135deg,#d7eae9,#a4c6d6);
+    position: relative;
+    overflow: hidden
+}
+
+    .promo-image-wrap img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover
+    }
+
+.promo-type-tag, .promo-discount-tag {
+    position: absolute;
+    top: 15px;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 800
+}
+
+.promo-type-tag {
+    left: 15px;
+    background: #fff;
+    color: #123b5d
+}
+
+.promo-discount-tag {
+    right: 15px;
+    background: #ff8d34;
+    color: #fff
+}
+
+.promo-card-body {
+    padding: 20px 23px 22px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    justify-content: flex-start
+}
+
+.promo-card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    color: #0b9995;
+    font-size: 12px;
+    font-weight: 700
+}
+
+.promo-status {
+    font-size: 11px;
+    white-space: nowrap
+}
+
+    .promo-status.active {
+        color: #069c76
+    }
+
+    .promo-status.upcoming {
+        color: #d18c16
+    }
+
+    .promo-status.expired, .promo-status.inactive {
+        color: #9c9c9c
+    }
+
+.promo-card h3 {
+    font: 700 22px/1.25 Georgia,serif;
+    color: #123b5d;
+    margin: 10px 0 9px;
+    min-height: 0
+}
+
+.promo-card-description {
+    color: #738a9b;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0 0 10px;
+    min-height: 0
+}
+
+.promo-duration {
+    color: #5d7688;
+    font-size: 12px;
+    margin: 0 0 12px
+}
+
+.promo-price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid #e9eff2;
+    padding-top: 16px;
+    margin-top: 0
+}
+
+.promo-price-label {
+    display: block;
+    color: #8b9daa;
+    font-size: 11px;
+    margin-bottom: 3px
+}
+
+.promo-price-row strong {
+    display: block;
+    font-size: 23px;
+    color: #079b98
+}
+
+.promo-price-row del {
+    display: block;
+    font-size: 12px;
+    color: #9cabb5;
+    margin-top: 4px
+}
+
+.promo-save {
+    background: #e8f7f2;
+    border-radius: 20px;
+    padding: 7px 10px;
+    color: #0a9474;
+    font-weight: 750;
+    font-size: 11px;
+    text-align: center
+}
+
+.promo-code-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 12px;
+    background: #f2f9fa;
+    border: 1px dashed #addbd9;
+    border-radius: 9px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #607b8e
+}
+
+    .promo-code-row strong {
+        color: #087f7d;
+        letter-spacing: .5px
+    }
+
+    .promo-code-row button {
+        border: 0;
+        background: none;
+        color: #008e8a;
+        font-weight: 800;
+        cursor: pointer;
+        white-space: nowrap
+    }
+
+.promo-time {
+    color: #d4772b;
+    font-size: 12px;
+    margin: 12px 0 0;
+    font-weight: 700
+}
+
+.promo-card-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: auto;
+    padding-top: 16px
+}
+
+.promo-outline, .promo-primary {
+    border-radius: 10px;
+    padding: 13px 12px;
+    font-weight: 750;
+    font-size: 13px;
+    cursor: pointer
+}
+
+.promo-outline {
+    background: #fff;
+    border: 1px solid #cfe2e8;
+    color: #17415c;
+    flex: 1
+}
+
+.promo-primary {
+    background: #079b98;
+    border: 1px solid #079b98;
+    color: #fff;
+    flex: 1
+}
+
+    .promo-primary:hover:not(:disabled) {
+        background: #067d7a
+    }
+
+    .promo-primary:disabled {
+        opacity: .4;
+        cursor: not-allowed
+    }
+
+.promo-info-strip {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-top: 35px;
+    padding: 17px 20px;
+    background: #eaf5f6;
+    border-radius: 13px;
+    color: #416e7b
+}
+
+    .promo-info-strip > span {
+        font-size: 21px;
+        color: #079b98
+    }
+
+    .promo-info-strip p {
+        margin: 0;
+        line-height: 1.6;
+        font-size: 13px
+    }
+
+.promo-bottom-link {
+    text-align: center;
+    margin-top: 30px;
+    font-size: 14px;
+    color: #6d8495
+}
+
+    .promo-bottom-link a {
+        color: #079b98;
+        font-weight: 750;
+        text-decoration: none
+    }
+
+.promo-empty {
+    text-align: center;
+    background: white;
+    border: 1px solid #e2ebef;
+    border-radius: 18px;
+    padding: 70px 20px
+}
+
+    .promo-empty span {
+        font-size: 36px;
+        color: #079b98
+    }
+
+    .promo-empty h3 {
+        font: 700 26px Georgia,serif
+    }
+
+    .promo-empty p {
+        color: #72899b
+    }
+
+    .promo-empty button {
+        border: 0;
+        background: #079b98;
+        color: #fff;
+        padding: 11px 19px;
+        border-radius: 9px;
+        cursor: pointer
+    }
+
+.promo-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #071b2ab8;
+    display: grid;
+    place-items: center;
+    padding: 20px
+}
+
+.promo-modal {
+    width: min(570px,100%);
+    max-height: 90vh;
+    overflow: auto;
+    background: #fff;
+    border-radius: 20px;
+    padding: 34px;
+    position: relative;
+    box-shadow: 0 20px 90px #0003
+}
+
+.promo-modal-close {
+    position: absolute;
+    top: 13px;
+    right: 18px;
+    font-size: 29px;
+    border: 0;
+    background: transparent;
+    color: #597588;
+    cursor: pointer
+}
+
+.promo-modal h2 {
+    font: 700 30px Georgia,serif;
+    color: #123b5d;
+    margin: 14px 0
+}
+
+.promo-modal > p {
+    color: #6d8595;
+    line-height: 1.6
+}
+
+.promo-modal-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin: 25px 0
+}
+
+    .promo-modal-details > div {
+        padding: 13px;
+        background: #f5f9fb;
+        border-radius: 9px;
+        min-width: 0
+    }
+
+    .promo-modal-details span, .promo-modal-details strong {
+        display: block
+    }
+
+    .promo-modal-details span {
+        color: #8095a3;
+        font-size: 12px;
+        margin-bottom: 8px
+    }
+
+    .promo-modal-details strong {
+        color: #123b5d;
+        font-size: 15px;
+        overflow-wrap: anywhere
+    }
+
+.promo-modal-note {
+    font-size: 12px !important;
+    background: #f2f9f8;
+    border-radius: 9px;
+    padding: 12px
+}
+
+.promo-modal-book {
+    width: 100%;
+    margin-top: 12px
+}
+
+@media(max-width:1200px) {
+    .promo-grid {
+        grid-template-columns: repeat(2,minmax(0,1fr))
+    }
+
+    .promo-toolbar {
+        flex-direction: column;
+        align-items: stretch
+    }
+
+    .promo-tools {
+        justify-content: space-between
+    }
+
+    .promo-search {
+        flex: 1
+    }
+
+        .promo-search input {
+            width: 100%
+        }
+}
+
+@media(max-width:700px) {
+    .promo-container {
+        width: calc(100% - 30px)
+    }
+
+    .promo-page {
+        padding-top: 15px
+    }
+
+    .promo-hero {
+        padding: 35px 25px;
+        min-height: 300px
+    }
+
+    .promo-hero-stat {
+        display: none
+    }
+
+    .promo-intro {
+        align-items: flex-start;
+        flex-direction: column;
+        padding-top: 30px
+    }
+
+        .promo-intro h2 {
+            font-size: 28px
+        }
+
+    .promo-grid {
+        grid-template-columns: 1fr
+    }
+
+    .promo-categories {
+        gap: 7px
+    }
+
+        .promo-categories button {
+            padding: 9px 13px
+        }
+
+    .promo-results-header {
+        align-items: flex-start;
+        flex-direction: column
+    }
+
+    .promo-tools {
+        align-items: stretch
+    }
+
+        .promo-tools select {
+            max-width: 160px
+        }
+
+    .promo-image-wrap {
+        height: 220px
+    }
+
+    .promo-modal {
+        padding: 26px 20px
+    }
+
+    .promo-modal-details {
+        gap: 8px
+    }
+
+        .promo-modal-details strong {
+            font-size: 13px
+        }
+}
+
+@media(max-width:420px) {
+    .promo-tools {
+        flex-direction: column
+    }
+
+        .promo-tools select {
+            max-width: none
+        }
+
+    .promo-hero h1 {
+        font-size: 37px
+    }
+
+    .promo-card-actions {
+        flex-direction: column
+    }
+}

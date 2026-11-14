@@ -18,3 +18,121 @@
 @media(max-width:1100px){.dd-shell{padding:28px}.dd-content-grid{grid-template-columns:minmax(0,1fr) 300px;gap:22px}.dd-facts{grid-template-columns:repeat(2,1fr);row-gap:15px}.dd-fact:nth-child(3){border-left:0}.dd-gallery{grid-template-rows:repeat(2,155px)}}
 @media(max-width:800px){.destination-detail{padding:16px 12px 40px}.dd-shell{padding:20px;border-radius:18px}.dd-content-grid{grid-template-columns:1fr}.dd-booking-card{position:static}.dd-gallery{grid-template-rows:repeat(2,120px)}.dd-heading-row{align-items:flex-start;flex-direction:column}.dd-heading-row h1{font-size:31px}}
 @media(max-width:520px){.dd-gallery{grid-template-columns:repeat(2,1fr);grid-template-rows:190px 100px 100px;gap:5px}.dd-gallery-main{grid-column:span 2;grid-row:span 1}.dd-view-all{font-size:10px;padding:7px}.dd-facts{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px 4px}.dd-fact{padding:0 5px;gap:6px}.dd-fact-icon{width:30px;height:30px;font-size:15px}.dd-fact strong{font-size:11px}.dd-highlight-grid{grid-template-columns:1fr}.dd-section h2{font-size:23px}.dd-breadcrumb{font-size:12px}}
+
+/* Promotion code and price summary - append to DestinationDetail.css */
+.dd-promo-offer {
+    display: block !important;
+    margin: 10px 0 !important;
+    padding: 10px 12px;
+    background: #e9f8f5;
+    color: #087d79 !important;
+    border-radius: 9px;
+    font-size: 12px !important;
+    line-height: 1.6
+}
+
+.dd-promo-section {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid #e6edf1
+}
+
+.dd-promo-input-row {
+    display: flex;
+    gap: 8px
+}
+
+    .dd-promo-input-row input {
+        min-width: 0;
+        flex: 1;
+        border: 1px solid #dce7ec;
+        border-radius: 10px;
+        padding: 11px 12px;
+        font: inherit;
+        font-size: 13px;
+        outline: none;
+        text-transform: uppercase
+    }
+
+        .dd-promo-input-row input:focus {
+            border-color: #079b98;
+            box-shadow: 0 0 0 3px #079b981a
+        }
+
+    .dd-promo-input-row button {
+        border: 0;
+        background: #079b98;
+        color: white;
+        border-radius: 10px;
+        padding: 0 15px;
+        font-weight: 700;
+        cursor: pointer
+    }
+
+        .dd-promo-input-row button:hover {
+            background: #087d7b
+        }
+
+.dd-promo-message {
+    font-size: 12px;
+    color: #b45309;
+    margin: 9px 0 0;
+    line-height: 1.5
+}
+
+    .dd-promo-message.success {
+        color: #07866b
+    }
+
+.dd-promo-remove {
+    border: 0;
+    background: transparent;
+    color: #087d79;
+    font-size: 12px;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 8px 0 0
+}
+
+.dd-price-summary {
+    margin-top: 16px;
+    padding: 14px;
+    background: #f5f9fb;
+    border-radius: 12px
+}
+
+    .dd-price-summary > div {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        font-size: 12px;
+        margin-bottom: 10px
+    }
+
+        .dd-price-summary > div:last-child {
+            margin-bottom: 0
+        }
+
+    .dd-price-summary strong {
+        text-align: right;
+        color: #17324b
+    }
+
+    .dd-price-summary .dd-price-discount, .dd-price-summary .dd-price-discount strong {
+        color: #07866b
+    }
+
+    .dd-price-summary .dd-price-total {
+        border-top: 1px solid #dfe9ee;
+        padding-top: 12px;
+        margin-top: 12px;
+        font-size: 14px;
+        font-weight: 750
+    }
+
+.dd-price-note {
+    font-size: 11px;
+    line-height: 1.6;
+    color: #7b8d9c;
+    margin: 10px 0 0
+}
