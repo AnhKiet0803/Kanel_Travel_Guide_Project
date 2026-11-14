@@ -19,6 +19,12 @@ import AdminBackupPage from './pages/admin/AdminBackupPage';
 import AdminProvidersPage from './pages/admin/AdminProvidersPage';
 import AdminTransportPage from './pages/admin/AdminTransportPage';
 import AdminBookingsPage from './pages/admin/AdminBookingsPage';
+import AdminTouristSpotsPage from './pages/admin/AdminTouristSpotsPage';
+import AdminTouristSpotFormPage from './pages/admin/AdminTouristSpotFormPage'
+import AdminTouristSpotDetailPage from './pages/admin/AdminTouristSpotDetailPage'
+import AdminPromotionsPage from './pages/admin/AdminPromotionsPage';
+import AdminPromotionFormPage from './pages/admin/AdminPromotionFormPage';
+import AdminPromotionDetailPage from './pages/admin/AdminPromotionDetailPage';
 
 // Customer pages for Tien's modules
 import ServicesPage from './pages/ServicesPage';
@@ -151,6 +157,57 @@ function App() {
                 <Route path="/admin/providers" element={<AdminPage><AdminProvidersPage /></AdminPage>} />
                 <Route path="/admin/transport" element={<AdminPage><AdminTransportPage /></AdminPage>} />
                 <Route path="/admin/bookings" element={<AdminPage><AdminBookingsPage /></AdminPage>} />
+                <Route path="/admin/spots" element={<AdminPage><AdminTouristSpotsPage /></AdminPage>} />
+
+                    {/* Add Tourist Spot */}
+                    <Route
+                        path="/admin/spots/new"
+                        element={
+                            <AdminPage>
+                                <AdminTouristSpotFormPage />
+                            </AdminPage>
+                        }
+                    />
+
+                    {/* Edit Tourist Spot */}
+                    <Route
+                        path="/admin/spots/:id/edit"
+                        element={
+                            <AdminPage>
+                                <AdminTouristSpotFormPage />
+                            </AdminPage>
+                        }
+                    />
+
+                    {/* View Tourist Spot */}
+                    <Route
+                        path="/admin/spots/:id"
+                        element={
+                            <AdminPage>
+                                <AdminTouristSpotDetailPage />
+                            </AdminPage>
+                        }
+                    />
+                    <Route
+                        path="/admin/promotions"
+                        element={<AdminPage><AdminPromotionsPage /></AdminPage>}
+                    />
+
+                    <Route
+                        path="/admin/promotions/new"
+                        element={<AdminPage><AdminPromotionFormPage /></AdminPage>}
+                    />
+
+                    <Route
+                        path="/admin/promotions/:id/edit"
+                        element={<AdminPage><AdminPromotionFormPage /></AdminPage>}
+                    />
+
+                    <Route
+                        path="/admin/promotions/:id"
+                        element={<AdminPage><AdminPromotionDetailPage /></AdminPage>}
+                    />
+
             </Routes>
             </AuthProvider>
         </BrowserRouter>

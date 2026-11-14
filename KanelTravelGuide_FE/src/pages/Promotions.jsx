@@ -1,11 +1,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-    promotionsDemo,
-    tourVisuals,
-    transportDealsDemo
-} from '../data/promotionsDemo';
+import { tourVisuals } from '../data/promotionsDemo';
+import { listPromotions, listPromotionTours, listPromotionSchedules, USE_DEMO_PROMOTIONS } from '../data/adminPromotionsStore';
 import '../styles/Promotions.css';
 
 const currency = (amount) =>
@@ -29,7 +26,7 @@ const getStatus = (promotion, now) => {
         return 'upcoming';
     }
 
-    if (now > new Date(promotion.EndDate).getTime()) {
+    if (now > new Date(`${String(promotion.EndDate).slice(0,10)}T23:59:59`).getTime()) {
         return 'expired';
     }
 
@@ -37,7 +34,7 @@ const getStatus = (promotion, now) => {
 };
 
 const remaining = (date, now) => {
-    const ms = new Date(date).getTime() - now;
+    const ms = new Date(`${String(date).slice(0,10)}T23:59:59`).getTime() - now;
 
     if (ms <= 0) return 'Offer ended';
 
@@ -122,6 +119,24 @@ export default function Promotions() {
     const [showUnavailable, setShowUnavailable] = useState(false);
     const [selected, setSelected] = useState(null);
     const [copied, setCopied] = useState('');
+    const [campaigns, setCampaigns] = useState([]);
+    const [tourCatalog, setTourCatalog] = useState([]);
+    const [scheduleCatalog, setScheduleCatalog] = useState([]);
+    const [loadError, setLoadError] = useState('');
+    useEffect(() => {
+        let alive = true;
+        const load = async () => {
+            try {
+                const [promos, tours, schedules] = await Promise.all([listPromotions(), listPromotionTours(), USE_DEMO_PROMOTIONS ? listPromotionSchedules() : []]);
+                if (alive) { setCampaigns(promos); setTourCatalog(tours); setScheduleCatalog(schedules); setLoadError(''); }
+            } catch (error) { if (alive) setLoadError(error.message || 'Unable to load offers.'); }
+        };
+        load();
+        window.addEventListener('karnel-promotions-changed', load);
+        const onStorage = event => { if (event.key === 'karnel-admin-promotions-demo') load(); };
+        window.addEventListener('storage', onStorage);
+        return () => { alive = false; window.removeEventListener('karnel-promotions-changed', load); window.removeEventListener('storage', onStorage); };
+    }, []);
 
     useEffect(() => {
         const timer = window.setInterval(() => {
@@ -132,53 +147,57 @@ export default function Promotions() {
     }, []);
 
     const offers = useMemo(() => {
-        // Tour promotions
-        const tours = promotionsDemo.flatMap((promotion) =>
-            (promotion.TourPackages || []).map((tour) => {
-                const visual = tourVisuals[tour.TourId] || {};
-
-                return {
-                    id: `tour-${tour.TourId}`,
-                    type: 'Tour',
-                    title: tour.TourName,
-                    subtitle: promotion.Title,
-                    description: tour.ItineraryDetail || '',
-                    image: visual.image || '',
-                    location: visual.location || '',
-                    provider: 'Karnel Travels',
-                    duration: tour.Duration,
-                    originalPrice: Number(tour.StandardPrice),
-                    price: effectivePrice(tour, promotion),
-                    discountPercent: promotion.DiscountPercent,
-                    discountAmount: promotion.DiscountAmount,
-                    promoCode: promotion.PromoCode,
-                    startDate: promotion.StartDate,
-                    endDate: promotion.EndDate,
-                    status: getStatus(promotion, now),
-                    isFeatured: tour.IsFeatured,
-                    bookingPath: `/booking?tourId=${tour.TourId}`,
-                    isDemoTransport: false
-                };
-            })
-        );
-
-        // Transportation promotions (demo only)
-        const transport = transportDealsDemo.map((item) => ({
-            ...item,
-            subtitle: item.provider,
-            location: `${item.origin} → ${item.destination}`,
-            startDate: null,
-            status:
-                new Date(item.endDate).getTime() >= now
-                    ? 'active'
-                    : 'expired',
-            isFeatured: false,
-            isDemoTransport: true
-        }));
-
-        // Only retain genuine promotions.
-        return [...tours, ...transport].filter(hasRealDiscount);
-    }, [now]);
+        const calculate = (price, p) => {
+            const base = Number(price);
+            if (!Number.isFinite(base) || base <= 0) return null;
+            return Math.max(0, p.DiscountPercent != null
+                ? base * (1 - Number(p.DiscountPercent) / 100)
+                : base - Number(p.DiscountAmount || 0));
+        };
+        const rows = campaigns.flatMap(p => {
+            if (p.ServiceType === 'transport') {
+                return (p.ScheduleIds || []).flatMap(sid => {
+                    const sc = scheduleCatalog.find(x => Number(x.ScheduleId) === Number(sid));
+                    if (!sc) return [];
+                    const price = calculate(sc.TicketPrice, p);
+                    if (price == null) return [];
+                    return [{
+                        id: `transport-${p.PromotionId}-${sid}`, type: sc.Type || 'Bus',
+                        title: sc.VehicleName || sc.RouteName, subtitle: p.Title,
+                        description: `Transport offer for ${sc.RouteName}. Departure: ${sc.DepartureTime}.`,
+                        image: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=1100&q=85',
+                        location: sc.RouteName, provider: 'Karnel Travels', duration: null,
+                        originalPrice: Number(sc.TicketPrice), price,
+                        discountPercent: p.DiscountPercent, discountAmount: p.DiscountAmount,
+                        promoCode: p.PromoCode, startDate: p.StartDate, endDate: p.EndDate,
+                        status: getStatus(p, now), isFeatured: false,
+                        bookingPath: `/transport?scheduleId=${sc.ScheduleId}`,
+                        isDemoTransport: true
+                    }];
+                });
+            }
+            return (p.TourIds || []).flatMap(tid => {
+                const tour = tourCatalog.find(t => Number(t.TourId) === Number(tid));
+                if (!tour) return [];
+                const price = calculate(tour.StandardPrice, p);
+                if (price == null) return [];
+                const visual = tourVisuals?.[tid] || {};
+                return [{
+                    id: `tour-${p.PromotionId}-${tid}`, type: 'Tour',
+                    title: tour.TourName, subtitle: p.Title,
+                    description: tour.ItineraryDetail || p.Title,
+                    image: visual.image || '', location: visual.location || tour.Location || '',
+                    provider: 'Karnel Travels', duration: tour.Duration,
+                    originalPrice: Number(tour.StandardPrice), price,
+                    discountPercent: p.DiscountPercent, discountAmount: p.DiscountAmount,
+                    promoCode: p.PromoCode, startDate: p.StartDate, endDate: p.EndDate,
+                    status: getStatus(p, now), isFeatured: Boolean(tour.IsFeatured),
+                    bookingPath: `/booking?tourId=${tid}`, isDemoTransport: false
+                }];
+            });
+        });
+        return rows.filter(hasRealDiscount);
+    }, [now, campaigns, tourCatalog, scheduleCatalog]);
 
     const filtered = useMemo(() => {
         const needle = query.trim().toLocaleLowerCase();
@@ -290,13 +309,12 @@ export default function Promotions() {
                         <h2>Offers worth exploring</h2>
 
                         <p>
-                            Compare tour promotions and sample transportation
-                            deals in one place.
+                            Discover tour and transportation offers in one place.
                         </p>
                     </div>
 
                     <span className="promo-demo-pill">
-                        Demo data · API integration pending
+                        {USE_DEMO_PROMOTIONS ? 'Demo data · API integration pending' : 'Live promotions'}
                     </span>
                 </div>
 
@@ -350,6 +368,8 @@ export default function Promotions() {
                         </select>
                     </div>
                 </section>
+
+                {loadError && <p className="promo-empty" role="alert">{loadError}</p>}
 
                 {/* RESULTS HEADER */}
                 <div
@@ -554,11 +574,9 @@ export default function Promotions() {
                     <span>ⓘ</span>
 
                     <p>
-                        <strong>Demo notice:</strong> Tour promotions
-                        follow the supplied Promotion and TourPackage
-                        models. Transportation deals are illustrative
-                        only. Real discounts and booking confirmation
-                        require backend integration.
+                        <strong>Demo notice:</strong> Offers are synchronized with Admin Promotions.
+                        Transport schedules are illustrative in Demo mode.
+                        Final booking discounts must be validated by the backend.
                     </p>
                 </div>
 
@@ -652,7 +670,7 @@ export default function Promotions() {
 
                         <p className="promo-modal-note">
                             {selected.isDemoTransport
-                                ? 'This transportation deal is sample data and is not linked to Promotion.cs.'
+                                ? 'This transport promotion uses demo schedules; the backend must validate discounts during checkout.'
                                 : 'Final eligibility and price must be validated by the backend at checkout.'}
                         </p>
 

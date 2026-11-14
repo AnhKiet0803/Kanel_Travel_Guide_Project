@@ -191,3 +191,12 @@
         height: 230px;
     }
 }
+.dest-image-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #7891a0;
+    font-size: 13px;
+    background: #edf5f7;
+}

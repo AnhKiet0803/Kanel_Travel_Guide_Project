@@ -10,4 +10,5 @@ export const ADMIN_MENU = [
   { to: '/admin/feedbacks', label: 'Feedback & Contact' },
   { to: '/admin/users', label: 'Accounts' },
   { to: '/admin/backup', label: 'Backup' },
+  
 ]

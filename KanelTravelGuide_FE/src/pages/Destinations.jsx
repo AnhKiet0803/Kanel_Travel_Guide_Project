@@ -13,6 +13,7 @@ import 'leaflet/dist/leaflet.css';
 
 import { destinations } from '../components/home/HomeData';
 import { promotionsDemo } from '../data/promotionsDemo';
+import { getSpots, getLocations, getCategories } from '../data/adminTouristSpotsStore';
 import '../styles/destinations/Destinations.css';
 
 // Demo metadata for TouristSpots, CategoryTypes and Locations.
@@ -22,13 +23,63 @@ const DEMO_METADATA = {
     3: { category: 'beach', coordinates: [-8.4095, 115.1889] },
 };
 
-const CATEGORIES = [
-    { id: 'all', label: 'All types' },
+const BASE_CATEGORIES = [
     { id: 'nature', label: 'Nature' },
     { id: 'culture', label: 'Culture & Heritage' },
     { id: 'beach', label: 'Beaches & Islands' },
     { id: 'historical', label: 'Historical Sites' },
 ];
+
+function categorySlug(name = '') {
+    const text = String(name).trim().toLowerCase();
+    if (text.includes('nature')) return 'nature';
+    if (text.includes('culture') || text.includes('heritage')) return 'culture';
+    if (text.includes('beach') || text.includes('island')) return 'beach';
+    if (text.includes('historical')) return 'historical';
+    return `custom:${text}`;
+}
+
+function countryFromLocation(location) {
+    const name = String(location?.LocationName || '');
+    const region = String(location?.Region || '');
+    if (/indonesia|bali/i.test(`${name} ${region}`)) return 'Indonesia';
+    if (/vietnam|viet nam|quang|northern|central|southern|hoi an|ha long/i.test(`${name} ${region}`)) return 'Vietnam';
+    return region || 'Other destinations';
+}
+
+function getAdminDestinationData() {
+    const locations = getLocations();
+    const categories = getCategories();
+    const locationsById = new Map(locations.map(x => [Number(x.LocationId), x]));
+    const categoriesById = new Map(categories.map(x => [Number(x.CategoryId), x]));
+    const spots = getSpots().map(item => {
+        const location = locationsById.get(Number(item.LocationId));
+        const category = categoriesById.get(Number(item.CategoryId));
+        const categoryName = category?.CategoryName || 'Other';
+        const original = destinations.find(x => Number(x.id) === Number(item.SpotId));
+        const coordinates = original && original.name?.toLowerCase() === item.SpotName?.toLowerCase() ? (DEMO_METADATA[item.SpotId]?.coordinates || null) : null;
+        return {
+            id: item.SpotId,
+            name: item.SpotName,
+            country: countryFromLocation(location),
+            description: item.Description || '',
+            image: item.ThumbnailUrl || original?.image || '',
+            category: categorySlug(categoryName),
+            categoryLabel: categoryName,
+            coordinates,
+            promotion: getSpotPromotion(item.SpotId),
+            createdAt: item.CreatedAt || '',
+        };
+    });
+    const availableCategories = [
+        { id: 'all', label: 'All types' },
+        ...Array.from(new Map([
+            ...BASE_CATEGORIES,
+            ...categories.map(c => ({ id: categorySlug(c.CategoryName), label: c.CategoryName })),
+        ].map(c => [c.id, c])).values()),
+    ];
+    return { spots, availableCategories };
+}
 
 const PAGE_SIZE = 9;
 
@@ -126,22 +177,28 @@ export default function Destinations() {
     const [sort, setSort] = useState('default');
     const [page, setPage] = useState(1);
     const [showMap, setShowMap] = useState(true);
+    const [adminData, setAdminData] = useState(getAdminDestinationData);
 
     useEffect(() => {
         setKeyword(searchParams.get('search') || '');
         setPage(1);
     }, [searchParams]);
 
-    const spots = useMemo(
-        () =>
-            destinations.map((item) => ({
-                ...item,
-                category: DEMO_METADATA[item.id]?.category || 'other',
-                coordinates: DEMO_METADATA[item.id]?.coordinates || null,
-                promotion: getSpotPromotion(item.id),
-            })),
-        []
-    );
+    // Refresh when the user returns from Admin or changes local demo data.
+    useEffect(() => {
+        const refresh = () => setAdminData(getAdminDestinationData());
+        window.addEventListener('focus', refresh);
+        window.addEventListener('storage', refresh);
+        window.addEventListener('pageshow', refresh);
+        return () => {
+            window.removeEventListener('focus', refresh);
+            window.removeEventListener('storage', refresh);
+            window.removeEventListener('pageshow', refresh);
+        };
+    }, []);
+
+    const CATEGORIES = adminData.availableCategories;
+    const spots = adminData.spots;
 
     const countries = useMemo(
         () => [
@@ -158,7 +215,7 @@ export default function Destinations() {
 
         const result = spots.filter((item) => {
             const categoryLabel =
-                CATEGORIES.find((c) => c.id === item.category)?.label || '';
+                item.categoryLabel || '';
 
             const haystack = [
                 item.name,
@@ -321,8 +378,8 @@ export default function Destinations() {
                                 key={item.id}
                                 type="button"
                                 className={`dest-type-chip ${category === item.id
-                                        ? 'is-active'
-                                        : ''
+                                    ? 'is-active'
+                                    : ''
                                     }`}
                                 aria-pressed={category === item.id}
                                 onClick={() =>
@@ -374,11 +431,11 @@ export default function Destinations() {
                                         key={item.id}
                                     >
                                         <div className="dest-card-image">
-                                            <img
-                                                src={item.image}
-                                                alt={item.name}
-                                                loading="lazy"
-                                            />
+                                            {item.image ? (
+                                                <img src={item.image} alt={item.name} loading="lazy" />
+                                            ) : (
+                                                <span className="dest-image-empty">No image available</span>
+                                            )}
 
                                             <span className="dest-card-arrow">
                                                 <i className="bi bi-arrow-up-right" />
@@ -409,9 +466,7 @@ export default function Destinations() {
                                                     className="bi bi-compass"
                                                     aria-hidden="true"
                                                 />
-                                                {CATEGORIES.find(
-                                                    (c) => c.id === item.category
-                                                )?.label || 'Other'}
+                                                {item.categoryLabel || 'Other'}
                                             </span>
 
                                             <p>{item.description}</p>
@@ -510,12 +565,7 @@ export default function Destinations() {
 
                                                         <p>
                                                             {item.country} ·{' '}
-                                                            {
-                                                                CATEGORIES.find(
-                                                                    (c) =>
-                                                                        c.id === item.category
-                                                                )?.label
-                                                            }
+                                                            {item.categoryLabel}
                                                         </p>
 
                                                         <Link
