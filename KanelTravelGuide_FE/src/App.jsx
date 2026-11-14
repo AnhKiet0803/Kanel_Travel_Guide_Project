@@ -32,6 +32,9 @@ import Destinations from './pages/Destinations';
 import DestinationDetail from './pages/DestinationDetail';
 import Transport from './pages/Transport';
 
+//Khuyến mãi
+import Promotions from './pages/Promotions';
+
 function App() {
     return (
         <BrowserRouter>
@@ -115,7 +118,7 @@ function App() {
 
                     <Route
                         path="/promotions"
-                        element={<PlaceholderPage title="Special Offers" />}
+                        element={<Promotions />}
                     />
 
                     <Route

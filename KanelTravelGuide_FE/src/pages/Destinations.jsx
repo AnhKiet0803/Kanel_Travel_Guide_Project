@@ -1,264 +1,219 @@
-
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-
 import { destinations } from '../components/home/HomeData';
 import '../styles/destinations/Destinations.css';
 
-const coordinates = {
-    1: [20.9101, 107.1839],
-    2: [15.8801, 108.3380],
-    3: [-8.4095, 115.1889],
+// Demo metadata for existing HomeData destinations. Replace with
+// TouristSpots + CategoryTypes + Locations API fields later.
+const DEMO_METADATA = {
+  1: { category: 'nature', coordinates: [20.9101, 107.1839] },
+  2: { category: 'culture', coordinates: [15.8801, 108.338] },
+  3: { category: 'beach', coordinates: [-8.4095, 115.1889] },
 };
 
-const markerIcon = L.divIcon({
-    className: 'dest-map-pin',
-    html: '<span>●</span>',
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-});
+const CATEGORIES = [
+  { id: 'all', label: 'All types' },
+  { id: 'nature', label: 'Nature' },
+  { id: 'culture', label: 'Culture & Heritage' },
+  { id: 'beach', label: 'Beaches & Islands' },
+  { id: 'historical', label: 'Historical Sites' },
+];
 
 const PAGE_SIZE = 9;
+const markerIcon = L.divIcon({
+  className: 'dest-map-pin',
+  html: '<span>●</span>',
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
+});
+
+function FitMapToSpots({ spots }) {
+  const map = useMap();
+  useEffect(() => {
+    const points = spots.map(s => s.coordinates).filter(Boolean);
+    if (points.length === 1) map.setView(points[0], 9);
+    else if (points.length > 1) map.fitBounds(points, { padding: [35, 35], maxZoom: 9 });
+    else map.setView([12, 108], 4);
+  }, [map, spots]);
+  return null;
+}
 
 export default function Destinations() {
-    const [searchParams] = useSearchParams();
-    const [keyword, setKeyword] = useState(
-        searchParams.get('search') || ''
-    );
-    const [country, setCountry] = useState('All');
-    const [sort, setSort] = useState('default');
-    const [page, setPage] = useState(1);
-    const [showMap, setShowMap] = useState(true);
+  const [searchParams] = useSearchParams();
+  const [keyword, setKeyword] = useState(searchParams.get('search') || '');
+  const [country, setCountry] = useState('All');
+  const [category, setCategory] = useState('all');
+  const [sort, setSort] = useState('default');
+  const [page, setPage] = useState(1);
+  const [showMap, setShowMap] = useState(true);
 
-    const countries = [
-        'All',
-        ...new Set(destinations.map(d => d.country)),
-    ];
+  useEffect(() => {
+    setKeyword(searchParams.get('search') || '');
+    setPage(1);
+  }, [searchParams]);
 
-    const filtered = useMemo(() => {
-        const search = keyword.trim().toLowerCase();
+  const spots = useMemo(() => destinations.map(item => ({
+    ...item,
+    category: DEMO_METADATA[item.id]?.category || 'other',
+    coordinates: DEMO_METADATA[item.id]?.coordinates || null,
+  })), []);
 
-        const result = destinations.filter(item => {
-            const text = [
-                item.name,
-                item.country,
-                item.description,
-            ].join(' ').toLowerCase();
+  const countries = useMemo(() => [
+    'All', ...new Set(spots.map(item => item.country).filter(Boolean)),
+  ], [spots]);
 
-            return text.includes(search) &&
-                (country === 'All' || item.country === country);
-        });
+  const filtered = useMemo(() => {
+    const q = keyword.trim().toLocaleLowerCase();
+    const result = spots.filter(item => {
+      const categoryLabel = CATEGORIES.find(c => c.id === item.category)?.label || '';
+      const haystack = [item.name, item.country, item.description, categoryLabel]
+        .filter(Boolean).join(' ').toLocaleLowerCase();
+      return haystack.includes(q)
+        && (country === 'All' || item.country === country)
+        && (category === 'all' || item.category === category);
+    });
+    if (sort === 'az') result.sort((a, b) => a.name.localeCompare(b.name));
+    if (sort === 'za') result.sort((a, b) => b.name.localeCompare(a.name));
+    return result;
+  }, [spots, keyword, country, category, sort]);
 
-        if (sort === 'az') {
-            result.sort((a, b) => a.name.localeCompare(b.name));
-        }
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const changeFilter = (setter, value) => { setter(value); setPage(1); };
+  const clearFilters = () => {
+    setKeyword(''); setCountry('All'); setCategory('all'); setSort('default'); setPage(1);
+  };
+  const hasFilters = Boolean(keyword || country !== 'All' || category !== 'all');
 
-        if (sort === 'za') {
-            result.sort((a, b) => b.name.localeCompare(a.name));
-        }
+  return (
+    <main className="dest-page">
+      <div className="dest-container">
+        <div className="dest-top">
+          <div>
+            <span className="dest-eyebrow">DISCOVER THE WORLD</span>
+            <h1>Explore destinations</h1>
+            <p>Find your next adventure and explore remarkable places around the world.</p>
+          </div>
+          <label className="dest-search">
+            <i className="bi bi-search" aria-hidden="true" />
+            <input type="search" placeholder="Where would you like to go?"
+              aria-label="Search destinations" value={keyword}
+              onChange={e => changeFilter(setKeyword, e.target.value)} />
+          </label>
+        </div>
 
-        return result;
-    }, [keyword, country, sort]);
+        <div className="dest-filters">
+          <div className="dest-country-filters" aria-label="Filter by country">
+            {countries.map(item => (
+              <button key={item} type="button" className={country === item ? 'is-active' : ''}
+                aria-pressed={country === item}
+                onClick={() => changeFilter(setCountry, item)}>
+                {item === 'All' ? 'All destinations' : item}
+              </button>
+            ))}
+          </div>
+          <div className="dest-filter-actions">
+            <select aria-label="Sort destinations" value={sort}
+              onChange={e => changeFilter(setSort, e.target.value)}>
+              <option value="default">Recommended</option>
+              <option value="az">Name A - Z</option>
+              <option value="za">Name Z - A</option>
+            </select>
+            <button type="button" className="dest-map-toggle" onClick={() => setShowMap(x => !x)}>
+              <i className="bi bi-map" aria-hidden="true" />
+              {showMap ? 'Hide map' : 'Show map'}
+            </button>
+          </div>
+        </div>
 
-    const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+        <div className="dest-type-bar">
+          <div className="dest-type-heading">
+            <i className="bi bi-funnel" aria-hidden="true" />
+            <strong>Travel type</strong>
+          </div>
+          <div className="dest-type-options" aria-label="Filter by travel type">
+            {CATEGORIES.map(item => (
+              <button key={item.id} type="button"
+                className={`dest-type-chip ${category === item.id ? 'is-active' : ''}`}
+                aria-pressed={category === item.id}
+                onClick={() => changeFilter(setCategory, item.id)}>{item.label}</button>
+            ))}
+          </div>
+          {hasFilters && <button type="button" className="dest-clear-btn" onClick={clearFilters}>
+            <i className="bi bi-x-circle" aria-hidden="true" /> Clear filters
+          </button>}
+        </div>
 
-    const visible = filtered.slice(
-        (page - 1) * PAGE_SIZE,
-        page * PAGE_SIZE
-    );
+        <div className="dest-results-heading">
+          <h2>Discover amazing places</h2>
+          <span aria-live="polite">{filtered.length} {filtered.length === 1 ? 'destination' : 'destinations'}</span>
+        </div>
 
-    const updateKeyword = value => {
-        setKeyword(value);
-        setPage(1);
-    };
-
-    const updateCountry = value => {
-        setCountry(value);
-        setPage(1);
-    };
-
-    return (
-        <main className="dest-page">
-            <div className="dest-container">
-
-                <div className="dest-top">
-                    <div>
-                        <span className="dest-eyebrow">
-                            DISCOVER THE WORLD
-                        </span>
-                        <h1>Explore destinations</h1>
-                        <p>
-                            Find your next adventure and explore
-                            remarkable places around the world.
-                        </p>
+        <div className={`dest-layout ${showMap ? '' : 'no-map'}`}>
+          <div className="dest-list-column">
+            {visible.length ? (
+              <div className="dest-grid">
+                {visible.map(item => (
+                  <Link to={`/destinations/${item.id}`} className="dest-card" key={item.id}>
+                    <div className="dest-card-image">
+                      <img src={item.image} alt={item.name} loading="lazy" />
+                      <span className="dest-card-arrow"><i className="bi bi-arrow-up-right" /></span>
                     </div>
-
-                    <div className="dest-search">
-                        <i className="bi bi-search" />
-                        <input
-                            type="search"
-                            placeholder="Where would you like to go?"
-                            aria-label="Search destinations"
-                            value={keyword}
-                            onChange={e => updateKeyword(e.target.value)}
-                        />
+                    <div className="dest-card-info">
+                      <span className="dest-card-country"><i className="bi bi-geo-alt" />{item.country}</span>
+                      <h3>{item.name}</h3>
+                      <span className="dest-card-category">
+                        <i className="bi bi-compass" aria-hidden="true" />
+                        {CATEGORIES.find(c => c.id === item.category)?.label || 'Other'}
+                      </span>
+                      <p>{item.description}</p>
                     </div>
-                </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="dest-empty">
+                <i className="bi bi-search" aria-hidden="true" />
+                <h3>No destinations found</h3>
+                <p>Try another keyword, country, or travel type.</p>
+                <button type="button" className="dest-empty-reset" onClick={clearFilters}>Clear filters</button>
+              </div>
+            )}
+            {totalPages > 1 && (
+              <nav className="dest-pagination" aria-label="Pagination">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
+                  <button type="button" key={number} aria-current={page === number ? 'page' : undefined}
+                    className={page === number ? 'is-active' : ''} onClick={() => setPage(number)}>{number}</button>
+                ))}
+              </nav>
+            )}
+          </div>
 
-                <div className="dest-filters">
-                    <div className="dest-country-filters">
-                        {countries.map(item => (
-                            <button
-                                key={item}
-                                type="button"
-                                className={
-                                    country === item ? 'is-active' : ''
-                                }
-                                onClick={() => updateCountry(item)}
-                            >
-                                {item === 'All' ? 'All destinations' : item}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="dest-filter-actions">
-                        <select
-                            aria-label="Sort destinations"
-                            value={sort}
-                            onChange={e => setSort(e.target.value)}
-                        >
-                            <option value="default">Recommended</option>
-                            <option value="az">Name A - Z</option>
-                            <option value="za">Name Z - A</option>
-                        </select>
-
-                        <button
-                            type="button"
-                            className="dest-map-toggle"
-                            onClick={() => setShowMap(!showMap)}
-                        >
-                            <i className="bi bi-map" />
-                            {showMap ? 'Hide map' : 'Show map'}
-                        </button>
-                    </div>
-                </div>
-
-                <div className="dest-results-heading">
-                    <h2>Discover amazing places</h2>
-                    <span>{filtered.length} destinations</span>
-                </div>
-
-                <div className={
-                    `dest-layout ${showMap ? '' : 'no-map'}`
-                }>
-                    <div className="dest-list-column">
-                        {visible.length > 0 ? (
-                            <div className="dest-grid">
-                                {visible.map(item => (
-                                    <Link
-                                        to={`/destinations/${item.id}`}
-                                        className="dest-card"
-                                        key={item.id}
-                                    >
-                                        <div className="dest-card-image">
-                                            <img
-                                                src={item.image}
-                                                alt={item.name}
-                                                loading="lazy"
-                                            />
-                                            <span className="dest-card-arrow">
-                                                <i className="bi bi-arrow-up-right" />
-                                            </span>
-                                        </div>
-
-                                        <div className="dest-card-info">
-                                            <span className="dest-card-country">
-                                                <i className="bi bi-geo-alt" />
-                                                {item.country}
-                                            </span>
-                                            <h3>{item.name}</h3>
-                                            <p>{item.description}</p>
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="dest-empty">
-                                <i className="bi bi-search" />
-                                <h3>No destinations found</h3>
-                                <p>Try another destination or country.</p>
-                            </div>
-                        )}
-
-                        {totalPages > 1 && (
-                            <nav className="dest-pagination" aria-label="Pagination">
-                                {Array.from(
-                                    { length: totalPages },
-                                    (_, index) => index + 1
-                                ).map(number => (
-                                    <button
-                                        key={number}
-                                        type="button"
-                                        className={
-                                            page === number ? 'is-active' : ''
-                                        }
-                                        onClick={() => setPage(number)}
-                                    >
-                                        {number}
-                                    </button>
-                                ))}
-                            </nav>
-                        )}
-                    </div>
-
-                    {showMap && (
-                        <div className="dest-map-column">
-                            <div className="dest-map-heading">
-                                <i className="bi bi-geo-alt-fill" />
-                                Explore on map
-                            </div>
-
-                            <MapContainer
-                                center={[12, 108]}
-                                zoom={4}
-                                scrollWheelZoom={false}
-                                className="dest-leaflet-map"
-                            >
-                                <TileLayer
-                                    attribution='&copy; OpenStreetMap contributors'
-                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                />
-
-                                {filtered.map(item => {
-                                    const position = coordinates[item.id];
-                                    if (!position) return null;
-
-                                    return (
-                                        <Marker
-                                            key={item.id}
-                                            position={position}
-                                            icon={markerIcon}
-                                        >
-                                            <Popup>
-                                                <div className="dest-map-popup">
-                                                    <strong>{item.name}</strong>
-                                                    <p>{item.country}</p>
-                                                    <Link to={`/destinations/${item.id}`}>
-                                                        View details
-                                                    </Link>
-                                                </div>
-                                            </Popup>
-                                        </Marker>
-                                    );
-                                })}
-                            </MapContainer>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </main>
-    );
+          {showMap && (
+            <aside className="dest-map-column">
+              <div className="dest-map-heading"><i className="bi bi-geo-alt-fill" />Explore on map</div>
+              <MapContainer center={[12, 108]} zoom={4} scrollWheelZoom={false}
+                className="dest-leaflet-map">
+                <TileLayer attribution='&copy; OpenStreetMap contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <FitMapToSpots spots={filtered} />
+                {filtered.map(item => item.coordinates && (
+                  <Marker key={item.id} position={item.coordinates} icon={markerIcon}>
+                    <Popup><div className="dest-map-popup">
+                      <strong>{item.name}</strong>
+                      <p>{item.country} · {CATEGORIES.find(c => c.id === item.category)?.label}</p>
+                      <Link to={`/destinations/${item.id}`}>View details</Link>
+                    </div></Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
+            </aside>
+          )}
+        </div>
+      </div>
+    </main>
+  );
 }

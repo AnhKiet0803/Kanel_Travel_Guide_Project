@@ -39,6 +39,47 @@ const CONFIG = {
  train:{from:'Hanoi',to:'Da Nang',headline:'Scenic journeys by rail',subtitle:'Compare trains, seat classes and sleeper berths.',sort:['Recommended','Lowest price','Highest price','Earliest departure','Latest departure','Shortest duration','Top rated'],filterLabel:'Train type',filters:['Express','Standard']},
 };
 const detailTabs = ['Offers','Pick-up / Drop-off','Reviews','Policy','Photos','Amenities'];
+
+// Demo passenger selector. Age limits and infant seat rules may differ by operator.
+const DEFAULT_PASSENGERS = { adults: 1, children: 0, infants: 0 };
+const passengerCount = p => p.adults + p.children + p.infants;
+const seatCount = p => p.adults + p.children; // Infants assumed to travel without a separate seat in this demo.
+const passengerLabel = p => `${passengerCount(p)} passenger${passengerCount(p) === 1 ? '' : 's'}`;
+
+function PassengerPicker({ value, onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const rows = [
+    { key: 'adults', title: 'Adults', subtitle: '12 years and above' },
+    { key: 'children', title: 'Children', subtitle: '2–11 years' },
+    { key: 'infants', title: 'Infants', subtitle: 'Under 2 years' },
+  ];
+  const change = (key, delta) => {
+    const next = { ...value, [key]: value[key] + delta };
+    if (next.adults < 1 || next.children < 0 || next.infants < 0 ||
+        next.infants > next.adults || passengerCount(next) > 9) return;
+    onChange(next);
+  };
+  return <div className="ktr-passengers" onKeyDown={e => { if (e.key === 'Escape') setIsOpen(false); }}>
+    <button type="button" className="ktr-passenger-trigger" aria-expanded={isOpen}
+      aria-controls="ktr-passenger-panel" onClick={() => setIsOpen(v => !v)}>
+      <span><small>Passengers</small><strong>{passengerLabel(value)}</strong></span>
+      <span aria-hidden="true">{isOpen ? '⌃' : '⌄'}</span>
+    </button>
+    {isOpen && <div className="ktr-passenger-panel" id="ktr-passenger-panel">
+      {rows.map(row => <div className="ktr-passenger-row" key={row.key}>
+        <div className="ktr-passenger-description"><strong>{row.title}</strong><small>{row.subtitle}</small></div>
+        <div className="ktr-passenger-counter">
+          <button type="button" aria-label={`Remove ${row.title.toLowerCase()}`} disabled={value[row.key] <= (row.key === 'adults' ? Math.max(1, value.infants) : 0)} onClick={() => change(row.key, -1)}>−</button>
+          <output aria-label={`${row.title} count`}>{value[row.key]}</output>
+          <button type="button" aria-label={`Add ${row.title.toLowerCase()}`} disabled={passengerCount(value) >= 9 || (row.key === 'infants' && value.infants >= value.adults)} onClick={() => change(row.key, 1)}>+</button>
+        </div>
+      </div>)}
+      <p className="ktr-passenger-note">Demo: maximum 9 passengers, at least 1 adult and 1 adult per infant. Infants do not occupy a separate seat in this demo. Actual rules and fares depend on the operator.</p>
+      <button type="button" className="ktr-passenger-apply" onClick={() => setIsOpen(false)}>Apply · {passengerLabel(value)}</button>
+    </div>}
+  </div>;
+}
+
 function FilterCheck({label,checked,onChange}) { return <label className="ktr-check"><input type="checkbox" checked={checked} onChange={e=>onChange(e.target.checked)}/><span>{label}</span></label>; }
 function Details({trip,tab,setTab,onClose}) {
  return <div className="ktr-details"><div className="ktr-detail-tabs" role="tablist" aria-label="Trip details">{detailTabs.map(t=><button role="tab" aria-selected={tab===t} className={tab===t?'active':''} key={t} onClick={()=>setTab(t)}>{t}</button>)}<button className="ktr-close" aria-label="Close details" onClick={onClose}>×</button></div><div className="ktr-detail-body">
@@ -65,7 +106,7 @@ function PromoCountdown({endsAt}) {
  const s = String(seconds%60).padStart(2,'0');
  return <span>Ends in <strong>{h}:{m}:{s}</strong></span>;
 }
-function BusTripCard({trip,expanded,onToggle,tab,setTab,onBook}) {
+function BusTripCard({trip,expanded,onToggle,tab,setTab,onBook,requiredSeats}) {
  const promo=trip.promotion;
  const nextDay=minutes(trip.depart)+trip.duration>=1440;
  return <article className={`ktr-trip ktr-bus-card ${promo?'ktr-has-promo':'ktr-no-promo'} ${expanded?'expanded':''}`}>
@@ -92,7 +133,7 @@ function BusTripCard({trip,expanded,onToggle,tab,setTab,onBook}) {
        <span className="ktr-bus-seats">{trip.seats?`${trip.seats} seats available`:'Sold out'} <small>· demo</small></span>
        <div className="ktr-bus-actions">
          <button type="button" className="ktr-bus-detail-button" aria-expanded={expanded} onClick={onToggle}>{expanded?'Hide details ▴':'View details ▾'}</button>
-         <button type="button" className="ktr-bus-book-button" disabled={!trip.seats} onClick={()=>onBook(trip)}>{trip.seats?'Choose seat':'Unavailable'}</button>
+         <button type="button" className="ktr-bus-book-button" disabled={trip.seats<requiredSeats} onClick={()=>onBook(trip)}>{trip.seats>=requiredSeats?'Choose seat':'Not enough seats'}</button>
        </div>
      </div>
    </div>
@@ -103,20 +144,37 @@ function BusTripCard({trip,expanded,onToggle,tab,setTab,onBook}) {
    {expanded&&<Details trip={trip} tab={tab} setTab={setTab} onClose={onToggle}/>}
  </article>;
 }
-function TripCard({trip,expanded,onToggle,tab,setTab,onBook}) {
- if (trip.mode==='bus') return <BusTripCard trip={trip} expanded={expanded} onToggle={onToggle} tab={tab} setTab={setTab} onBook={onBook}/>;
+function TripCard({trip,expanded,onToggle,tab,setTab,onBook,requiredSeats}) {
+ if (trip.mode==='bus') return <BusTripCard trip={trip} expanded={expanded} onToggle={onToggle} tab={tab} setTab={setTab} onBook={onBook} requiredSeats={requiredSeats}/>;
  const nextDay=minutes(trip.depart)+trip.duration>=1440;
  return <article className={`ktr-trip ${trip.mode} ${expanded?'expanded':''}`}>
  {trip.featured&&<div className="ktr-featured">✦ RECOMMENDED OPTION <span>Popular demo choice</span></div>}
  <div className="ktr-trip-content"><div className="ktr-trip-photo"><img src={trip.image} alt={`${trip.name} illustrative transport`} loading="lazy"/><span>{trip.mode==='flight'?'FLIGHT':'TRAIN'}</span></div>
  <div className="ktr-trip-center"><div className="ktr-trip-title"><h3>{trip.name}</h3><span className="ktr-rating">★ {trip.rating.toFixed(1)}</span></div><p className="ktr-sub">{trip.sub}</p><div className="ktr-timeline"><div><strong>{trip.depart}</strong><small>{trip.mode==='flight'?trip.pickup:trip.from}</small></div><div className="ktr-journey"><small>{durationText(trip.duration)}</small><span>● ────── ✦ ────── ●</span><small>{nextDay?'+1 day':'Direct journey'}</small></div><div><strong>{clock(trip.depart,trip.duration)}</strong><small>{trip.mode==='flight'?trip.dropoff:trip.to}</small></div></div><div className="ktr-points">{trip.mode==='flight'?'Direct flight':`From ${trip.pickup} · To ${trip.dropoff}`}</div>{trip.mode==='train'&&<div className="ktr-classes">{trip.classes.map(c=><div key={c.name}><strong>{c.name}</strong><span>From {money(c.price)}</span><small>{c.seats} seats (demo)</small></div>)}</div>}</div>
- <div className="ktr-trip-side"><span>From</span><strong>{money(trip.price)}</strong><small>/ passenger</small><em className={trip.seats?'available':'sold'}>{trip.seats?`${trip.seats} seats · demo`:'Sold out · demo'}</em><button disabled={!trip.seats} onClick={()=>onBook(trip)}>{trip.seats?'Book Now':'Unavailable'}</button></div></div>
+ <div className="ktr-trip-side"><span>From</span><strong>{money(trip.price)}</strong><small>/ passenger</small><em className={trip.seats?'available':'sold'}>{trip.seats?`${trip.seats} seats · demo`:'Sold out · demo'}</em><button disabled={trip.seats<requiredSeats} onClick={()=>onBook(trip)}>{trip.seats>=requiredSeats?'Book Now':'Not enough seats'}</button></div></div>
  <div className="ktr-trip-footer"><span>✓ {trip.amenities.slice(0,2).join(' · ')}</span><button aria-expanded={expanded} onClick={onToggle}>{expanded?'Hide details −':'View details + '}</button></div>
  {expanded&&<Details trip={trip} tab={tab} setTab={setTab} onClose={onToggle}/>}</article>;
 }
+function SeatSelection({ trip, onClose, onConfirm }) {
+ const [quantity,setQuantity]=useState(1);
+ const [chosenClass,setChosenClass]=useState(trip.classes?.[0]?.name || 'Standard seat');
+ const option=trip.classes?.find(c=>c.name===chosenClass);
+ const available=option ? option.seats : trip.seats;
+ const unitPrice=option ? option.price : trip.price;
+ return <div className="ktr-booking-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
+  <section className="ktr-booking-dialog" role="dialog" aria-modal="true" aria-label="Select tickets">
+   <div className="ktr-booking-header"><div><span>SELECT YOUR TICKETS · DEMO</span><h3>{trip.name}</h3><small>{trip.from} → {trip.to} · {trip.depart}</small></div><button type="button" aria-label="Close" onClick={onClose}>×</button></div>
+   {trip.mode==='train'&&<label className="ktr-booking-class">Seat / berth type<select value={chosenClass} onChange={e=>{setChosenClass(e.target.value);setQuantity(1);}}>{trip.classes.map(c=><option key={c.name} value={c.name}>{c.name} · {money(c.price)} · {c.seats} available</option>)}</select></label>}
+   <div className="ktr-booking-count"><div><strong>Number of {trip.mode==='train'?'tickets':'seats'}</strong><small>{available} available · demo inventory</small></div><div className="ktr-passenger-counter"><button type="button" disabled={quantity<=1} onClick={()=>setQuantity(q=>q-1)}>−</button><output>{quantity}</output><button type="button" disabled={quantity>=Math.min(9,available)} onClick={()=>setQuantity(q=>q+1)}>+</button></div></div>
+   <div className="ktr-booking-summary"><span>{quantity} × {money(unitPrice)}</span><strong>{money(quantity*unitPrice)}</strong></div>
+   <p className="ktr-booking-disclaimer">This is a front-end demonstration. Seat numbers, child fares and booking confirmation require backend integration.</p>
+   <button className="ktr-booking-confirm" type="button" disabled={quantity>available} onClick={()=>onConfirm(trip,quantity,chosenClass,unitPrice)}>Continue · {quantity} ticket{quantity>1?'s':''}</button>
+  </section>
+ </div>;
+}
 export default function Transport(){
  const [mode,setMode]=useState('bus');
- const [draft,setDraft]=useState({from:'Hanoi',to:'Ha Long',date:today(),returnDate:'',time:'all',passengers:1});
+ const [draft,setDraft]=useState({from:'Hanoi',to:'Ha Long',date:today(),returnDate:'',time:'all',passengers:{...DEFAULT_PASSENGERS}});
  const [search,setSearch]=useState({...draft});
  const [sort,setSort]=useState('Recommended');
  const [variants,setVariants]=useState([]);
@@ -130,25 +188,35 @@ export default function Transport(){
  const [page,setPage]=useState(1);
  const [showFilters,setShowFilters]=useState(false);
  const [notice,setNotice]=useState('');
+ const [selectedTrip,setSelectedTrip]=useState(null);
  const [open,setOpen]=useState({type:true,operator:true,time:true,price:true,rating:false,status:false});
  const config=CONFIG[mode];
  const allMode=useMemo(()=>DATA.filter(t=>t.mode===mode),[mode]);
  const modeOperators=useMemo(()=>[...new Set(allMode.map(t=>t.operator))],[allMode]);
- const setTransportMode=id=>{setMode(id);const next={from:CONFIG[id].from,to:CONFIG[id].to,date:draft.date,returnDate:'',time:'all',passengers:draft.passengers};setDraft(next);setSearch(next);setSort('Recommended');setVariants([]);setOperators([]);setPrice(3500000);setMinRating(0);setOnlyAvailable(false);setSidebarTime('all');setPage(1);setExpanded(null);setNotice('');};
+ const setTransportMode=id=>{setMode(id);const next={from:CONFIG[id].from,to:CONFIG[id].to,date:draft.date,returnDate:'',time:'all',passengers:draft.passengers};setSelectedTrip(null);setDraft(next);setSearch(next);setSort('Recommended');setVariants([]);setOperators([]);setPrice(3500000);setMinRating(0);setOnlyAvailable(false);setSidebarTime('all');setPage(1);setExpanded(null);setNotice('');};
  const reset=()=>{setVariants([]);setOperators([]);setPrice(3500000);setMinRating(0);setOnlyAvailable(false);setSidebarTime('all');setPage(1);};
  const toggle=(item,value,set)=>set(prev=>value?[...prev,item]:prev.filter(x=>x!==item));
  const filtered=useMemo(()=>{
  const inWindow=(time,id)=>{const w=WINDOWS.find(x=>x.id===id)||WINDOWS[0];return minutes(time)>=w.start&&minutes(time)<w.end;};
- const result=allMode.filter(t=>t.from.toLowerCase()===search.from.trim().toLowerCase()&&t.to.toLowerCase()===search.to.trim().toLowerCase()&&inWindow(t.depart,search.time)&&inWindow(t.depart,sidebarTime)&&(!variants.length||variants.includes(t.variant))&&(!operators.length||operators.includes(t.operator))&&t.price<=price&&t.rating>=minRating&&(!onlyAvailable||t.seats>0));
+ const result=allMode.filter(t=>t.from.toLowerCase()===search.from.trim().toLowerCase()&&t.to.toLowerCase()===search.to.trim().toLowerCase()&&inWindow(t.depart,search.time)&&inWindow(t.depart,sidebarTime)&&(!variants.length||variants.includes(t.variant))&&(!operators.length||operators.includes(t.operator))&&t.price<=price&&t.rating>=minRating&&(!onlyAvailable||t.seats>=(mode==='flight'?seatCount(search.passengers):1)));
  return [...result].sort((a,b)=>sort==='Lowest price'?a.price-b.price:sort==='Highest price'?b.price-a.price:sort==='Earliest departure'?minutes(a.depart)-minutes(b.depart):sort==='Latest departure'?minutes(b.depart)-minutes(a.depart):sort==='Shortest duration'?a.duration-b.duration:sort==='Top rated'?b.rating-a.rating:Number(Boolean(b.featured))-Number(Boolean(a.featured)));
  },[allMode,search,sidebarTime,variants,operators,price,minRating,onlyAvailable,sort]);
  const PAGE_SIZE=4; const pages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE)); const visible=filtered.slice((Math.min(page,pages)-1)*PAGE_SIZE,Math.min(page,pages)*PAGE_SIZE);
  const updateDraft=(key,value)=>setDraft(s=>({...s,[key]:value}));
- const submit=e=>{e.preventDefault();if(draft.from.trim().toLowerCase()===draft.to.trim().toLowerCase()){setNotice('Departure and destination must be different.');return;}if(draft.returnDate&&draft.returnDate<draft.date){setNotice('Return date cannot be before departure date.');return;}setSearch({...draft});setPage(1);setExpanded(null);setNotice('');};
- const book=trip=>setNotice(`Demo only: ${trip.name} · ${trip.depart} · ${money(trip.price)}. Booking checkout is not implemented yet.`);
+ const submit=e=>{e.preventDefault();if(mode==='flight'&&draft.passengers.infants>draft.passengers.adults){setNotice('Each infant must be accompanied by an adult.');return;}if(draft.from.trim().toLowerCase()===draft.to.trim().toLowerCase()){setNotice('Departure and destination must be different.');return;}if(draft.returnDate&&draft.returnDate<draft.date){setNotice('Return date cannot be before departure date.');return;}setSearch({...draft});setPage(1);setExpanded(null);setNotice('');};
+ const book=trip=>{
+   if(trip.mode!=='flight'){setSelectedTrip(trip);return;}
+   const p=search.passengers;const needed=seatCount(p);
+   if(trip.seats<needed){setNotice(`Only ${trip.seats} seats remain. Your flight search requires ${needed} seats.`);return;}
+   setNotice(`Flight booking demo: ${trip.name} · ${p.adults} adult(s), ${p.children} child(ren), ${p.infants} infant(s). Fare per adult ${money(trip.price)}; child/infant pricing requires airline integration.`);
+ };
+ const confirmSeats=(trip,quantity,seatClass,unitPrice)=>{
+   setSelectedTrip(null);
+   setNotice(`Ticket selection demo: ${trip.name} · ${quantity} ticket(s) · ${trip.mode==='train'?seatClass+' · ':''}${money(quantity*unitPrice)} total. Passenger information and payment will be handled in a later booking step.`);
+ };
  return <main className="ktr-page"><section className="ktr-hero"><div className="ktr-container"><div className="ktr-breadcrumb">Home / Transportation</div><div className="ktr-kicker">KARNEL TRAVELS · DISCOVER MORE</div><h1>Transportation</h1><p>{config.headline}. {config.subtitle}</p></div></section>
  <div className="ktr-container ktr-main"><section className="ktr-search"><div className="ktr-modes" role="tablist" aria-label="Transport mode">{MODES.map(m=><button role="tab" aria-selected={mode===m.id} key={m.id} className={mode===m.id?'selected':''} onClick={()=>setTransportMode(m.id)}><span>{m.icon}</span>{m.name}</button>)}</div>
- <form onSubmit={submit}><div className="ktr-search-grid"><label><span>From</span><select value={draft.from} onChange={e=>updateDraft('from',e.target.value)}>{['Hanoi','Ha Long','Da Nang','Hoi An','Ho Chi Minh City','Ninh Binh'].map(x=><option key={x}>{x}</option>)}</select></label><button type="button" className="ktr-swap" title="Swap locations" onClick={()=>setDraft(s=>({...s,from:s.to,to:s.from}))}>⇄</button><label><span>To</span><select value={draft.to} onChange={e=>updateDraft('to',e.target.value)}>{['Ha Long','Hanoi','Da Nang','Hoi An','Ho Chi Minh City','Ninh Binh'].map(x=><option key={x}>{x}</option>)}</select></label><label><span>Departure date</span><input type="date" min={today()} value={draft.date} onChange={e=>updateDraft('date',e.target.value)} required/></label><label><span>Return date <em>(optional)</em></span><input type="date" min={draft.date||today()} value={draft.returnDate} onChange={e=>updateDraft('returnDate',e.target.value)}/></label><button className="ktr-search-submit" type="submit">⌕ Search routes</button></div><div className="ktr-search-extra"><label><span>Departure time</span><select value={draft.time} onChange={e=>updateDraft('time',e.target.value)}>{WINDOWS.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}</select></label><label><span>Passengers</span><select value={draft.passengers} onChange={e=>updateDraft('passengers',Number(e.target.value))}>{[1,2,3,4,5,6,7,8].map(n=><option key={n} value={n}>{n} passenger{n>1?'s':''}</option>)}</select></label><span>Illustrative schedules and prices · No real-time availability</span></div></form></section>
+ <form onSubmit={submit}><div className="ktr-search-grid"><label><span>From</span><select value={draft.from} onChange={e=>updateDraft('from',e.target.value)}>{['Hanoi','Ha Long','Da Nang','Hoi An','Ho Chi Minh City','Ninh Binh'].map(x=><option key={x}>{x}</option>)}</select></label><button type="button" className="ktr-swap" title="Swap locations" onClick={()=>setDraft(s=>({...s,from:s.to,to:s.from}))}>⇄</button><label><span>To</span><select value={draft.to} onChange={e=>updateDraft('to',e.target.value)}>{['Ha Long','Hanoi','Da Nang','Hoi An','Ho Chi Minh City','Ninh Binh'].map(x=><option key={x}>{x}</option>)}</select></label><label><span>Departure date</span><input type="date" min={today()} value={draft.date} onChange={e=>updateDraft('date',e.target.value)} required/></label><label><span>Return date <em>(optional)</em></span><input type="date" min={draft.date||today()} value={draft.returnDate} onChange={e=>updateDraft('returnDate',e.target.value)}/></label><button className="ktr-search-submit" type="submit">⌕ Search routes</button></div></form>{mode==='flight'&&<div className="ktr-flight-passengers"><PassengerPicker value={draft.passengers} onChange={value=>updateDraft('passengers',value)}/></div>}</section>
  {notice&&<div className="ktr-notice" role="status"><span>{notice}</span><button onClick={()=>setNotice('')} aria-label="Dismiss">×</button></div>}
  <div className="ktr-results-layout"><aside className={`ktr-sidebar ${showFilters?'visible':''}`}><div className="ktr-sidebar-heading"><h2>Filters</h2><button onClick={reset}>Reset all</button></div>
  <div className="ktr-filter-section"><button className="ktr-filter-heading" onClick={()=>setOpen(s=>({...s,type:!s.type}))}>{config.filterLabel}<span>{open.type?'−':'+'}</span></button>{open.type&&<div>{config.filters.map(v=><FilterCheck key={v} label={v} checked={variants.includes(v)} onChange={x=>toggle(v,x,setVariants)}/>)}</div>}</div>
@@ -157,8 +225,8 @@ export default function Transport(){
  <div className="ktr-filter-section"><button className="ktr-filter-heading" onClick={()=>setOpen(s=>({...s,price:!s.price}))}>Maximum price<span>{open.price?'−':'+'}</span></button>{open.price&&<div className="ktr-price"><strong>{money(price)}</strong><input type="range" min="100000" max="3500000" step="50000" value={price} onChange={e=>{setPrice(Number(e.target.value));setPage(1);}}/><div><small>100.000đ</small><small>3.500.000đ</small></div></div>}</div>
  <div className="ktr-filter-section"><button className="ktr-filter-heading" onClick={()=>setOpen(s=>({...s,rating:!s.rating}))}>Rating<span>{open.rating?'−':'+'}</span></button>{open.rating&&<div className="ktr-radio-list">{[0,4,4.5,4.8].map(n=><label key={n}><input type="radio" name="rating" checked={minRating===n} onChange={()=>{setMinRating(n);setPage(1);}}/>{n===0?'All ratings':`★ ${n}+`}</label>)}</div>}</div>
  <div className="ktr-filter-section"><button className="ktr-filter-heading" onClick={()=>setOpen(s=>({...s,status:!s.status}))}>Availability<span>{open.status?'−':'+'}</span></button>{open.status&&<FilterCheck label="Available seats only" checked={onlyAvailable} onChange={setOnlyAvailable}/>}</div>
- </aside><section className="ktr-results"><div className="ktr-results-head"><div><span className="ktr-eyebrow">EXPLORE YOUR OPTIONS</span><h2>{search.from} <span>→</span> {search.to}</h2><p>{filtered.length} {mode==='flight'?'flights':mode==='train'?'trains':'departures'} found · Demo results</p></div><div className="ktr-results-actions"><button className="ktr-mobile-filter" onClick={()=>setShowFilters(x=>!x)}>☷ Filters</button><label>Sort by <select value={sort} onChange={e=>{setSort(e.target.value);setPage(1);}}>{config.sort.map(s=><option key={s}>{s}</option>)}</select></label></div></div><div className="ktr-info-banner">ⓘ All dates, fares, remaining seats and offers are sample data. Choosing a date updates the search form; real date-based availability requires an API.</div>
- <div className="ktr-trip-list">{visible.map(t=><TripCard key={t.id} trip={t} expanded={expanded===t.id} onToggle={()=>{setExpanded(x=>x===t.id?null:t.id);setTab('Offers');}} tab={tab} setTab={setTab} onBook={book}/>)}{!visible.length&&<div className="ktr-empty"><div>⌕</div><h3>No matching trips</h3><p>Try another route or adjust the filters.</p><button onClick={reset}>Clear filters</button></div>}</div>
+ </aside><section className="ktr-results"><div className="ktr-results-head"><div><span className="ktr-eyebrow">EXPLORE YOUR OPTIONS</span><h2>{search.from} <span>→</span> {search.to}</h2><p>{filtered.length} {mode==='flight'?'flights':mode==='train'?'trains':'departures'} found · {mode==='flight'?`${passengerLabel(search.passengers)} · ${seatCount(search.passengers)} seat(s) needed · `:''}Demo results</p></div><div className="ktr-results-actions"><button className="ktr-mobile-filter" onClick={()=>setShowFilters(x=>!x)}>☷ Filters</button><label>Sort by <select value={sort} onChange={e=>{setSort(e.target.value);setPage(1);}}>{config.sort.map(s=><option key={s}>{s}</option>)}</select></label></div></div><div className="ktr-info-banner">ⓘ All dates, fares, remaining seats and offers are sample data. Choosing a date updates the search form; real date-based availability requires an API.</div>
+ <div className="ktr-trip-list">{visible.map(t=><TripCard key={t.id} trip={t} expanded={expanded===t.id} onToggle={()=>{setExpanded(x=>x===t.id?null:t.id);setTab('Offers');}} tab={tab} setTab={setTab} onBook={book} requiredSeats={mode==='flight'?seatCount(search.passengers):1}/>)}{!visible.length&&<div className="ktr-empty"><div>⌕</div><h3>No matching trips</h3><p>Try another route or adjust the filters.</p><button onClick={reset}>Clear filters</button></div>}</div>
  {pages>1&&<nav className="ktr-pagination" aria-label="Results pages"><button disabled={page===1} onClick={()=>{setPage(p=>p-1);setExpanded(null);}}>‹ Previous</button>{Array.from({length:pages},(_,i)=><button className={page===i+1?'current':''} key={i} onClick={()=>{setPage(i+1);setExpanded(null);}}>{i+1}</button>)}<button disabled={page===pages} onClick={()=>{setPage(p=>p+1);setExpanded(null);}}>Next ›</button></nav>}
- </section></div></div></main>;
+ </section></div></div>{selectedTrip&&<SeatSelection trip={selectedTrip} onClose={()=>setSelectedTrip(null)} onConfirm={confirmSeats}/>}</main>;
 }

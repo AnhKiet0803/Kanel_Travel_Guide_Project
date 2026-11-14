@@ -45,3 +45,57 @@
 @media(max-width:1050px){.ktr-page .ktr-bus-layout{grid-template-columns:120px minmax(0,1fr) 185px;gap:12px}.ktr-page .ktr-bus-photo img{width:120px;height:140px}.ktr-page .ktr-bus-heading h3{font-size:15px}.ktr-page .ktr-bus-actions{gap:7px}.ktr-page .ktr-bus-book-button{padding:9px 10px}}
 @media(max-width:680px){.ktr-page .ktr-bus-layout{grid-template-columns:105px minmax(0,1fr);gap:11px;padding:13px}.ktr-page .ktr-bus-photo img{width:105px;height:135px}.ktr-page .ktr-bus-right{grid-column:1/-1;display:grid;grid-template-columns:1fr auto;align-items:center;justify-items:start;text-align:left;gap:6px;border-top:1px solid #edf1f4;padding-top:11px}.ktr-page .ktr-promo-caption{grid-column:1/-1}.ktr-page .ktr-bus-price{font-size:19px}.ktr-page .ktr-bus-original{justify-self:end}.ktr-page .ktr-bus-extra{grid-column:1/-1}.ktr-page .ktr-bus-seats{grid-column:1}.ktr-page .ktr-bus-actions{grid-column:2;grid-row:auto;justify-self:end}.ktr-page .ktr-bus-bottom{padding:0 13px 13px;flex-wrap:wrap;font-size:10px}.ktr-page .ktr-bus-bottom strong{font-size:10px}.ktr-page .ktr-bus-promo-strip{font-size:10px}.ktr-page .ktr-bus-promo-strip>strong{min-width:48%;font-size:10px}.ktr-page .ktr-no-promo .ktr-bus-right{min-height:0}.ktr-page .ktr-bus-type{margin:9px 0}.ktr-page .ktr-bus-stops strong{font-size:15px}}
 @media(max-width:390px){.ktr-page .ktr-bus-layout{grid-template-columns:88px minmax(0,1fr)}.ktr-page .ktr-bus-photo img{width:88px;height:115px}.ktr-page .ktr-bus-actions{gap:6px}.ktr-page .ktr-bus-book-button{padding:8px}.ktr-page .ktr-bus-detail-button{font-size:11px}.ktr-page .ktr-bus-heading h3{font-size:13px}}
+
+/* Passenger selector: scoped to Transportation search form */
+.ktr-page .ktr-passengers{position:relative;width:230px;flex:0 0 230px;min-width:0;z-index:8}
+.ktr-page .ktr-passenger-trigger{width:100%;min-height:50px;border:1px solid #d3e3eb;border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 11px;color:#123c5b;text-align:left}
+.ktr-page .ktr-passenger-trigger>span:first-child{display:flex;flex-direction:column;gap:3px}
+.ktr-page .ktr-passenger-trigger small{font-size:11px;color:#678197;font-weight:700}
+.ktr-page .ktr-passenger-trigger strong{font-size:13px;font-weight:750}
+.ktr-page .ktr-passenger-panel{position:absolute;left:0;top:calc(100% + 8px);width:min(350px,calc(100vw - 40px));max-width:none;background:white;border:1px solid #d8e5ec;border-radius:13px;box-shadow:0 15px 38px #092f532b;padding:15px;z-index:30}
+.ktr-page .ktr-passenger-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #eaf0f4}
+.ktr-page .ktr-passenger-description{display:flex;flex-direction:column;gap:3px}
+.ktr-page .ktr-passenger-description strong{font-size:13px;color:#123652}
+.ktr-page .ktr-passenger-description small{font-size:11px;color:#7890a3}
+.ktr-page .ktr-passenger-counter{display:flex;align-items:center;gap:12px}
+.ktr-page .ktr-passenger-counter button{width:31px;height:31px;border:1px solid #cddfe8;border-radius:8px;background:white;color:#087e91;font-size:19px;display:grid;place-items:center;padding:0}
+.ktr-page .ktr-passenger-counter button:disabled{opacity:.35;cursor:not-allowed}
+.ktr-page .ktr-passenger-counter output{font-size:13px;font-weight:800;min-width:12px;text-align:center}
+.ktr-page .ktr-passenger-note{font-size:11px;line-height:1.5;color:#71899c;margin:12px 0}
+.ktr-page .ktr-passenger-apply{width:100%;background:#078e91;border:0;border-radius:8px;color:white;font-weight:800;padding:10px}
+@media(max-width:640px){.ktr-page .ktr-passengers{flex:1 1 145px;width:auto}.ktr-page .ktr-passenger-panel{left:auto;right:0;width:min(350px,calc(100vw - 40px))}}
+
+/* Passengers moved into the filter sidebar; panel expands in document flow, never behind results. */
+.ktr-page .ktr-sidebar-passengers{padding-bottom:17px;margin-bottom:15px;border-bottom:1px solid #e7eef2}
+.ktr-page .ktr-sidebar-passengers .ktr-passengers{position:static;width:100%;flex:none;z-index:auto}
+.ktr-page .ktr-sidebar-passengers .ktr-passenger-trigger{width:100%}
+.ktr-page .ktr-sidebar-passengers .ktr-passenger-panel{position:static;width:100%;max-width:100%;margin-top:9px;box-shadow:none;padding:10px;border-radius:9px;z-index:auto}
+.ktr-page .ktr-sidebar-passengers .ktr-passenger-row{gap:5px}
+.ktr-page .ktr-sidebar-passengers .ktr-passenger-counter{gap:6px}
+.ktr-page .ktr-sidebar-passengers .ktr-passenger-counter button{width:27px;height:27px}
+@media(max-width:880px){.ktr-page .ktr-sidebar{display:block}.ktr-page .ktr-sidebar:not(.visible) .ktr-sidebar-heading,.ktr-page .ktr-sidebar:not(.visible) .ktr-filter-section{display:none}.ktr-page .ktr-sidebar-passengers .ktr-passenger-panel{position:static;width:100%}}
+
+/* Flights: passenger selection belongs to the search form only. */
+.ktr-page .ktr-flight-passengers{padding:0 20px 18px;position:relative;z-index:4}
+.ktr-page .ktr-flight-passengers .ktr-passengers{width:min(280px,100%);flex:none}
+.ktr-page .ktr-search{overflow:visible}
+.ktr-page .ktr-flight-passengers .ktr-passenger-panel{position:static;width:min(360px,100%);box-shadow:0 8px 20px #092f531c;margin-top:8px}
+/* Bus and train: ticket quantity is selected after a trip, not in search. */
+.ktr-page .ktr-booking-backdrop{position:fixed;inset:0;z-index:1000;background:#071c31a8;display:flex;align-items:center;justify-content:center;padding:18px}
+.ktr-page .ktr-booking-dialog{width:min(470px,100%);max-height:90vh;overflow-y:auto;background:white;border-radius:16px;box-shadow:0 25px 70px #0004;padding:24px}
+.ktr-page .ktr-booking-header{display:flex;align-items:start;justify-content:space-between;gap:14px;border-bottom:1px solid #e5edf3;padding-bottom:16px}
+.ktr-page .ktr-booking-header span{font-size:10px;color:#009b99;font-weight:850;letter-spacing:1.2px}
+.ktr-page .ktr-booking-header h3{margin:6px 0;color:#0b3657;font-size:22px}
+.ktr-page .ktr-booking-header small,.ktr-page .ktr-booking-count small{font-size:12px;color:#7890a3}
+.ktr-page .ktr-booking-header button{border:0;background:#eff5f8;border-radius:50%;width:33px;height:33px;font-size:24px;color:#34566e}
+.ktr-page .ktr-booking-class{display:flex;flex-direction:column;gap:8px;margin-top:20px;font-size:13px;font-weight:800;color:#163e5c}
+.ktr-page .ktr-booking-class select{border:1px solid #d4e4ed;border-radius:8px;padding:12px;background:white;color:#163e5c;max-width:100%}
+.ktr-page .ktr-booking-count{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:23px 0}
+.ktr-page .ktr-booking-count>div:first-child{display:flex;flex-direction:column;gap:5px}
+.ktr-page .ktr-booking-count strong{font-size:14px;color:#123652}
+.ktr-page .ktr-booking-summary{display:flex;justify-content:space-between;gap:10px;border-top:1px solid #e6eef3;padding:17px 0;color:#45667b;font-size:13px}
+.ktr-page .ktr-booking-summary strong{font-size:20px;color:#008e8d}
+.ktr-page .ktr-booking-disclaimer{font-size:11px;line-height:1.6;color:#7a8e9f}
+.ktr-page .ktr-booking-confirm{display:block;width:100%;border:0;border-radius:9px;background:#079a98;color:white;padding:13px;font-weight:800;margin-top:15px}
+.ktr-page .ktr-booking-confirm:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:640px){.ktr-page .ktr-flight-passengers{padding:0 11px 12px}.ktr-page .ktr-booking-dialog{padding:17px}}
