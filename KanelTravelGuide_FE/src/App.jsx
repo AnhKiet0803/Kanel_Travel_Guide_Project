@@ -13,6 +13,9 @@ import ChangePasswordPage from './pages/ChangePasswordPage';
 import NotificationsPage from './pages/NotificationsPage';
 
 // Admin pages
+import AdminFeedbackPage from './pages/admin/AdminFeedbackPage';
+import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AdminBackupPage from './pages/admin/AdminBackupPage';
 import AdminProvidersPage from './pages/admin/AdminProvidersPage';
 import AdminTransportPage from './pages/admin/AdminTransportPage';
 import AdminBookingsPage from './pages/admin/AdminBookingsPage';
