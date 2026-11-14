@@ -57,7 +57,7 @@ function getAdminDestinationData() {
         const category = categoriesById.get(Number(item.CategoryId));
         const categoryName = category?.CategoryName || 'Other';
         const original = destinations.find(x => Number(x.id) === Number(item.SpotId));
-        const coordinates = original && original.name?.toLowerCase() === item.SpotName?.toLowerCase() ? (DEMO_METADATA[item.SpotId]?.coordinates || null) : null;
+        const coordinates = DEMO_METADATA[item.SpotId]?.coordinates || null;
         return {
             id: item.SpotId,
             name: item.SpotName,
@@ -69,6 +69,7 @@ function getAdminDestinationData() {
             coordinates,
             promotion: getSpotPromotion(item.SpotId),
             createdAt: item.CreatedAt || '',
+            rating: item.Rating == null || item.Rating === '' ? null : Number(item.Rating),
         };
     });
     const availableCategories = [
@@ -173,6 +174,7 @@ export default function Destinations() {
         searchParams.get('search') || ''
     );
     const [country, setCountry] = useState('All');
+    const [rating, setRating] = useState('');
     const [category, setCategory] = useState('all');
     const [sort, setSort] = useState('default');
     const [page, setPage] = useState(1);
@@ -180,7 +182,8 @@ export default function Destinations() {
     const [adminData, setAdminData] = useState(getAdminDestinationData);
 
     useEffect(() => {
-        setKeyword(searchParams.get('search') || '');
+        const value = searchParams.get('search') || '';
+        setKeyword(value);
         setPage(1);
     }, [searchParams]);
 
@@ -230,7 +233,8 @@ export default function Destinations() {
             return (
                 haystack.includes(q) &&
                 (country === 'All' || item.country === country) &&
-                (category === 'all' || item.category === category)
+                (category === 'all' || item.category === category) &&
+                (!rating || (Number.isFinite(item.rating) && item.rating >= Number(rating)))
             );
         });
 
@@ -243,7 +247,7 @@ export default function Destinations() {
         }
 
         return result;
-    }, [spots, keyword, country, category, sort]);
+    }, [spots, keyword, country, category, rating, sort]);
 
     const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
 
@@ -261,151 +265,62 @@ export default function Destinations() {
         setKeyword('');
         setCountry('All');
         setCategory('all');
+        setRating('');
         setSort('default');
         setPage(1);
     };
 
-    const hasFilters = Boolean(
-        keyword || country !== 'All' || category !== 'all'
-    );
-
     return (
         <main className="dest-page">
             <div className="dest-container">
-                <div className="dest-top">
-                    <div>
-                        <span className="dest-eyebrow">
-                            DISCOVER THE WORLD
-                        </span>
-
-                        <h1>Explore destinations</h1>
-
-                        <p>
-                            Find your next adventure and explore remarkable
-                            places around the world.
-                        </p>
-                    </div>
-
-                    <label className="dest-search">
-                        <i
-                            className="bi bi-search"
-                            aria-hidden="true"
-                        />
-
-                        <input
-                            type="search"
-                            placeholder="Where would you like to go?"
-                            aria-label="Search destinations"
-                            value={keyword}
-                            onChange={(e) =>
-                                changeFilter(setKeyword, e.target.value)
-                            }
-                        />
-                    </label>
+            </div>
+            <section className="dest-hero">
+                <div className="dest-container">
+                    <div className="dest-breadcrumb">Home / Destinations</div>
+                    <span className="dest-eyebrow">KARNEL TRAVELS · DISCOVER MORE</span>
+                    <h1>Explore destinations</h1>
+                    <p>Find your next adventure and explore remarkable places around the world.</p>
                 </div>
-
-                <div className="dest-filters">
-                    <div
-                        className="dest-country-filters"
-                        aria-label="Filter by country"
-                    >
-                        {countries.map((item) => (
-                            <button
-                                key={item}
-                                type="button"
-                                className={
-                                    country === item ? 'is-active' : ''
-                                }
-                                aria-pressed={country === item}
-                                onClick={() =>
-                                    changeFilter(setCountry, item)
-                                }
-                            >
-                                {item === 'All'
-                                    ? 'All destinations'
-                                    : item}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="dest-filter-actions">
-                        <select
-                            aria-label="Sort destinations"
-                            value={sort}
-                            onChange={(e) =>
-                                changeFilter(setSort, e.target.value)
-                            }
-                        >
-                            <option value="default">
-                                Recommended
-                            </option>
-                            <option value="az">Name A - Z</option>
-                            <option value="za">Name Z - A</option>
-                        </select>
-
-                        <button
-                            type="button"
-                            className="dest-map-toggle"
-                            onClick={() =>
-                                setShowMap((value) => !value)
-                            }
-                        >
-                            <i
-                                className="bi bi-map"
-                                aria-hidden="true"
-                            />
-
-                            {showMap ? 'Hide map' : 'Show map'}
-                        </button>
+            </section>
+            <div className="dest-container dest-main">
+                <div className="dest-search-panel">
+                    <div className="dest-search-grid">
+                        <label className="dest-search">
+                            <span><i className="bi bi-search" /> Keyword</span>
+                            <input type="search" placeholder="Search destinations..." value={keyword} onChange={e => changeFilter(setKeyword, e.target.value)} />
+                        </label>
+                        <label className="dest-search">
+                            <span><i className="bi bi-geo-alt-fill" /> Destination</span>
+                            <select value={country} onChange={e => changeFilter(setCountry, e.target.value)}>
+                                {countries.map(c => <option key={c} value={c}>{c === 'All' ? 'All Destinations' : c}</option>)}
+                            </select>
+                        </label>
+                        <label className="dest-search">
+                            <span><i className="bi bi-compass" /> Travel type</span>
+                            <select value={category} onChange={e => changeFilter(setCategory, e.target.value)}>
+                                {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                            </select>
+                        </label>
+                        <label className="dest-search">
+                            <span><i className="bi bi-star-fill" /> Rating</span>
+                            <select value={rating} onChange={e => changeFilter(setRating, e.target.value)}>
+                                <option value="">All ratings</option>
+                                {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{'★'.repeat(n)} ({n}+ Stars)</option>)}
+                            </select>
+                        </label>
+                        <button type="button" className="dest-reset-button" onClick={clearFilters} title="Reset filters" aria-label="Reset filters"><i className="bi bi-arrow-counterclockwise" /></button>
                     </div>
                 </div>
-
-                <div className="dest-type-bar">
-                    <div className="dest-type-heading">
-                        <i
-                            className="bi bi-funnel"
-                            aria-hidden="true"
-                        />
-                        <strong>Travel type</strong>
-                    </div>
-
-                    <div
-                        className="dest-type-options"
-                        aria-label="Filter by travel type"
-                    >
-                        {CATEGORIES.map((item) => (
-                            <button
-                                key={item.id}
-                                type="button"
-                                className={`dest-type-chip ${category === item.id
-                                    ? 'is-active'
-                                    : ''
-                                    }`}
-                                aria-pressed={category === item.id}
-                                onClick={() =>
-                                    changeFilter(setCategory, item.id)
-                                }
-                            >
-                                {item.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    {hasFilters && (
-                        <button
-                            type="button"
-                            className="dest-clear-btn"
-                            onClick={clearFilters}
-                        >
-                            <i
-                                className="bi bi-x-circle"
-                                aria-hidden="true"
-                            />
-                            Clear filters
-                        </button>
-                    )}
+                <div className="dest-filter-actions dest-secondary-actions">
+                    <select aria-label="Sort destinations" value={sort} onChange={e => changeFilter(setSort, e.target.value)}>
+                        <option value="default">Recommended</option>
+                        <option value="az">Name A - Z</option>
+                        <option value="za">Name Z - A</option>
+                    </select>
+                    <button type="button" className="dest-map-toggle" onClick={() => setShowMap(v => !v)}>
+                        <i className="bi bi-map" /> {showMap ? 'Hide map' : 'Show map'}
+                    </button>
                 </div>
-
                 <div className="dest-results-heading">
                     <h2>Discover amazing places</h2>
 

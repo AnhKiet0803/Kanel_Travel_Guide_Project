@@ -25,6 +25,10 @@ import AdminTouristSpotDetailPage from './pages/admin/AdminTouristSpotDetailPage
 import AdminPromotionsPage from './pages/admin/AdminPromotionsPage';
 import AdminPromotionFormPage from './pages/admin/AdminPromotionFormPage';
 import AdminPromotionDetailPage from './pages/admin/AdminPromotionDetailPage';
+import AdminToursPage from './pages/admin/AdminToursPage';
+import AdminTourFormPage from './pages/admin/AdminTourFormPage';
+import AdminTourDetailPage from './pages/admin/AdminTourDetailPage';
+
 
 // Customer pages for Tien's modules
 import ServicesPage from './pages/ServicesPage';
@@ -40,6 +44,10 @@ import Transport from './pages/Transport';
 
 //Khuyến mãi
 import Promotions from './pages/Promotions';
+
+//Tour
+import ToursPage from './pages/user/ToursPage';
+import TourDetailPage from './pages/user/TourDetailPage';
 
 function App() {
     return (
@@ -112,10 +120,9 @@ function App() {
                         element={<DestinationDetail />}
                     />
 
-                    <Route
-                        path="/tours"
-                        element={<PlaceholderPage title="Tours" />}
-                    />
+                    <Route path="/tours" element={<ToursPage />} />
+
+                    <Route path="/tours/:id" element={<TourDetailPage />} />
 
                     <Route
                         path="/transport"
@@ -207,6 +214,46 @@ function App() {
                         path="/admin/promotions/:id"
                         element={<AdminPage><AdminPromotionDetailPage /></AdminPage>}
                     />
+
+                    {/* TOUR MANAGEMENT */}
+
+                    <Route
+                        path="/admin/tours"
+                        element={
+                            <AdminPage>
+                                <AdminToursPage />
+                            </AdminPage>
+                        }
+                    />
+
+                    <Route
+                        path="/admin/tours/new"
+                        element={
+                            <AdminPage>
+                                <AdminTourFormPage />
+                            </AdminPage>
+                        }
+                    />
+
+                    <Route
+                        path="/admin/tours/:id"
+                        element={
+                            <AdminPage>
+                                <AdminTourDetailPage />
+                            </AdminPage>
+                        }
+                    />
+
+                    <Route
+                        path="/admin/tours/:id/edit"
+                        element={
+                            <AdminPage>
+                                <AdminTourFormPage />
+                            </AdminPage>
+                        }
+                    />
+
+                    
 
             </Routes>
             </AuthProvider>
