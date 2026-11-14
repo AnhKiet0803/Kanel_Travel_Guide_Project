@@ -13,9 +13,6 @@ import ChangePasswordPage from './pages/ChangePasswordPage';
 import NotificationsPage from './pages/NotificationsPage';
 
 // Admin pages
-import AdminFeedbackPage from './pages/admin/AdminFeedbackPage';
-import AdminUsersPage from './pages/admin/AdminUsersPage';
-import AdminBackupPage from './pages/admin/AdminBackupPage';
 import AdminProvidersPage from './pages/admin/AdminProvidersPage';
 import AdminTransportPage from './pages/admin/AdminTransportPage';
 import AdminBookingsPage from './pages/admin/AdminBookingsPage';
@@ -26,6 +23,11 @@ import ServiceDetailPage from './pages/ServiceDetailPage';
 import SearchPage from './pages/SearchPage';
 import BookingPage from './pages/BookingPage';
 import MyBookingsPage from './pages/MyBookingsPage';
+
+// Destinations & Transportation
+import Destinations from './pages/Destinations';
+import DestinationDetail from './pages/DestinationDetail';
+import Transport from './pages/Transport';
 
 function App() {
     return (
@@ -89,12 +91,13 @@ function App() {
                     {/* Other team modules */}
                     <Route
                         path="/destinations"
-                        element={<PlaceholderPage title="Destinations" />}
+                        element={<Destinations />}
                     />
+
 
                     <Route
                         path="/destinations/:id"
-                        element={<PlaceholderPage title="Destination Details" />}
+                        element={<DestinationDetail />}
                     />
 
                     <Route
@@ -104,7 +107,7 @@ function App() {
 
                     <Route
                         path="/transport"
-                        element={<PlaceholderPage title="Transport" />}
+                        element={<Transport />}
                     />
 
                     <Route
