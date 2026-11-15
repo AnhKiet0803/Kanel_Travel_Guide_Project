@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using KanelTravelGuide_BE.Contracts;
 using KanelTravelGuide_BE.Data;
+using KanelTravelGuide_BE.Models;
+using KanelTravelGuide_BE.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +15,12 @@ namespace KanelTravelGuide_BE.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly DatabaseBackupService _backups;
 
-    public AdminController(AppDbContext db)
+    public AdminController(AppDbContext db, DatabaseBackupService backups)
     {
         _db = db;
+        _backups = backups;
     }
 
     [HttpGet("feedbacks")]
@@ -197,6 +201,111 @@ public class AdminController : ControllerBase
         user.IsActive = request.IsActive;
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    [HttpPost("backups")]
+    public async Task<IActionResult> Backup()
+    {
+        try
+        {
+            var fileName = await _backups.BackupAsync();
+            var createdAt = DateTime.UtcNow;
+            var description = $"Backup completed: {fileName}";
+            _db.SystemLogs.Add(new SystemLog
+            {
+                UserId = CurrentUserId(),
+                ActionType = "BACKUP",
+                ActionDescription = description,
+                CreatedAt = createdAt
+            });
+            await _db.SaveChangesAsync();
+            return Ok(new { createdAt, message = description });
+        }
+        catch (Exception exception)
+        {
+            _db.SystemLogs.Add(new SystemLog
+            {
+                UserId = CurrentUserId(),
+                ActionType = "BACKUP",
+                ActionDescription = $"Backup failed: {exception.Message}",
+                CreatedAt = DateTime.UtcNow
+            });
+            await _db.SaveChangesAsync();
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Database backup failed." });
+        }
+    }
+
+    [HttpGet("backups")]
+    public async Task<IActionResult> Backups(int? page, int? pageSize)
+    {
+        var (pageNumber, size) = NormalizePage(page, pageSize);
+        var query = _db.SystemLogs.AsNoTracking().Where(item => item.ActionType == "BACKUP");
+        var total = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(item => item.CreatedAt)
+            .Skip((pageNumber - 1) * size)
+            .Take(size)
+            .Select(item => new
+            {
+                item.LogId,
+                username = item.User != null ? item.User.Username : null,
+                item.ActionDescription,
+                item.CreatedAt
+            })
+            .ToListAsync();
+        return Ok(new { items, total });
+    }
+
+    [HttpPost("backups/restore")]
+    public async Task<IActionResult> Restore(RestoreBackupRequest request)
+    {
+        if (!BackupFileNames.IsSafe(request.FileName))
+        {
+            return BadRequest(new { message = "Backup file name is invalid." });
+        }
+
+        try
+        {
+            await _backups.RestoreAsync(request.FileName);
+            return Ok(new { message = $"Database restored from {request.FileName}." });
+        }
+        catch (FileNotFoundException)
+        {
+            return NotFound(new { message = "Backup file was not found." });
+        }
+        catch (Exception)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Database restore failed." });
+        }
+    }
+
+    [HttpGet("logs")]
+    public async Task<IActionResult> Logs(int? page, int? pageSize)
+    {
+        var (pageNumber, size) = NormalizePage(page, pageSize);
+        var query = _db.SystemLogs.AsNoTracking();
+        var total = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(item => item.CreatedAt)
+            .Skip((pageNumber - 1) * size)
+            .Take(size)
+            .Select(item => new
+            {
+                item.LogId,
+                item.UserId,
+                username = item.User != null ? item.User.Username : null,
+                item.ActionType,
+                item.ActionDescription,
+                item.CreatedAt
+            })
+            .ToListAsync();
+        return Ok(new { items, total });
+    }
+
+    private int? CurrentUserId()
+    {
+        var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(id, out var userId) ? userId : null;
     }
 
     private static (int Page, int Size) NormalizePage(int? page, int? pageSize)

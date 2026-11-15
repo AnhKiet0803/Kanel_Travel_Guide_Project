@@ -155,17 +155,18 @@ A wrong username or password returns `401`. A disabled account returns `403`.
 }
 ```
 
+Always returns `200` with a generic message when the address is unknown or the account is disabled. A registered active account receives a link to `{FrontendBaseUrl}/reset-password?token=...`. The link expires after 1 hour and works once. When `Email:Host` is empty, the message is stored in `EmailLogs` and the link is written to the API log instead of being sent.
+
 `POST /api/auth/reset-password`
 
 ```json
 {
-  "email": "user@karnel.local",
   "token": "token-from-email",
   "newPassword": "User@456"
 }
 ```
 
-These two APIs ship with email delivery, due 17/11.
+An invalid or expired token returns `400`. Success returns `204`.
 
 ### Profile
 
@@ -345,39 +346,66 @@ Returns `204`. `DELETE /api/admin/feedbacks/{id}` also returns `204`.
 
 ## Notifications, logs, and backup — Giap (code due 17/11)
 
-`GET /api/notifications`
+`GET /api/notifications?page=1&pageSize=10&type=BOOKING` requires a bearer token. `type` is `BOOKING`, `PROMOTION`, `SYSTEM`, or omitted.
 
 ```json
-[
-  {
-    "notificationId": 1,
-    "title": "Booking confirmed",
-    "message": "Booking BK20261108-001 has been confirmed.",
-    "notificationType": "BOOKING",
-    "referenceId": "BK20261108-001",
-    "isRead": false,
-    "createdAt": "2026-11-08T08:00:00"
-  }
-]
+{
+  "items": [
+    {
+      "notificationId": 1,
+      "title": "Booking confirmed",
+      "message": "Booking BK20261108-001 has been confirmed.",
+      "notificationType": "BOOKING",
+      "referenceId": "BK20261108-001",
+      "isRead": false,
+      "createdAt": "2026-11-08T08:00:00"
+    }
+  ],
+  "total": 1,
+  "unreadCount": 1
+}
 ```
 
-`PUT /api/notifications/{id}/read` returns `204`.
+`PUT /api/notifications/{id}/read` and `PUT /api/notifications/read-all` return `204`. A user can only change their own notifications.
 
-`GET /api/system/logs` (Admin)
+`GET /api/admin/logs?page=1&pageSize=10` (Admin)
 
 ```json
-[
-  {
-    "logId": 1,
-    "userId": 1,
-    "actionType": "INSERT",
-    "actionDescription": "Seeded sample data.",
-    "createdAt": "2026-11-08T08:00:00"
-  }
-]
+{
+  "items": [
+    {
+      "logId": 1,
+      "userId": 1,
+      "username": "admin",
+      "actionType": "INSERT",
+      "actionDescription": "Seeded sample data.",
+      "createdAt": "2026-11-08T08:00:00"
+    }
+  ],
+  "total": 1
+}
 ```
 
-`POST /api/system/backup` and `POST /api/system/restore` (Admin). Restore accepts a backup file. The file format will be fixed with CN24.
+`POST /api/admin/backups` (Admin) writes a SQL Server `.bak` file and a `SystemLogs` row with `actionType` `BACKUP`.
+
+```json
+{
+  "createdAt": "2026-11-15T06:00:00Z",
+  "message": "Backup completed: KarnelTravelGuide_20261115060000.bak"
+}
+```
+
+`GET /api/admin/backups?page=1&pageSize=10` returns `{ "items": [ { "logId", "username", "actionDescription", "createdAt" } ], "total" }`.
+
+`POST /api/admin/backups/restore` (Admin)
+
+```json
+{
+  "fileName": "KarnelTravelGuide_20261115060000.bak"
+}
+```
+
+Restore replaces the current database from a file in the backup folder. The file name must be a `.bak` name, not a path.
 
 ## Home, tourist spots, and categories — Kiet
 

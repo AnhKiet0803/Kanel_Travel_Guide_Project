@@ -15,11 +15,15 @@ public class AuthController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly JwtTokenService _tokens;
+    private readonly IEmailSender _email;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(AppDbContext db, JwtTokenService tokens)
+    public AuthController(AppDbContext db, JwtTokenService tokens, IEmailSender email, ILogger<AuthController> logger)
     {
         _db = db;
         _tokens = tokens;
+        _email = email;
+        _logger = logger;
     }
 
     [HttpPost("register")]
@@ -156,6 +160,96 @@ public class AuthController : ControllerBase
         }
 
         user.PasswordHash = PasswordHasher.Hash(request.NewPassword);
+        AddSystemNote(user, "UPDATE", "Changed the account password.");
+        AddSystemNotification(user, "Password changed", "Your password was changed.");
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request)
+    {
+        var email = request.Email.Trim();
+        var generic = new { message = "If this email is registered, we have sent instructions to reset your password." };
+        var user = await _db.Users.FirstOrDefaultAsync(item => item.Email == email && item.IsActive);
+        if (user is null)
+        {
+            return Ok(generic);
+        }
+
+        var token = PasswordResetTokens.Create();
+        var link = $"{_email.FrontendBaseUrl}/reset-password?token={Uri.EscapeDataString(token)}";
+        var body = $"Use this link within 1 hour to choose a new password:\n{link}\n\n{PasswordResetTokens.HashLine(token)}";
+        var status = "SENT";
+        string? error = null;
+        if (_email.IsConfigured)
+        {
+            try
+            {
+                await _email.SendAsync(user.Email, PasswordResetTokens.Subject, body);
+            }
+            catch (Exception exception)
+            {
+                status = "FAILED";
+                error = exception.Message;
+                _logger.LogWarning(exception, "Password reset email could not be sent.");
+            }
+        }
+        else
+        {
+            body += "\n\nDelivery: stored in EmailLogs because SMTP is not configured.";
+            _logger.LogInformation("Password reset link for {Email}: {Link}", user.Email, link);
+        }
+
+        _db.EmailLogs.Add(new EmailLog
+        {
+            UserId = user.UserId,
+            RecipientEmail = user.Email,
+            Subject = PasswordResetTokens.Subject,
+            BodyContent = body,
+            SendStatus = status,
+            ErrorMessage = error,
+            SentAt = status == "SENT" ? DateTime.UtcNow : null,
+            CreatedAt = DateTime.UtcNow
+        });
+        await _db.SaveChangesAsync();
+        if (status == "FAILED")
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "The reset email could not be sent. Please try again later." });
+        }
+
+        return Ok(generic);
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequest request)
+    {
+        var hashLine = PasswordResetTokens.HashLine(request.Token);
+        var earliest = DateTime.UtcNow.Subtract(PasswordResetTokens.Lifetime);
+        var matches = await _db.EmailLogs
+            .Where(item => item.Subject == PasswordResetTokens.Subject
+                && item.SendStatus == "SENT"
+                && item.ErrorMessage == null
+                && item.CreatedAt >= earliest
+                && item.UserId != null)
+            .OrderByDescending(item => item.CreatedAt)
+            .ToListAsync();
+        var match = matches.FirstOrDefault(item => item.BodyContent.Contains(hashLine, StringComparison.Ordinal));
+        if (match?.UserId is null)
+        {
+            return BadRequest(new { message = "This reset link is invalid or has expired." });
+        }
+
+        var user = await _db.Users.FirstOrDefaultAsync(item => item.UserId == match.UserId && item.IsActive);
+        if (user is null)
+        {
+            return BadRequest(new { message = "This reset link is invalid or has expired." });
+        }
+
+        user.PasswordHash = PasswordHasher.Hash(request.NewPassword);
+        match.ErrorMessage = "USED";
+        AddSystemNote(user, "UPDATE", "Reset the account password from an email link.");
+        AddSystemNotification(user, "Password reset", "Your password was reset.");
         await _db.SaveChangesAsync();
         return NoContent();
     }
@@ -189,6 +283,30 @@ public class AuthController : ControllerBase
         user.Email,
         user.Role
     };
+
+    private void AddSystemNote(User user, string actionType, string description)
+    {
+        _db.SystemLogs.Add(new SystemLog
+        {
+            UserId = user.UserId,
+            ActionType = actionType,
+            ActionDescription = description,
+            CreatedAt = DateTime.UtcNow
+        });
+    }
+
+    private void AddSystemNotification(User user, string title, string message)
+    {
+        _db.Notifications.Add(new Notification
+        {
+            UserId = user.UserId,
+            Title = title,
+            Message = message,
+            NotificationType = "SYSTEM",
+            IsRead = false,
+            CreatedAt = DateTime.UtcNow
+        });
+    }
 
     private static object ProfileBody(User user) => new
     {

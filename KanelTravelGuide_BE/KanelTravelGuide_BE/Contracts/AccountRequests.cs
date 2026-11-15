@@ -68,3 +68,37 @@ public class ActiveRequest
 {
     public bool IsActive { get; set; }
 }
+
+public class ForgotPasswordRequest
+{
+    [Required(ErrorMessage = "Email is required.")]
+    [EmailAddress(ErrorMessage = "Email format is invalid.")]
+    public string Email { get; set; } = string.Empty;
+}
+
+public class ResetPasswordRequest : IValidatableObject
+{
+    [Required(ErrorMessage = "Reset token is required.")]
+    public string Token { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Please enter your password.")]
+    public string NewPassword { get; set; } = string.Empty;
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (NewPassword.Length < 8)
+        {
+            yield return new ValidationResult("Password must be at least 8 characters.", [nameof(NewPassword)]);
+        }
+        else if (!NewPassword.Any(char.IsLetter) || !NewPassword.Any(char.IsDigit))
+        {
+            yield return new ValidationResult("Password must contain both letters and digits.", [nameof(NewPassword)]);
+        }
+    }
+}
+
+public class RestoreBackupRequest
+{
+    [Required(ErrorMessage = "Backup file name is required.")]
+    public string FileName { get; set; } = string.Empty;
+}
