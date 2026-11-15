@@ -27,6 +27,7 @@ export default function AuthProvider({ children }) {
 
   const signIn = useCallback(async (credentials) => {
     const signedIn = await login(credentials)
+    if (signedIn?.token) localStorage.setItem('token', signedIn.token)
     setUser(signedIn)
     return signedIn
   }, [])
@@ -35,6 +36,7 @@ export default function AuthProvider({ children }) {
     try {
       await logout()
     } finally {
+      localStorage.removeItem('token')
       setUser(null)
     }
   }, [])

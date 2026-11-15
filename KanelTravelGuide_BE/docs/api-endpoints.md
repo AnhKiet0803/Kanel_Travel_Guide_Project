@@ -136,7 +136,7 @@ A wrong username or password returns `401`. A disabled account returns `403`.
 
 ### Change password
 
-`POST /api/auth/change-password`
+`POST /api/auth/change-password` requires `Authorization: Bearer <token>`. A wrong current password returns `400`. Success returns `204`.
 
 ```json
 {
@@ -169,7 +169,7 @@ These two APIs ship with email delivery, due 17/11.
 
 ### Profile
 
-`GET /api/account/profile`
+`GET /api/auth/profile` requires `Authorization: Bearer <token>`.
 
 ```json
 {
@@ -185,7 +185,7 @@ These two APIs ship with email delivery, due 17/11.
 }
 ```
 
-`PUT /api/account/profile`
+`PUT /api/auth/profile`
 
 ```json
 {
@@ -198,30 +198,34 @@ These two APIs ship with email delivery, due 17/11.
 
 ### Account management (Admin)
 
-`GET /api/account/users`
-
-```json
-[
-  {
-    "userId": 2,
-    "username": "minhan",
-    "fullName": "Nguyen Minh An",
-    "email": "user@karnel.local",
-    "phone": "0901000002",
-    "role": "User",
-    "isActive": true
-  }
-]
-```
-
-`PUT /api/account/users/{id}`
+`GET /api/admin/users?page=1&pageSize=10&search=`
 
 ```json
 {
-  "role": "User",
+  "items": [
+    {
+      "userId": 2,
+      "username": "minhan",
+      "fullName": "Nguyen Minh An",
+      "email": "user@karnel.local",
+      "role": "User",
+      "isActive": true,
+      "createdAt": "2026-11-08T08:00:00"
+    }
+  ],
+  "total": 1
+}
+```
+
+`PUT /api/admin/users/{id}/active`
+
+```json
+{
   "isActive": false
 }
 ```
+
+An admin cannot lock their own account. That request returns `400`.
 
 ## Contacts and feedback — Giap (code due 11/11 and 15/11)
 
@@ -249,26 +253,39 @@ These two APIs ship with email delivery, due 17/11.
 
 ### Contact list (Admin)
 
-`GET /api/contacts`
+`GET /api/admin/contacts?page=1&pageSize=10&status=pending`
+
+`status` is `pending`, `responded`, or omitted for every contact.
 
 ```json
-[
-  {
-    "contactId": 1,
-    "fullName": "Tran Thu Ha",
-    "email": "ha.tran@example.com",
-    "phone": "0912000001",
-    "subject": "Hoi An tour question",
-    "message": "Please send me the weekend tour schedule.",
-    "isResponded": false,
-    "createdAt": "2026-11-08T08:00:00"
-  }
-]
+{
+  "items": [
+    {
+      "contactId": 1,
+      "fullName": "Tran Thu Ha",
+      "email": "ha.tran@example.com",
+      "phone": "0912000001",
+      "subject": "Hoi An tour question",
+      "message": "Please send me the weekend tour schedule.",
+      "isResponded": false,
+      "createdAt": "2026-11-08T08:00:00"
+    }
+  ],
+  "total": 1
+}
 ```
 
 ### Mark a contact as replied (Admin)
 
-`PUT /api/contacts/{id}/responded` sets `isResponded` to `true`. Returns `204`.
+`PUT /api/admin/contacts/{id}/responded`
+
+```json
+{
+  "isResponded": true
+}
+```
+
+Returns `204`. `DELETE /api/admin/contacts/{id}` also returns `204`.
 
 ### Send feedback
 
@@ -312,15 +329,19 @@ Only records with `isApproved = true` are returned.
 
 ### Feedback management (Admin)
 
-`GET /api/feedbacks/manage`
+`GET /api/admin/feedbacks?page=1&pageSize=10&status=pending`
 
-`PUT /api/feedbacks/{id}/approval`
+`status` is `pending`, `approved`, or omitted for every feedback. The response is `{ "items": [ ... ], "total": 1 }`.
+
+`PUT /api/admin/feedbacks/{id}/approval`
 
 ```json
 {
   "isApproved": true
 }
 ```
+
+Returns `204`. `DELETE /api/admin/feedbacks/{id}` also returns `204`.
 
 ## Notifications, logs, and backup — Giap (code due 17/11)
 

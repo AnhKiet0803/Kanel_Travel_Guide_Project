@@ -15,11 +15,16 @@ export class ApiError extends Error {
 
 export async function request(path, options = {}) {
   let response
+  const token = localStorage.getItem('token')
   try {
     response = await fetch(`${API_BASE}${path}`, {
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
       ...options,
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options.headers,
+      },
     })
   } catch {
     throw new ApiError('Cannot reach the server. Please try again later.', 0)

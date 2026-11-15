@@ -110,6 +110,56 @@ public class AuthController : ControllerBase
         return Ok(PublicUser(user));
     }
 
+    [Authorize]
+    [HttpGet("profile")]
+    public async Task<IActionResult> Profile()
+    {
+        var user = await CurrentUserAsync();
+        if (user is null || !user.IsActive)
+        {
+            return Unauthorized(new { message = "Sign in is required." });
+        }
+
+        return Ok(ProfileBody(user));
+    }
+
+    [Authorize]
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile(ProfileUpdateRequest request)
+    {
+        var user = await CurrentUserAsync();
+        if (user is null || !user.IsActive)
+        {
+            return Unauthorized(new { message = "Sign in is required." });
+        }
+
+        user.FullName = request.FullName.Trim();
+        user.Phone = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim();
+        user.Address = string.IsNullOrWhiteSpace(request.Address) ? null : request.Address.Trim();
+        await _db.SaveChangesAsync();
+        return Ok(ProfileBody(user));
+    }
+
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
+    {
+        var user = await CurrentUserAsync();
+        if (user is null || !user.IsActive)
+        {
+            return Unauthorized(new { message = "Sign in is required." });
+        }
+
+        if (!PasswordHasher.Verify(request.CurrentPassword, user.PasswordHash))
+        {
+            return BadRequest(new { message = "Current password is incorrect." });
+        }
+
+        user.PasswordHash = PasswordHasher.Hash(request.NewPassword);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     private async Task<User?> CurrentUserAsync()
     {
         var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -138,5 +188,17 @@ public class AuthController : ControllerBase
         user.FullName,
         user.Email,
         user.Role
+    };
+
+    private static object ProfileBody(User user) => new
+    {
+        user.UserId,
+        user.Username,
+        user.FullName,
+        user.Email,
+        user.Phone,
+        user.Address,
+        user.Role,
+        user.IsActive
     };
 }
