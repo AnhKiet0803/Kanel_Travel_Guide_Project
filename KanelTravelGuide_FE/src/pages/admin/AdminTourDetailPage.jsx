@@ -1,13 +1,51 @@
-import { useEffect,useState } from 'react';
-import { Link,useParams } from 'react-router-dom';
-import { getTour } from '../../data/adminToursStore';
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { money, tourService } from '../../services/tourService.js';
+import AdminTourDepartures from './AdminTourDepartures.jsx';
 import '../../styles/admin/AdminTours.css';
-const money=n=>`${Number(n||0).toLocaleString('vi-VN')} ₫`;
-const dateOf=v=>v?String(v).slice(0,10).split('-').reverse().join('/'):'—';
-export default function AdminTourDetailPage(){const {id}=useParams();const [item,setItem]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState('');useEffect(()=>{let alive=true;getTour(id).then(t=>{if(alive)setItem(t);}).catch(e=>{if(alive)setError(e.message);}).finally(()=>{if(alive)setLoading(false);});return()=>{alive=false;};},[id]);if(loading)return <main className="at-page"><p>Loading tour...</p></main>;if(error||!item)return <main className="at-page"><p className="at-error">{error||'Tour not found.'}</p><Link to="/admin/tours">Back to tours</Link></main>;
- return <main className="at-page at-modern at-detail-modern"><header className="at-head"><div><Link className="at-back" to="/admin/tours"><i className="bi bi-arrow-left"/> Back to tours</Link><h1>Tour details</h1><p>Tour information, schedules and travel policies.</p></div><Link className="at-primary" to={`/admin/tours/${id}/edit`}><i className="bi bi-pencil-square"/> Edit tour</Link></header>
- <section className="at-detail-hero"><div className="at-detail-hero-main">{item.ImageUrl?<img className="at-hero-image" src={item.ImageUrl} alt={item.TourName}/>:<div className="at-detail-symbol"><i className="bi bi-map"/></div>}<div><span className="at-kicker">TRAVEL PACKAGE</span><h2>{item.TourName}</h2><div className="at-detail-hero-meta"><code>{item.TourCode}</code><span className={`at-status at-${item.IsActive?'active':'inactive'}`}>{item.IsActive?'Active':'Inactive'}</span></div><p>{item.Description}</p></div></div><div className="at-detail-price"><small>TOUR PRICE</small><strong>{money(item.Price)}</strong><span>{item.DurationDays} days / {item.DurationNights} nights</span></div></section>
- <div className="at-detail-grid"><section className="at-panel at-info-card"><div className="at-section-title"><span><i className="bi bi-geo-alt"/></span><div><h3>Travel information</h3><p>Location and tour services</p></div></div>{[['Destination',item.Destination],['Departure location',item.DepartureLocation],['Duration',`${item.DurationDays} days / ${item.DurationNights} nights`],['Transport',item.Transport],['Meals',item.Meals],['Original price',money(item.OriginalPrice)]].map(([label,value])=><div className="at-info-row" key={label}><span>{label}</span><strong>{value||'—'}</strong></div>)}</section>
- <section className="at-panel at-info-card"><div className="at-section-title"><span><i className="bi bi-calendar-range"/></span><div><h3>Departure schedules</h3><p>{(item.Departures||[]).length} scheduled departure(s)</p></div></div>{item.Departures?.length?<div className="at-linked-tours">{item.Departures.map((d,i)=><div key={i}><i className="bi bi-calendar-check"/><span>{dateOf(d.Date)} · {d.Seats} seats</span><strong>{money(d.Price)}</strong></div>)}</div>:<div className="at-no-tours">No departures scheduled.</div>}</section></div>
- <div className="at-detail-grid at-lower"><section className="at-panel at-info-card"><div className="at-section-title"><span><i className="bi bi-signpost-split"/></span><div><h3>Daily itinerary</h3><p>Day-by-day travel plan</p></div></div>{item.Itinerary?.length?item.Itinerary.map((d,i)=><div className="at-itinerary-detail" key={i}><b>Day {i+1}: {d.Title}</b><p>{d.Description||'No description.'}</p></div>):<div className="at-no-tours">No itinerary yet.</div>}</section><section className="at-panel at-info-card"><div className="at-section-title"><span><i className="bi bi-info-circle"/></span><div><h3>Highlights & policies</h3><p>Additional tour information</p></div></div>{[['Highlights',item.Highlights],['Included',item.Included],['Excluded',item.Excluded],['Child policy',item.ChildPolicy],['Payment policy',item.PaymentPolicy],['Cancellation policy',item.CancellationPolicy]].map(([label,value])=><div className="at-policy" key={label}><b>{label}</b><p>{value||'Not specified.'}</p></div>)}</section></div><p className="at-detail-footnote">Demo tour management uses localStorage. Backend integration will be added when APIs are available.</p></main>;
+
+export default function AdminTourDetailPage() {
+    const { id } = useParams();
+    return <TourRecord key={id} id={id} />;
+}
+
+function TourRecord({ id }) {
+    const [result, setResult] = useState(null);
+
+    useEffect(() => {
+        let active = true;
+        tourService.get(id)
+            .then((tour) => { if (active) setResult({ tour }); })
+            .catch((error) => { if (active) setResult({ error: error.message }); });
+        return () => { active = false; };
+    }, [id]);
+
+    const tour = result?.tour;
+    return (
+        <main className="at-page">
+            <Link className="at-back" to="/admin/tours">← Back to tours</Link>
+            {!result && <p role="status">Loading tour…</p>}
+            {result?.error && <p className="at-error" role="alert">{result.error}</p>}
+            {tour && <>
+                <header className="at-head">
+                    <h1>{tour.title}</h1>
+                    <div className="at-actions">
+                        <Link to={`/tours/${id}`}>View on website</Link>
+                        <Link to={`/admin/tours/${id}/edit`}>Edit tour</Link>
+                    </div>
+                </header>
+                <section className="at-panel at-info-card">
+                    <dl>
+                        <div className="at-info-row"><dt>Destination</dt><dd>{tour.destination || '—'}</dd></div>
+                        <div className="at-info-row"><dt>Duration</dt><dd>{tour.duration}</dd></div>
+                        <div className="at-info-row"><dt>Standard price</dt><dd>{money(tour.standardPrice)}</dd></div>
+                        <div className="at-info-row"><dt>Sale price</dt><dd>{tour.salePrice == null ? '—' : money(tour.salePrice)}</dd></div>
+                        <div className="at-info-row"><dt>Featured</dt><dd>{tour.isFeatured ? 'Yes' : 'No'}</dd></div>
+                    </dl>
+                    <div className="at-itinerary-detail"><h2>Itinerary</h2><p>{tour.itineraryDetail || 'No itinerary yet.'}</p></div>
+                </section>
+                <AdminTourDepartures tourId={tour.id} defaultPrice={tour.price} />
+            </>}
+        </main>
+    );
 }

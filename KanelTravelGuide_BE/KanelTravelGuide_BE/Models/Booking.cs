@@ -3,6 +3,8 @@ namespace KanelTravelGuide_BE.Models;
 public class Booking
 {
     public int BookingId { get; set; }
+    public int? TourDepartureId { get; set; }
+    public TourDeparture? TourDeparture { get; set; }
     public string BookingCode { get; set; } = string.Empty;
     public int? UserId { get; set; }
     public User? User { get; set; }
@@ -17,6 +19,9 @@ public class Booking
     public int TotalPassengers { get; set; }
     public decimal DiscountAmount { get; set; } = 0;
     public decimal TotalAmount { get; set; }
+    public string? PayPalOrderId { get; set; }
+    public decimal? PayPalAmountUsd { get; set; }
+    public string? PaymentMethod { get; set; }
     public string PaymentStatus { get; set; } = "Unpaid";
     public string BookingStatus { get; set; } = "Pending";
     public string? Notes { get; set; }

@@ -19,6 +19,12 @@ public class BookingDetailRequest
 
 public class BookingRequest
 {
+    public int? TourDepartureId { get; set; }
+    public int? AdultCount { get; set; }
+
+    [MaxLength(1000)]
+    public List<int>? ChildAges { get; set; }
+
     [Required, StringLength(100)]
     public string CustomerName { get; set; } = string.Empty;
 
@@ -36,6 +42,9 @@ public class BookingRequest
 
     [Range(1, 1000)]
     public int TotalPassengers { get; set; } = 1;
+
+    [RegularExpression("^(BankTransfer|PayAfterConfirmation|PayPalSandbox)$", ErrorMessage = "Invalid payment method.")]
+    public string? PaymentMethod { get; set; }
 
     public string? PromoCode { get; set; }
 

@@ -779,3 +779,57 @@
         min-height: 0
     }
 }
+
+.kt-tour-copy {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.ktd-booking label {
+    display: grid;
+    gap: 6px;
+    margin-block: 12px;
+}
+
+.ktd-booking input,
+.ktd-booking textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #cbdce5;
+    border-radius: 7px;
+    font: inherit;
+}
+
+.ktd-booking :is(input, textarea):focus-visible {
+    outline: 2px solid #00827b;
+    outline-offset: 1px;
+}
+
+.ktd-primary:disabled {
+    opacity: .65;
+    cursor: wait;
+}
+
+.kt-tour-review {
+    margin-block: 12px;
+}
+
+.kt-tour-review-form {
+    position: static;
+    max-width: 620px;
+    margin-top: 20px;
+}
+
+.kt-tour-review-form summary {
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.kt-tour-review-form select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #cbdce5;
+    border-radius: 7px;
+    background: #fff;
+    font: inherit;
+}

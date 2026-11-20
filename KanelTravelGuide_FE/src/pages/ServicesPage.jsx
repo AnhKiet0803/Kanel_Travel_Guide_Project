@@ -3,11 +3,25 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { getServices, getLocations } from '../api/servicesApi.js'
+import { fallbackServiceImage, serviceIllustration } from '../components/home/HomeData.js'
 import '../styles/services.css'
 import './pages.css'
 
 export default function ServicesPage({ defaultType = '' }) {
   const location = useLocation()
+  return <ServicesDirectory key={location.pathname + location.search} defaultType={defaultType} location={location} />
+}
+
+function ServicesDirectory({ defaultType, location }) {
+  const initialFilters = new URLSearchParams(location.search)
+  const [stayDate, setStayDate] = useState(initialFilters.get('date') || '')
+  const [guests, setGuests] = useState(initialFilters.get('guests') || '')
+  const detailLink = (id) => {
+    const params = new URLSearchParams()
+    if (stayDate) params.set('date', stayDate)
+    if (guests) params.set('guests', guests)
+    return '/services/' + id + (params.size ? '?' + params : '')
+  }
 
   // Determine active category from defaultType or current path
   const currentPath = location.pathname.toLowerCase()
@@ -20,11 +34,11 @@ export default function ServicesPage({ defaultType = '' }) {
 
   const [activeType, setActiveType] = useState(initialType)
   const [locationsList, setLocationsList] = useState([])
-  const [selectedLocation, setSelectedLocation] = useState('')
+  const [selectedLocation, setSelectedLocation] = useState(initialFilters.get('locationId') || '')
   const [starRating, setStarRating] = useState('')
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
-  const [searchKeyword, setSearchKeyword] = useState('')
+  const [searchKeyword, setSearchKeyword] = useState(initialFilters.get('search') || '')
   const [sortBy, setSortBy] = useState('recommended')
 
   const [services, setServices] = useState([])
@@ -43,7 +57,7 @@ export default function ServicesPage({ defaultType = '' }) {
 
   useEffect(() => {
     loadServices()
-  }, [activeType, selectedLocation, starRating, sortBy])
+  }, [activeType, selectedLocation, starRating, sortBy, stayDate, guests])
 
   async function loadServices() {
     setLoading(true)
@@ -56,6 +70,8 @@ export default function ServicesPage({ defaultType = '' }) {
       if (minPrice) params.minPrice = minPrice
       if (maxPrice) params.maxPrice = maxPrice
       if (searchKeyword.trim()) params.q = searchKeyword.trim()
+      if (stayDate && activeType !== 'Restaurant') params.date = stayDate
+      if (guests && activeType !== 'Restaurant') params.guests = guests
 
       const data = await getServices(params)
       let list = Array.isArray(data) ? data : []
@@ -83,6 +99,8 @@ export default function ServicesPage({ defaultType = '' }) {
   }
 
   function handleResetFilters() {
+    setStayDate('')
+    setGuests('')
     setSelectedLocation('')
     setStarRating('')
     setMinPrice('')
@@ -228,7 +246,7 @@ export default function ServicesPage({ defaultType = '' }) {
                 <button type="submit" className="ktg-btn-navy flex-grow-1 justify-content-center">
                   <i className="bi bi-funnel-fill"></i> Filter
                 </button>
-                {(selectedLocation || starRating || maxPrice || searchKeyword) && (
+                {(selectedLocation || starRating || maxPrice || searchKeyword || stayDate || guests) && (
                   <button
                     type="button"
                     className="btn btn-outline-secondary"
@@ -250,7 +268,7 @@ export default function ServicesPage({ defaultType = '' }) {
               Found {services.length} {activeType ? `${activeType.toLowerCase()}s` : 'places'}
             </h5>
             <span className="text-muted small">
-              Real-time prices in VND • Complimentary breakfast & cancellation options available
+              Prices in VND{stayDate ? ' · Check-in ' + stayDate : ''}{guests ? ' · ' + guests + ' guest(s)' : ''}
             </span>
           </div>
 
@@ -312,29 +330,20 @@ export default function ServicesPage({ defaultType = '' }) {
                   <div className="ktg-card-media">
                     <img
                       src={
-                        item.imageUrl ||
-                        'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80'
+                        item.imageUrl || serviceIllustration(item.serviceType)
                       }
                       alt={item.providerName}
                       loading="lazy"
-                      onError={(e) => {
-                        e.target.src =
-                          'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80'
-                      }}
+                      onError={event => fallbackServiceImage(event, item.serviceType)}
                     />
                     <span className="ktg-badge-type">{item.serviceType}</span>
-                    <span className="ktg-badge-rating">
-                      <i className="bi bi-star-fill"></i>
-                      <span>{item.reviewScore || 9.2}</span>
-                      <small className="text-muted fw-normal">({item.reviewCount || 120})</small>
-                    </span>
                   </div>
 
                   {/* Card Body */}
                   <div className="ktg-card-body">
                     <div className="d-flex justify-content-between align-items-center mb-1">
                       <div className="ktg-stars">
-                        {Array.from({ length: item.starRating || 5 }).map((_, i) => (
+                        {Array.from({ length: item.starRating || 0 }).map((_, i) => (
                           <i key={i} className="bi bi-star-fill"></i>
                         ))}
                       </div>
@@ -344,23 +353,12 @@ export default function ServicesPage({ defaultType = '' }) {
                     </div>
 
                     <h3 className="ktg-card-title">
-                      <Link to={`/services/${item.providerId}`}>{item.providerName}</Link>
+                      <Link to={detailLink(item.providerId)}>{item.providerName}</Link>
                     </h3>
 
                     <div className="ktg-location-text">
                       <i className="bi bi-geo-alt-fill text-danger flex-shrink-0"></i>
                       <span className="text-truncate">{item.address}</span>
-                    </div>
-
-                    {/* Amenities Tags */}
-                    <div className="ktg-tag-list">
-                      {(item.amenities || ['Free Wi-Fi', 'Breakfast Included', 'Swimming Pool'])
-                        .slice(0, 3)
-                        .map((am, idx) => (
-                          <span key={idx} className="ktg-tag">
-                            <i className="bi bi-check2 text-success"></i> {am}
-                          </span>
-                        ))}
                     </div>
 
                     {/* Price and CTA */}
@@ -371,11 +369,11 @@ export default function ServicesPage({ defaultType = '' }) {
                           {formatPrice(item.minPrice)}
                         </div>
                         <small className="text-muted" style={{ fontSize: '0.72rem' }}>
-                          taxes & fees included
+                          See rates by option
                         </small>
                       </div>
 
-                      <Link to={`/services/${item.providerId}`} className="ktg-btn-navy">
+                      <Link to={detailLink(item.providerId)} className="ktg-btn-navy">
                         Explore <i className="bi bi-arrow-right"></i>
                       </Link>
                     </div>

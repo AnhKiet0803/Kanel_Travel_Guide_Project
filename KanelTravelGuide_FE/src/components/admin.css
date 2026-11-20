@@ -324,3 +324,59 @@
     width: 100%;
   }
 }
+
+/* Match the typography used by the Tours and Offers admin pages. */
+.ktg-stay-dining {
+  color: #173b55;
+  font-family: Inter, 'Segoe UI', sans-serif;
+}
+
+.ktg-admin-content .ktg-stay-dining h1,
+.ktg-stay-dining .modal-title {
+  color: var(--color-primary, #123b5d);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+}
+
+.ktg-admin-content .ktg-stay-dining h1 {
+  font-size: clamp(1.75rem, 3vw, 2.375rem);
+}
+
+.ktg-stay-dining .table {
+  --bs-table-color: #173b55;
+  --bs-table-border-color: #edf1f4;
+  font-size: .875rem;
+}
+
+.ktg-stay-dining .table-light {
+  --bs-table-bg: #f6fafb;
+  --bs-table-color: #51697d;
+  font-size: .75rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.ktg-stay-dining .modal-title { font-size: 1.25rem; }
+
+.ktg-stay-dining .form-label {
+  color: #173b55;
+  font-size: .875rem;
+}
+
+.ktg-stay-dining .form-control,
+.ktg-stay-dining .form-select {
+  border-color: #dce7ed;
+  color: #173b55;
+  font-family: inherit;
+  font-size: .875rem;
+}
+
+.ktg-stay-dining .btn-primary {
+  --bs-btn-bg: #087d7b;
+  --bs-btn-border-color: #087d7b;
+  --bs-btn-hover-bg: #066965;
+  --bs-btn-hover-border-color: #066965;
+  --bs-btn-active-bg: #055b58;
+  --bs-btn-active-border-color: #055b58;
+  --bs-btn-focus-shadow-rgb: 8, 125, 123;
+}

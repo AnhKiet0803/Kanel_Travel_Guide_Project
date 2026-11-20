@@ -1,10 +1,10 @@
 // Account API: register, sign in, sign out, current user (CN17 and User accounts).
 // Assumptions about the backend (to be confirmed with Giáp):
 //   POST /auth/register  { username, password, fullName, email, phone?, address? }
-//   POST /auth/login     { username, password }  -> { userId, username, fullName, email, role }  (sets the cookie)
+//   POST /auth/login     { username, password }  -> { userId, username, fullName, email, role } and token
 //   POST /auth/logout
 //   GET  /auth/me        -> same shape as login; 401 if not signed in
-import { ApiError, request } from './http.js'
+import { ApiError, request, setAccessToken } from './http.js'
 
 export function register({ username, password, fullName, email, phone, address }) {
   return request('/auth/register', {
@@ -22,10 +22,12 @@ export function register({ username, password, fullName, email, phone, address }
 
 export async function login({ username, password }) {
   try {
-    return await request('/auth/login', {
+    const { token, ...user } = await request('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ username: username.trim(), password }),
     })
+    setAccessToken(token)
+    return user
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
       throw new ApiError('Incorrect username or password.', 401)
@@ -34,8 +36,12 @@ export async function login({ username, password }) {
   }
 }
 
-export function logout() {
-  return request('/auth/logout', { method: 'POST' })
+export async function logout() {
+  try {
+    await request('/auth/logout', { method: 'POST' })
+  } finally {
+    setAccessToken(null)
+  }
 }
 
 // Profile and password (assumptions, to be confirmed with Giáp):

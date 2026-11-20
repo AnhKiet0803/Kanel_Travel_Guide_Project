@@ -571,6 +571,8 @@ export default function AdminTransportPage() {
                           <option value="Limousine">Limousine</option>
                           <option value="Tourist Coach">Tourist Coach</option>
                           <option value="Minivan">Minivan</option>
+                          <option value="Flight">Flight</option>
+                          <option value="Train">Train</option>
                         </select>
                       </div>
                       <div className="col-md-6">

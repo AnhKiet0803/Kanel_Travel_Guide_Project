@@ -19,6 +19,7 @@ import AdminBackupPage from './pages/admin/AdminBackupPage';
 import AdminProvidersPage from './pages/admin/AdminProvidersPage';
 import AdminTransportPage from './pages/admin/AdminTransportPage';
 import AdminBookingsPage from './pages/admin/AdminBookingsPage';
+import AdminOverviewPage from './pages/admin/AdminOverviewPage';
 import AdminTouristSpotsPage from './pages/admin/AdminTouristSpotsPage';
 import AdminTouristSpotFormPage from './pages/admin/AdminTouristSpotFormPage'
 import AdminTouristSpotDetailPage from './pages/admin/AdminTouristSpotDetailPage'
@@ -35,6 +36,8 @@ import ServicesPage from './pages/ServicesPage';
 import ServiceDetailPage from './pages/ServiceDetailPage';
 import SearchPage from './pages/SearchPage';
 import BookingPage from './pages/BookingPage';
+import TourBookingPage from './pages/user/TourBookingPage.jsx';
+import TourPaymentReturnPage from './pages/user/TourPaymentReturnPage.jsx';
 import MyBookingsPage from './pages/MyBookingsPage';
 
 // Destinations & Transportation
@@ -95,8 +98,9 @@ function App() {
                     />
                     <Route
                         path="/tours/booking"
-                        element={<BookingPage />}
+                        element={<TourBookingPage />}
                     />
+                    <Route path="/tours/payment-return" element={<TourPaymentReturnPage />} />
                     <Route
                         path="/transport/booking"
                         element={<BookingPage />}
@@ -157,6 +161,7 @@ function App() {
                 </Route>
 
                 {/* Admin Area */}
+                <Route path="/admin" element={<AdminPage><AdminOverviewPage /></AdminPage>} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin/feedbacks" element={<AdminPage><AdminFeedbackPage /></AdminPage>} />
                 <Route path="/admin/users" element={<AdminPage><AdminUsersPage /></AdminPage>} />

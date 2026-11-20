@@ -31,6 +31,13 @@ export const updateVehicle = (id, data) =>
 export const deleteVehicle = (id) =>
   request(`/vehicles/${id}`, { method: 'DELETE' })
 
+export function transportModeFor(vehicleType) {
+  const type = (vehicleType ?? '').toLowerCase()
+  if (/flight|plane|aircraft/.test(type)) return 'flight'
+  if (/train|rail/.test(type)) return 'train'
+  return 'bus'
+}
+
 // Schedules
 export const getSchedules = (params) => request(withQuery('/schedules', params))
 export const getScheduleById = (id) => request(`/schedules/${id}`)

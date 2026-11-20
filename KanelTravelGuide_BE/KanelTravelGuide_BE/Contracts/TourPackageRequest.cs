@@ -22,5 +22,29 @@ public class TourPackageRequest
 
     public string? ItineraryDetail { get; set; }
 
+    [StringLength(255)]
+    public string? MeetingPoint { get; set; }
+
+    [StringLength(255)]
+    public string? EndPoint { get; set; }
+
+    [StringLength(2000)]
+    public string? TransportDescription { get; set; }
+
+    [StringLength(2000)]
+    public string? AccommodationDescription { get; set; }
+
+    [StringLength(2000)]
+    public string? GuideDescription { get; set; }
+
+    [StringLength(2000)]
+    public string? MealsDescription { get; set; }
+
+    [StringLength(4000)]
+    public string? IncludedServices { get; set; }
+
+    [StringLength(4000)]
+    public string? ExcludedServices { get; set; }
+
     public bool IsFeatured { get; set; }
 }

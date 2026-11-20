@@ -1,6 +1,7 @@
 using KanelTravelGuide_BE.Contracts;
 using KanelTravelGuide_BE.Data;
 using KanelTravelGuide_BE.Models;
+using KanelTravelGuide_BE.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -26,7 +27,9 @@ public class ServicesController : ControllerBase
         [FromQuery] int? starRating,
         [FromQuery] decimal? minPrice,
         [FromQuery] decimal? maxPrice,
-        [FromQuery] string? q)
+        [FromQuery] string? q,
+        [FromQuery] DateOnly? date,
+        [FromQuery] int? guests)
     {
         var query = _db.ServiceProviders
             .AsNoTracking()
@@ -61,7 +64,22 @@ public class ServicesController : ControllerBase
         if (!string.IsNullOrWhiteSpace(q))
         {
             var keyword = q.Trim().ToLower();
-            query = query.Where(p => p.ProviderName.ToLower().Contains(keyword) || (p.Description != null && p.Description.ToLower().Contains(keyword)));
+            query = query.Where(p => p.ProviderName.ToLower().Contains(keyword) || (p.Description != null && p.Description.ToLower().Contains(keyword))
+                || p.Location.LocationName.ToLower().Contains(keyword)
+                || (p.Location.Description != null && p.Location.Description.ToLower().Contains(keyword)));
+        }
+
+        if (date.HasValue || guests.HasValue)
+        {
+            var today = TourPricing.Today;
+            var minimumGuests = guests.GetValueOrDefault();
+            var requestedDate = date.GetValueOrDefault();
+            query = query.Where(p => (!date.HasValue || requestedDate >= today) && p.Items.Any(i =>
+                i.IsAvailable && (minimumGuests <= 0 || i.Capacity >= minimumGuests)
+                && i.TotalQuantity > (date.HasValue ? _db.BookingDetails.Where(d =>
+                    d.ServiceItemId == i.ItemId && d.Booking.StartDate == date
+                    && d.Booking.BookingStatus != "Cancelled" && d.Booking.BookingStatus != "Hủy")
+                    .Sum(d => d.Quantity) : 0)));
         }
 
         var items = await query
@@ -87,11 +105,11 @@ public class ServicesController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById(int id, [FromQuery] DateOnly? date)
     {
         var provider = await _db.ServiceProviders
             .AsNoTracking()
-            .Where(p => p.ProviderId == id)
+            .Where(p => p.ProviderId == id && (p.IsActive || User.IsInRole("Admin")))
             .Select(p => new
             {
                 p.ProviderId,
@@ -115,6 +133,10 @@ public class ServicesController : ControllerBase
                     i.Capacity,
                     i.Price,
                     i.TotalQuantity,
+                    remainingQuantity = i.TotalQuantity - (date.HasValue ? _db.BookingDetails.Where(d =>
+                        d.ServiceItemId == i.ItemId && d.Booking.StartDate == date
+                        && d.Booking.BookingStatus != "Cancelled" && d.Booking.BookingStatus != "Hủy")
+                        .Sum(d => d.Quantity) : 0),
                     i.IsAvailable
                 }).ToList()
             })

@@ -23,4 +23,6 @@ public class PromotionRequest
     public DateTime EndDate { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    public List<int>? TourIds { get; set; }
 }

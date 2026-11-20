@@ -1,84 +1,9 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { deleteSpot, listCategories, listLocations, listSpots } from '../../api/touristSpotsApi.js'
 import '../../components/admin.css'
 import '../../styles/admin/AdminTouristSpots.css'
-
-const SPOTS_KEY = 'karnel-admin-tourist-spots-demo'
-const LOCATIONS_KEY = 'karnel-admin-locations-demo'
-const CATEGORIES_KEY = 'karnel-admin-categories-demo'
-
-const DEFAULT_LOCATIONS = [
-    { LocationId: 1, LocationName: 'Ha Long Bay', Region: 'Northern Vietnam' },
-    { LocationId: 2, LocationName: 'Hoi An', Region: 'Central Vietnam' },
-    { LocationId: 3, LocationName: 'Bali', Region: 'Indonesia' },
-]
-
-const DEFAULT_CATEGORIES = [
-    { CategoryId: 1, CategoryName: 'Nature' },
-    { CategoryId: 2, CategoryName: 'Culture & Heritage' },
-    { CategoryId: 3, CategoryName: 'Beaches & Islands' },
-    { CategoryId: 4, CategoryName: 'Historical Sites' },
-]
-
-const DEFAULT_SPOTS = [
-    {
-        SpotId: 1,
-        SpotName: 'Ha Long Bay',
-        LocationId: 1,
-        CategoryId: 1,
-        ThumbnailUrl: '',
-        Description: 'Limestone islands and emerald waters.',
-        DetailedContent: '',
-        IsFeatured: true,
-        CreatedAt: '2026-11-12T09:00:00',
-    },
-    {
-        SpotId: 2,
-        SpotName: 'Hoi An Ancient Town',
-        LocationId: 2,
-        CategoryId: 2,
-        ThumbnailUrl: '',
-        Description: 'Historic streets and traditional architecture.',
-        DetailedContent: '',
-        IsFeatured: true,
-        CreatedAt: '2026-11-10T14:30:00',
-    },
-    {
-        SpotId: 3,
-        SpotName: 'Bali',
-        LocationId: 3,
-        CategoryId: 3,
-        ThumbnailUrl: '',
-        Description: 'Beautiful beaches and tropical landscapes.',
-        DetailedContent: '',
-        IsFeatured: false,
-        CreatedAt: '2026-11-08T10:15:00',
-    },
-]
-
-function readStorage(key, fallback) {
-    try {
-        const value = localStorage.getItem(key)
-        if (value !== null) {
-            const parsed = JSON.parse(value)
-            if (Array.isArray(parsed)) return parsed
-        }
-    } catch (error) {
-        console.error('Cannot read demo data:', error)
-    }
-
-    return fallback
-}
-
-function saveStorage(key, data) {
-    try {
-        localStorage.setItem(key, JSON.stringify(data))
-    } catch (error) {
-        console.error('Cannot save demo data:', error)
-        throw new Error('Unable to save demo data in this browser.')
-    }
-}
 
 function getCreatedAt(spot) {
     return spot.CreatedAt ?? spot.createdAt ?? null
@@ -106,13 +31,6 @@ function formatDate(value) {
         minute: '2-digit',
         hour12: false,
     }).format(date)
-}
-
-function getLocalDateString(date) {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
 }
 
 function matchesDateFilter(spot, filter, startDate, endDate) {
@@ -158,15 +76,11 @@ function matchesDateFilter(spot, filter, startDate, endDate) {
 export default function AdminTouristSpotsPage() {
     const navigate = useNavigate()
 
-    const [spots, setSpots] = useState(() =>
-        readStorage(SPOTS_KEY, DEFAULT_SPOTS)
-    )
-    const [locations, setLocations] = useState(() =>
-        readStorage(LOCATIONS_KEY, DEFAULT_LOCATIONS)
-    )
-    const [categories, setCategories] = useState(() =>
-        readStorage(CATEGORIES_KEY, DEFAULT_CATEGORIES)
-    )
+    const [spots, setSpots] = useState([])
+    const [locations, setLocations] = useState([])
+    const [categories, setCategories] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [deleting, setDeleting] = useState(false)
 
     const [search, setSearch] = useState('')
     const [locationFilter, setLocationFilter] = useState('all')
@@ -179,11 +93,18 @@ export default function AdminTouristSpotsPage() {
     const [pageSize, setPageSize] = useState(10)
     const [error, setError] = useState('')
 
-    // Reload local demo data when returning from Add/Edit pages.
     useEffect(() => {
-        setSpots(readStorage(SPOTS_KEY, DEFAULT_SPOTS))
-        setLocations(readStorage(LOCATIONS_KEY, DEFAULT_LOCATIONS))
-        setCategories(readStorage(CATEGORIES_KEY, DEFAULT_CATEGORIES))
+        let active = true
+        Promise.all([listSpots(), listLocations(), listCategories()])
+            .then(([records, places, types]) => {
+                if (!active) return
+                setSpots(records)
+                setLocations(places)
+                setCategories(types)
+            })
+            .catch((err) => { if (active) setError(err.message) })
+            .finally(() => { if (active) setLoading(false) })
+        return () => { active = false }
     }, [])
 
     const locationMap = useMemo(
@@ -312,28 +233,29 @@ export default function AdminTouristSpotsPage() {
         setPage(1)
     }
 
-    function handleDelete(spot) {
+    async function handleDelete(spot) {
         if (
-            !window.confirm(
+            deleting || !window.confirm(
                 `Are you sure you want to delete "${spot.SpotName}"?`
             )
         ) {
             return
         }
 
+        setDeleting(true)
         try {
-            const updated = spots.filter(
-                (item) => Number(item.SpotId) !== Number(spot.SpotId)
-            )
-
-            saveStorage(SPOTS_KEY, updated)
-            setSpots(updated)
+            await deleteSpot(spot.SpotId)
+            setSpots((items) => items.filter((item) => item.SpotId !== spot.SpotId))
             setError('')
             setPage(1)
         } catch (err) {
             setError(err.message)
+        } finally {
+            setDeleting(false)
         }
     }
+
+    if (loading) return <p role="status">Loading tourist spots…</p>
 
     return (
         <div className="ats-page">
@@ -626,6 +548,7 @@ export default function AdminTouristSpotsPage() {
                                             <button
                                                 type="button"
                                                 className="ats-action ats-delete"
+                                                disabled={deleting}
                                                 onClick={() => handleDelete(spot)}
                                             >
                                                 Delete

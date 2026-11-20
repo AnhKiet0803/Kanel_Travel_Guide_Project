@@ -40,3 +40,7 @@ export const listBackups = (params) => request(withQuery('/admin/backups', param
 
 export const listUsers = (params) => request(withQuery('/admin/users', params))
 export const setUserActive = (id, isActive) => put(`/admin/users/${id}/active`, { isActive })
+
+export const createUser = (account) => request('/admin/users', { method: 'POST', body: JSON.stringify(account) })
+export const updateUser = (id, account) => put(`/admin/users/${id}`, account)
+export const deleteUser = (id) => request(`/admin/users/${id}`, { method: 'DELETE' })

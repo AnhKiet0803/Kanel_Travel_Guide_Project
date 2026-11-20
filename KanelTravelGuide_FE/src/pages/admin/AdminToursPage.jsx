@@ -1,25 +1,189 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { deleteTour, listTours } from '../../data/adminToursStore';
+import { listTourPromotions, money, tourService } from '../../services/tourService.js';
 import '../../styles/admin/AdminTours.css';
-const PAGE_SIZES=[5,10,20];
-const money=n=>`${Number(n||0).toLocaleString('vi-VN')} ₫`;
-export default function AdminToursPage(){
- const [items,setItems]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
- const [query,setQuery]=useState(''),[status,setStatus]=useState('all'),[destination,setDestination]=useState('all'),[sort,setSort]=useState('newest'),[minPrice,setMinPrice]=useState(''),[maxPrice,setMaxPrice]=useState(''),[pageSize,setPageSize]=useState(10),[page,setPage]=useState(1);
- async function load(){try{setLoading(true);setError('');setItems(await listTours());}catch(e){setError(e.message||'Could not load tours.');}finally{setLoading(false);}}
- useEffect(()=>{load();},[]);
- const destinations=useMemo(()=>[...new Set(items.map(t=>t.Destination).filter(Boolean))].sort(),[items]);
- const filtered=useMemo(()=>{const q=query.trim().toLowerCase();return items.filter(t=>{const price=Number(t.Price||0);return `${t.TourName||''} ${t.TourCode||''} ${t.Destination||''}`.toLowerCase().includes(q)&&(status==='all'||(status==='active')===Boolean(t.IsActive))&&(destination==='all'||t.Destination===destination)&&(!minPrice||price>=Number(minPrice))&&(!maxPrice||price<=Number(maxPrice));}).sort((a,b)=>sort==='az'?a.TourName.localeCompare(b.TourName):sort==='za'?b.TourName.localeCompare(a.TourName):sort==='priceLow'?Number(a.Price)-Number(b.Price):sort==='priceHigh'?Number(b.Price)-Number(a.Price):sort==='oldest'?(a.CreatedAt||'').localeCompare(b.CreatedAt||''):(b.CreatedAt||'').localeCompare(a.CreatedAt||''));},[items,query,status,destination,sort,minPrice,maxPrice]);
- const pages=Math.max(1,Math.ceil(filtered.length/pageSize)),current=Math.min(page,pages),visible=filtered.slice((current-1)*pageSize,current*pageSize);
- const counts={total:items.length,active:items.filter(t=>t.IsActive).length,inactive:items.filter(t=>!t.IsActive).length,departures:items.reduce((n,t)=>n+(t.Departures||[]).length,0)};
- const reset=()=>{setQuery('');setStatus('all');setDestination('all');setMinPrice('');setMaxPrice('');setSort('newest');setPage(1);};
- async function remove(t){if(!window.confirm(`Delete tour "${t.TourName}" (${t.TourCode})?`))return;try{await deleteTour(t.TourId);await load();}catch(e){setError(e.message||'Could not delete tour.');}}
- return <main className="at-page at-modern"><header className="at-head"><div><span className="at-kicker">CONTENT MANAGEMENT / TOURS</span><h1>Tours</h1><p>Create, organize and manage your travel packages.</p></div><Link className="at-primary" to="/admin/tours/new"><i className="bi bi-plus-lg"/> Add tour</Link></header>
- <section className="at-stats">{[['Total tours',counts.total,'bi-map'],['Active tours',counts.active,'bi-check-circle'],['Inactive tours',counts.inactive,'bi-pause-circle'],['Departures',counts.departures,'bi-calendar-event']].map(([label,value,icon])=><div className="at-stat" key={label}><span className="at-stat-icon"><i className={`bi ${icon}`}/></span><div><small>{label}</small><strong>{value}</strong></div></div>)}</section>
- <section className="at-panel"><div className="at-list-heading"><div><h2>All tours</h2><p>Filter by destination, status and price range.</p></div><span>{filtered.length} results</span></div>
- <div className="at-filter-grid"><label className="at-search-field"><span>Search</span><div><i className="bi bi-search"/><input type="search" placeholder="Tour name or code" value={query} onChange={e=>{setQuery(e.target.value);setPage(1);}}/></div></label><label><span>Status</span><select value={status} onChange={e=>{setStatus(e.target.value);setPage(1);}}><option value="all">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></label><label><span>Destination</span><select value={destination} onChange={e=>{setDestination(e.target.value);setPage(1);}}><option value="all">All destinations</option>{destinations.map(d=><option key={d}>{d}</option>)}</select></label><label><span>Min price (VND)</span><input type="number" min="0" value={minPrice} onChange={e=>{setMinPrice(e.target.value);setPage(1);}}/></label><label><span>Max price (VND)</span><input type="number" min="0" value={maxPrice} onChange={e=>{setMaxPrice(e.target.value);setPage(1);}}/></label><label><span>Sort by</span><select value={sort} onChange={e=>{setSort(e.target.value);setPage(1);}}><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="az">Name A–Z</option><option value="za">Name Z–A</option><option value="priceLow">Price low–high</option><option value="priceHigh">Price high–low</option></select></label></div>
- <div className="at-filter-note"><span><i className="bi bi-info-circle"/> Prices are shown in Vietnamese dong (VND).</span><button type="button" onClick={reset}><i className="bi bi-arrow-counterclockwise"/> Reset filters</button></div>
- {error&&<p className="at-error" role="alert">{error}</p>}{loading?<p className="at-empty">Loading tours...</p>:!visible.length?<div className="at-empty"><i className="bi bi-search"/><h3>No tours found</h3><p>Try another filter or keyword.</p><button className="at-secondary" onClick={reset}>Clear filters</button></div>:<div className="at-table-wrap"><table className="at-table"><thead><tr><th>Tour</th><th>Destination</th><th>Duration</th><th>Price</th><th>Departures</th><th>Status</th><th>Actions</th></tr></thead><tbody>{visible.map(t=><tr key={t.TourId}><td><div className="at-campaign">{t.ImageUrl?<img src={t.ImageUrl} alt=""/>:<span className="at-campaign-icon"><i className="bi bi-image"/></span>}<div><Link to={`/admin/tours/${t.TourId}`}>{t.TourName}</Link><code>{t.TourCode}</code></div></div></td><td><span className="at-service-badge">{t.Destination||'—'}</span></td><td>{t.DurationDays}D / {t.DurationNights}N</td><td><strong className="at-price">{money(t.Price)}</strong></td><td>{(t.Departures||[]).length}</td><td><span className={`at-status at-${t.IsActive?'active':'inactive'}`}>{t.IsActive?'Active':'Inactive'}</span></td><td><div className="at-actions"><Link to={`/admin/tours/${t.TourId}`}>View</Link><Link to={`/admin/tours/${t.TourId}/edit`}>Edit</Link><button type="button" onClick={()=>remove(t)}>Delete</button></div></td></tr>)}</tbody></table></div>}
- <footer className="at-footer"><span>{filtered.length?`Showing ${(current-1)*pageSize+1}–${Math.min(current*pageSize,filtered.length)} of ${filtered.length}`:'0 tours'}</span><div className="at-page-controls"><label>Rows per page <select value={pageSize} onChange={e=>{setPageSize(Number(e.target.value));setPage(1);}}>{PAGE_SIZES.map(n=><option key={n}>{n}</option>)}</select></label><button disabled={current===1} onClick={()=>setPage(1)} aria-label="First page">«</button><button disabled={current===1} onClick={()=>setPage(current-1)} aria-label="Previous page">‹</button><span>Page {current} of {pages}</span><button disabled={current===pages} onClick={()=>setPage(current+1)} aria-label="Next page">›</button><button disabled={current===pages} onClick={()=>setPage(pages)} aria-label="Last page">»</button></div></footer></section></main>;
+
+const TOURS_PER_PAGE = 5;
+const EMPTY_FILTERS = {
+    destination: '', duration: '', promotion: '', featured: '', itinerary: '',
+    minStandard: '', maxStandard: '', minSale: '', maxSale: '',
+};
+const PRICE_FILTERS = [
+    ['minStandard', 'Min. standard price (VND)'],
+    ['maxStandard', 'Max. standard price (VND)'],
+    ['minSale', 'Min. sale price (VND)'],
+    ['maxSale', 'Max. sale price (VND)'],
+];
+
+function inPriceRange(price, min, max) {
+    if (!min && !max) return true;
+    return price != null && (!min || price >= Number(min)) && (!max || price <= Number(max));
+}
+
+const normalizeSearch = (value) => String(value ?? '').toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/đ/g, 'd').trim();
+
+export default function AdminToursPage() {
+    const [tours, setTours] = useState(null);
+    const [query, setQuery] = useState('');
+    const [filters, setFilters] = useState(EMPTY_FILTERS);
+    const [promotions, setPromotions] = useState([]);
+    const [page, setPage] = useState(1);
+    const [error, setError] = useState('');
+    const [deleting, setDeleting] = useState(null);
+
+    useEffect(() => {
+        let active = true;
+        tourService.list()
+            .then((items) => { if (active) setTours(items); })
+            .catch((failure) => { if (active) setError(failure.message); });
+        listTourPromotions({ activeOnly: false })
+            .then((items) => { if (active) setPromotions(items); })
+            .catch(() => {}); // Linked promotion IDs remain filterable if their labels are unavailable.
+        return () => { active = false; };
+    }, []);
+
+    async function remove(tour) {
+        if (deleting || !window.confirm(`Delete “${tour.title}”?`)) return;
+        setDeleting(tour.id);
+        setError('');
+        try {
+            await tourService.remove(tour.id);
+            setTours((items) => items.filter((item) => item.id !== tour.id));
+        } catch (failure) {
+            setError(failure.message);
+        } finally {
+            setDeleting(null);
+        }
+    }
+
+    const keyword = normalizeSearch(query);
+    const itinerary = normalizeSearch(filters.itinerary);
+    const destinations = new Map((tours ?? []).filter(tour => tour.spotId != null)
+        .map(tour => [String(tour.spotId), tour.destination || 'Destination #' + tour.spotId]));
+    const durations = [...new Set((tours ?? []).map(tour => tour.duration).filter(Boolean))].sort();
+    const promotionNames = new Map(promotions.map(promotion => [String(promotion.promotionId),
+        [promotion.title, promotion.promoCode].filter(Boolean).join(' · ')]));
+    const linkedPromotions = [...new Set((tours ?? []).filter(tour => tour.promotionId != null)
+        .map(tour => String(tour.promotionId)))];
+    const hasFilters = Boolean(keyword || Object.values(filters).some(Boolean));
+
+    const matches = tours?.filter((tour) => {
+        const promotionLabel = promotionNames.get(String(tour.promotionId));
+        const searchable = [tour.title, tour.destination, tour.id, tour.duration, promotionLabel, tour.itineraryDetail];
+        return normalizeSearch(searchable.join(' ')).includes(keyword)
+            && (!filters.destination || filters.destination === String(tour.spotId ?? 'none'))
+            && (!filters.duration || filters.duration === tour.duration)
+            && (!filters.promotion || filters.promotion === String(tour.promotionId ?? 'none'))
+            && (!filters.featured || tour.isFeatured === (filters.featured === 'yes'))
+            && (!itinerary || normalizeSearch(tour.itineraryDetail).includes(itinerary))
+            && inPriceRange(tour.standardPrice, filters.minStandard, filters.maxStandard)
+            && inPriceRange(tour.salePrice, filters.minSale, filters.maxSale);
+    });
+    const pageCount = Math.max(1, Math.ceil((matches?.length ?? 0) / TOURS_PER_PAGE));
+    const currentPage = Math.min(page, pageCount);
+    const offset = (currentPage - 1) * TOURS_PER_PAGE;
+    const visible = matches?.slice(offset, offset + TOURS_PER_PAGE);
+
+    function changeQuery(value) {
+        setQuery(value);
+        setPage(1);
+    }
+
+    function changeFilter(name, value) {
+        setFilters(previous => ({ ...previous, [name]: value }));
+        setPage(1);
+    }
+
+    function resetFilters() {
+        setFilters(EMPTY_FILTERS);
+        changeQuery('');
+    }
+
+    return (
+        <main className="at-page">
+            <header className="at-head">
+                <div><h1>Tours</h1><p>Manage the tours shown on the website.</p></div>
+                <Link className="at-primary" to="/admin/tours/new">Add tour</Link>
+            </header>
+            <section className="at-panel">
+                <div className="at-list-heading"><h2>All tours</h2>{matches && <span>{matches.length} results</span>}</div>
+                <div className="at-filter-grid">
+                    <label><span>Search tours</span><input type="search" value={query}
+                        placeholder="Tour name, destination or ID" onChange={(event) => changeQuery(event.target.value)} /></label>
+                    <label><span>Destination</span><select value={filters.destination}
+                        onChange={(event) => changeFilter('destination', event.target.value)}>
+                        <option value="">All destinations</option>
+                        <option value="none">No linked destination</option>
+                        {[...destinations].map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+                    </select></label>
+                    <label><span>Duration</span><select value={filters.duration}
+                        onChange={(event) => changeFilter('duration', event.target.value)}>
+                        <option value="">Any duration</option>
+                        {durations.map(duration => <option key={duration} value={duration}>{duration}</option>)}
+                    </select></label>
+                    <label><span>Linked promotion</span><select value={filters.promotion}
+                        onChange={(event) => changeFilter('promotion', event.target.value)}>
+                        <option value="">All promotions</option>
+                        <option value="none">No linked promotion</option>
+                        {linkedPromotions.map(id => <option key={id} value={id}>{promotionNames.get(id) || 'Promotion #' + id}</option>)}
+                    </select></label>
+                    <label><span>Featured</span><select value={filters.featured}
+                        onChange={(event) => changeFilter('featured', event.target.value)}>
+                        <option value="">All tours</option>
+                        <option value="yes">Featured</option>
+                        <option value="no">Not featured</option>
+                    </select></label>
+                    <label><span>Itinerary</span><input type="search" value={filters.itinerary}
+                        placeholder="Keyword in the itinerary" onChange={(event) => changeFilter('itinerary', event.target.value)} /></label>
+                    {PRICE_FILTERS.map(([key, label]) => (
+                        <label key={key}><span>{label}</span><input type="number" min="0" step="any" value={filters[key]}
+                            onChange={(event) => changeFilter(key, event.target.value)} /></label>
+                    ))}
+                    <div className="align-self-end">
+                        <button type="button" className="at-secondary" disabled={!hasFilters} onClick={resetFilters}>Reset filters</button>
+                    </div>
+                </div>
+                {error && <p className="at-error" role="alert">{error}</p>}
+                {!tours && !error && <p className="at-empty" role="status">Loading tours…</p>}
+                {visible?.length === 0 && <p className="at-empty" role="status">{hasFilters ? 'No matching tours.' : 'No tours yet.'}</p>}
+                {visible?.length > 0 && (
+                    <div className="at-table-wrap">
+                        <table className="at-table">
+                            <thead><tr><th>Tour</th><th>Destination</th><th>Duration</th><th>Price</th><th>Featured</th><th>Actions</th></tr></thead>
+                            <tbody>
+                                {visible.map((tour) => (
+                                    <tr key={tour.id}>
+                                        <td><Link to={`/admin/tours/${tour.id}`}>{tour.title}</Link></td>
+                                        <td>{tour.destination || '—'}</td><td>{tour.duration}</td>
+                                        <td><strong>{money(tour.price)}</strong></td><td>{tour.isFeatured ? 'Yes' : '—'}</td>
+                                        <td><div className="at-actions">
+                                            <Link to={`/admin/tours/${tour.id}`}>View</Link>
+                                            <Link to={`/admin/tours/${tour.id}/edit`}>Edit</Link>
+                                            <button type="button" disabled={deleting != null} onClick={() => remove(tour)}>{deleting === tour.id ? 'Deleting…' : 'Delete'}</button>
+                                        </div></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+                {visible?.length > 0 && (
+                    <nav className="d-flex flex-wrap align-items-center justify-content-between gap-2 border-top p-3"
+                        aria-label="Tours pagination">
+                        <span className="small text-muted" role="status">
+                            Showing {offset + 1}–{offset + visible.length} of {matches.length} tours
+                        </span>
+                        {pageCount > 1 && <div className="d-flex align-items-center gap-2">
+                            <button type="button" className="btn btn-sm btn-outline-secondary" disabled={currentPage === 1}
+                                onClick={() => setPage(currentPage - 1)}>Previous</button>
+                            <span className="small">Page {currentPage} of {pageCount}</span>
+                            <button type="button" className="btn btn-sm btn-outline-secondary" disabled={currentPage === pageCount}
+                                onClick={() => setPage(currentPage + 1)}>Next</button>
+                        </div>}
+                    </nav>
+                )}
+            </section>
+        </main>
+    );
 }

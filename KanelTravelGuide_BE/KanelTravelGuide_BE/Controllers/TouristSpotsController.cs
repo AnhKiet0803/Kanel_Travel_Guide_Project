@@ -41,6 +41,7 @@ public class TouristSpotsController : ControllerBase
             query = query.Where(s => s.SpotName.ToLower().Contains(keyword) || (s.Description != null && s.Description.ToLower().Contains(keyword)));
         }
 
+        var reviews = _db.Feedbacks.Where(f => f.IsApproved && f.Rating >= 1 && f.Rating <= 5);
         var items = await query
             .OrderByDescending(s => s.IsFeatured)
             .ThenByDescending(s => s.CreatedAt)
@@ -52,9 +53,12 @@ public class TouristSpotsController : ControllerBase
                 locationName = s.Location.LocationName,
                 s.CategoryId,
                 categoryName = s.CategoryType.CategoryName,
-                s.ThumbnailUrl,
+                thumbnailUrl = s.ThumbnailImage != null ? "/api/tourist-spots/" + s.SpotId + "/thumbnail" : s.ThumbnailUrl,
                 s.Description,
-                s.IsFeatured
+                s.IsFeatured,
+                s.CreatedAt,
+                reviewCount = reviews.Count(f => f.SpotId == s.SpotId),
+                averageRating = reviews.Where(f => f.SpotId == s.SpotId).Average(f => (double?)f.Rating)
             })
             .ToListAsync();
 
@@ -75,7 +79,7 @@ public class TouristSpotsController : ControllerBase
                 s.CategoryId,
                 categoryName = s.CategoryType.CategoryName,
                 s.SpotName,
-                s.ThumbnailUrl,
+                thumbnailUrl = s.ThumbnailImage != null ? "/api/tourist-spots/" + s.SpotId + "/thumbnail" : s.ThumbnailUrl,
                 s.Description,
                 s.DetailedContent,
                 s.IsFeatured,
@@ -91,10 +95,40 @@ public class TouristSpotsController : ControllerBase
         return Ok(spot);
     }
 
+    [HttpGet("{id:int}/thumbnail")]
+    public async Task<IActionResult> GetThumbnail(int id)
+    {
+        var bytes = await _db.TouristSpots
+            .AsNoTracking()
+            .Where(spot => spot.SpotId == id)
+            .Select(spot => spot.ThumbnailImage)
+            .FirstOrDefaultAsync();
+        var contentType = GetImageContentType(bytes);
+        return bytes != null && contentType != null ? File(bytes, contentType) : NotFound();
+    }
+
+    private static string? GetImageContentType(byte[]? bytes)
+    {
+        if (bytes is null) return null;
+        if (bytes.Length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF)
+            return "image/jpeg";
+        if (bytes.AsSpan().StartsWith(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }))
+            return "image/png";
+        if (bytes.Length >= 12 && bytes.AsSpan(0, 4).SequenceEqual("RIFF"u8)
+            && bytes.AsSpan(8, 4).SequenceEqual("WEBP"u8))
+            return "image/webp";
+        return null;
+    }
+
     [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<IActionResult> Create(TouristSpotRequest request)
     {
+        if (request.ThumbnailImage != null && GetImageContentType(request.ThumbnailImage) == null)
+        {
+            return BadRequest(new { message = "Choose a valid JPG, PNG or WebP image." });
+        }
+
         var locationExists = await _db.Locations.AnyAsync(l => l.LocationId == request.LocationId);
         if (!locationExists)
         {
@@ -112,6 +146,7 @@ public class TouristSpotsController : ControllerBase
             LocationId = request.LocationId,
             CategoryId = request.CategoryId,
             SpotName = request.SpotName.Trim(),
+            ThumbnailImage = request.ThumbnailImage,
             ThumbnailUrl = string.IsNullOrWhiteSpace(request.ThumbnailUrl) ? null : request.ThumbnailUrl.Trim(),
             Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim(),
             DetailedContent = string.IsNullOrWhiteSpace(request.DetailedContent) ? null : request.DetailedContent.Trim(),
@@ -128,7 +163,7 @@ public class TouristSpotsController : ControllerBase
             spot.LocationId,
             spot.CategoryId,
             spot.SpotName,
-            spot.ThumbnailUrl,
+            thumbnailUrl = spot.ThumbnailImage != null ? $"/api/tourist-spots/{spot.SpotId}/thumbnail" : spot.ThumbnailUrl,
             spot.Description,
             spot.DetailedContent,
             spot.IsFeatured,
@@ -146,6 +181,11 @@ public class TouristSpotsController : ControllerBase
             return NotFound(new { message = "Tourist spot not found." });
         }
 
+        if (request.ThumbnailImage != null && GetImageContentType(request.ThumbnailImage) == null)
+        {
+            return BadRequest(new { message = "Choose a valid JPG, PNG or WebP image." });
+        }
+
         var locationExists = await _db.Locations.AnyAsync(l => l.LocationId == request.LocationId);
         if (!locationExists)
         {
@@ -161,7 +201,15 @@ public class TouristSpotsController : ControllerBase
         spot.LocationId = request.LocationId;
         spot.CategoryId = request.CategoryId;
         spot.SpotName = request.SpotName.Trim();
-        spot.ThumbnailUrl = string.IsNullOrWhiteSpace(request.ThumbnailUrl) ? null : request.ThumbnailUrl.Trim();
+        if (request.RemoveThumbnail || request.ThumbnailImage != null)
+        {
+            spot.ThumbnailImage = request.ThumbnailImage;
+            spot.ThumbnailUrl = null;
+        }
+        else if (request.ThumbnailUrl != null)
+        {
+            spot.ThumbnailUrl = string.IsNullOrWhiteSpace(request.ThumbnailUrl) ? null : request.ThumbnailUrl.Trim();
+        }
         spot.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
         spot.DetailedContent = string.IsNullOrWhiteSpace(request.DetailedContent) ? null : request.DetailedContent.Trim();
         spot.IsFeatured = request.IsFeatured;
@@ -174,7 +222,7 @@ public class TouristSpotsController : ControllerBase
             spot.LocationId,
             spot.CategoryId,
             spot.SpotName,
-            spot.ThumbnailUrl,
+            thumbnailUrl = spot.ThumbnailImage != null ? $"/api/tourist-spots/{spot.SpotId}/thumbnail" : spot.ThumbnailUrl,
             spot.Description,
             spot.DetailedContent,
             spot.IsFeatured,
@@ -191,6 +239,9 @@ public class TouristSpotsController : ControllerBase
         {
             return NotFound(new { message = "Tourist spot not found." });
         }
+
+        if (await _db.Feedbacks.AnyAsync(review => review.SpotId == id))
+            return Conflict(new { message = "This destination has reviews. Remove the reviews in Admin Feedback before deleting it." });
 
         _db.TouristSpots.Remove(spot);
         await _db.SaveChangesAsync();

@@ -5,6 +5,7 @@ public class BookingDetail
     public int DetailId { get; set; }
     public int BookingId { get; set; }
     public Booking Booking { get; set; } = null!;
+    public string? TravelerType { get; set; }
     public int? TourId { get; set; }
     public TourPackage? TourPackage { get; set; }
     public int? ScheduleId { get; set; }

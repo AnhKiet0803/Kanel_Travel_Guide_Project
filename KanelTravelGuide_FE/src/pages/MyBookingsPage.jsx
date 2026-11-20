@@ -4,13 +4,80 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import { getMyBookings, getBookingById, cancelBooking } from '../api/bookingApi.js'
+import { paymentLabels } from '../api/payPalApi.js'
 import '../styles/services.css'
 import './pages.css'
+
+const BOOKINGS_PER_PAGE = 5
+
+const normalizeSearch = (value) => String(value ?? '').toLowerCase()
+  .normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/đ/g, 'd').trim()
+
+function describeReservedItem(item) {
+  if (item.tourName) return { title: item.tourName, category: 'Tour' }
+  if (item.scheduleInfo) return {
+    title: item.scheduleInfo,
+    subtitle: [item.vehicleName, item.departureTime].filter(Boolean).join(' · '),
+    category: 'Transportation',
+  }
+  if (item.providerName || item.serviceItemName) return {
+    title: item.providerName || item.serviceItemName,
+    subtitle: item.providerName ? item.serviceItemName : null,
+    category: item.serviceType === 'Restaurant' ? 'Dining' : item.serviceType || 'Service',
+  }
+  return null
+}
+
+function BookingServices({ booking }) {
+  const items = (booking.details ?? []).map(describeReservedItem).filter(Boolean)
+  const unique = items.filter((item, index) => items.findIndex((other) =>
+    item.title === other.title && item.subtitle === other.subtitle && item.category === other.category
+  ) === index)
+  if (unique.length === 0) return <span className="badge bg-light text-dark border me-1">{booking.bookingType}</span>
+
+  return unique.map(({ title, subtitle, category }, index) => (
+    <div key={index} className="mb-2">
+      <span className="badge bg-light text-dark border">{category}</span>
+      <div className="fw-bold text-dark text-break">{title}</div>
+      {subtitle && <small className="text-muted d-block text-break">{subtitle}</small>}
+    </div>
+  ))
+}
+
+function canContinuePayPal(booking) {
+  return booking.paymentMethod === 'PayPalSandbox'
+    && booking.paymentStatus === 'Unpaid' && booking.bookingStatus !== 'Cancelled'
+}
+
+const paymentUrl = (id) => '/tours/payment-return?bookingId=' + encodeURIComponent(id) + '&resume=1'
+
+function ManualPaymentGuidance({ booking }) {
+  if (booking.totalAmount <= 0 || booking.paymentStatus !== 'Unpaid'
+    || !['BankTransfer', 'PayAfterConfirmation'].includes(booking.paymentMethod)) return null
+
+  if (booking.bookingStatus === 'Pending') {
+    return <p className="small text-muted mt-1 mb-0">Wait for the operator to confirm your tour before paying.</p>
+  }
+
+  if (booking.bookingStatus !== 'Confirmed') return null
+
+  const instruction = booking.paymentMethod === 'BankTransfer'
+    ? 'Contact us for bank transfer details. Include your booking code when paying.'
+    : 'Contact us to arrange payment. Have your booking code ready.'
+
+  return (
+    <p className="small text-muted mt-1 mb-0">
+      {instruction} <Link className="ktg-link" to="/contact">Contact us</Link>
+    </p>
+  )
+}
 
 export default function MyBookingsPage() {
   const { user } = useAuth()
   const [bookings, setBookings] = useState([])
   const [activeStatusTab, setActiveStatusTab] = useState('ALL')
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -93,10 +160,33 @@ export default function MyBookingsPage() {
     return <span className="badge bg-warning text-dark px-3 py-2">Pending Confirmation</span>
   }
 
-  const filteredBookings = bookings.filter((b) => {
-    if (activeStatusTab === 'ALL') return true
-    return b.status?.toUpperCase() === activeStatusTab
+  const keyword = normalizeSearch(search)
+  const filteredBookings = bookings.filter(booking => {
+    if (activeStatusTab !== 'ALL' && booking.bookingStatus?.toUpperCase() !== activeStatusTab) return false
+    if (!keyword) return true
+
+    const serviceFields = (booking.details ?? []).flatMap(item => {
+      const service = describeReservedItem(item)
+      return service ? [service.title, service.subtitle, service.category] : []
+    })
+    const searchable = [booking.bookingCode || `KTG-${booking.bookingId}`, booking.bookingType, ...serviceFields]
+    return normalizeSearch(searchable.filter(Boolean).join(' ')).includes(keyword)
   })
+  const pageCount = Math.max(1, Math.ceil(filteredBookings.length / BOOKINGS_PER_PAGE))
+  const currentPage = Math.min(page, pageCount)
+  const offset = (currentPage - 1) * BOOKINGS_PER_PAGE
+  const pageBookings = filteredBookings.slice(offset, offset + BOOKINGS_PER_PAGE)
+
+  function changeStatus(status) {
+    if (status === activeStatusTab) return
+    setActiveStatusTab(status)
+    setPage(1)
+  }
+
+  function changeSearch(value) {
+    setSearch(value)
+    setPage(1)
+  }
 
   return (
     <div className="ktg-services-wrapper py-4">
@@ -124,31 +214,40 @@ export default function MyBookingsPage() {
           <button
             type="button"
             className={`ktg-pill-tab ${activeStatusTab === 'ALL' ? 'active' : ''}`}
-            onClick={() => setActiveStatusTab('ALL')}
+            onClick={() => changeStatus('ALL')}
           >
             All Bookings <span className="badge bg-secondary ms-1">{bookings.length}</span>
           </button>
           <button
             type="button"
             className={`ktg-pill-tab ${activeStatusTab === 'CONFIRMED' ? 'active' : ''}`}
-            onClick={() => setActiveStatusTab('CONFIRMED')}
+            onClick={() => changeStatus('CONFIRMED')}
           >
             Confirmed
           </button>
           <button
             type="button"
             className={`ktg-pill-tab ${activeStatusTab === 'PENDING' ? 'active' : ''}`}
-            onClick={() => setActiveStatusTab('PENDING')}
+            onClick={() => changeStatus('PENDING')}
           >
             Pending
           </button>
           <button
             type="button"
             className={`ktg-pill-tab ${activeStatusTab === 'CANCELLED' ? 'active' : ''}`}
-            onClick={() => setActiveStatusTab('CANCELLED')}
+            onClick={() => changeStatus('CANCELLED')}
           >
             Cancelled
           </button>
+        </div>
+
+        <div className="mb-4">
+          <label className="form-label fw-semibold" htmlFor="booking-search">Search bookings</label>
+          <div className="input-group" style={{ maxWidth: '460px' }}>
+            <input id="booking-search" className="form-control" type="search" value={search}
+              onChange={event => changeSearch(event.target.value)} placeholder="Booking reference or service name" />
+            {keyword && <button type="button" className="btn btn-outline-secondary" onClick={() => changeSearch('')}>Clear</button>}
+          </div>
         </div>
 
         {/* Loading Indicator */}
@@ -171,33 +270,33 @@ export default function MyBookingsPage() {
         {!loading && !error && filteredBookings.length === 0 && (
           <div className="ktg-card text-center py-5">
             <i className="bi bi-calendar-x text-muted" style={{ fontSize: '3rem' }}></i>
-            <h4 className="ktg-serif-title mt-3">No reservations in this section</h4>
-            <p className="text-muted small" style={{ maxWidth: '400px', margin: '0 auto 20px' }}>
-              You don't have any bookings matching this status. Explore our top hotels, dining, and guided tours.
-            </p>
-            <Link to="/hotels" className="ktg-btn-navy">
-              Explore Hotels & Stays
-            </Link>
+            <h4 className="ktg-serif-title mt-3">{keyword ? 'No matching bookings' : 'No reservations in this section'}</h4>
+            {keyword ? (
+              <p className="text-muted small mb-0" role="status">Try another booking reference or service name.</p>
+            ) : (
+              <>
+                <p className="text-muted small">You don't have any bookings matching this status.</p>
+                <Link to="/booking" className="ktg-btn-navy">Book a Service</Link>
+              </>
+            )}
           </div>
         )}
 
         {/* Bookings List Cards */}
         {!loading && !error && filteredBookings.length > 0 && (
           <div className="row g-3">
-            {filteredBookings.map((b) => (
+            {pageBookings.map((b) => (
               <div key={b.bookingId} className="col-12">
                 <div className="ktg-booking-row">
                   <div className="row align-items-center g-3">
                     <div className="col-lg-3 col-md-4">
+                      <BookingServices booking={b} />
                       <span className="small text-muted d-block">Booking Reference</span>
                       <strong className="text-primary font-monospace fs-5">
                         {b.bookingCode || `KTG-${b.bookingId}`}
                       </strong>
                       <div className="mt-1">
-                        <span className="badge bg-light text-dark border me-1">
-                          {b.bookingType}
-                        </span>
-                        {getStatusBadge(b.status)}
+                        {getStatusBadge(b.bookingStatus)}
                       </div>
                     </div>
 
@@ -217,12 +316,16 @@ export default function MyBookingsPage() {
                       <div className="fw-bold text-primary fs-5">
                         {formatPrice(b.totalAmount)}
                       </div>
-                      <small className="text-success">
-                        <i className="bi bi-check-circle-fill me-1"></i> Pay at Property
+                      <small className={b.paymentStatus === 'Paid' ? 'text-success' : 'text-muted'}>
+                        {b.totalAmount === 0 ? 'No payment due' : (paymentLabels[b.paymentMethod] ?? b.paymentMethod ?? 'Method not recorded') + ' · ' + (b.paymentStatus ?? 'Status unavailable')}
                       </small>
+                      <ManualPaymentGuidance booking={b} />
                     </div>
 
-                    <div className="col-lg-3 col-md-12 d-flex justify-content-lg-end gap-2">
+                    <div className="col-lg-3 col-md-12 d-flex flex-wrap justify-content-lg-end gap-2">
+                      {canContinuePayPal(b) && (
+                        <Link className="ktg-btn-teal" to={paymentUrl(b.bookingId)}>Continue payment</Link>
+                      )}
                       <button
                         type="button"
                         className="ktg-btn-outline-navy"
@@ -230,7 +333,7 @@ export default function MyBookingsPage() {
                       >
                         <i className="bi bi-receipt"></i> Digital Voucher
                       </button>
-                      {b.status?.toLowerCase() !== 'cancelled' && (
+                      {b.bookingStatus?.toLowerCase() !== 'cancelled' && (
                         <button
                           type="button"
                           className="btn btn-sm btn-outline-danger"
@@ -245,6 +348,22 @@ export default function MyBookingsPage() {
               </div>
             ))}
           </div>
+        )}
+
+        {!loading && !error && pageBookings.length > 0 && (
+          <nav className="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-4"
+            aria-label="Bookings pagination">
+            <p className="small text-muted mb-0" role="status">
+              Showing {offset + 1}–{offset + pageBookings.length} of {filteredBookings.length} bookings
+            </p>
+            {pageCount > 1 && <div className="d-flex align-items-center gap-2">
+              <button type="button" className="btn btn-outline-secondary btn-sm" disabled={currentPage === 1}
+                onClick={() => setPage(currentPage - 1)}>Previous</button>
+              <span className="small">Page {currentPage} of {pageCount}</span>
+              <button type="button" className="btn btn-outline-secondary btn-sm" disabled={currentPage === pageCount}
+                onClick={() => setPage(currentPage + 1)}>Next</button>
+            </div>}
+          </nav>
         )}
 
         {/* Digital Voucher / Detail Modal */}
@@ -278,8 +397,10 @@ export default function MyBookingsPage() {
                         {selectedBooking.bookingCode || `KTG-${selectedBooking.bookingId}`}
                       </strong>
                     </div>
-                    <div>{getStatusBadge(selectedBooking.status)}</div>
+                    <div>{getStatusBadge(selectedBooking.bookingStatus)}</div>
                   </div>
+
+                  <div className="mb-3"><BookingServices booking={selectedBooking} /></div>
 
                   <div className="row g-3 mb-4 small text-secondary">
                     <div className="col-sm-6">
@@ -318,9 +439,9 @@ export default function MyBookingsPage() {
                       </thead>
                       <tbody>
                         {(selectedBooking.details || []).map((d, i) => (
-                          <tr key={i}>
+                          <tr key={d.detailId ?? i}>
                             <td className="fw-semibold">
-                              {d.tourName || d.serviceItemName || d.scheduleInfo || 'Accommodation Item'}
+                              {d.travelerType ? d.travelerType + ' fare' : d.tourName || d.serviceItemName || d.scheduleInfo || 'Reserved item'}
                             </td>
                             <td className="text-center">{d.quantity}</td>
                             <td className="text-end">{formatPrice(d.unitPrice)}</td>
@@ -336,7 +457,14 @@ export default function MyBookingsPage() {
                   <div className="d-flex justify-content-between align-items-center pt-3 border-top">
                     <div>
                       <span className="small text-muted d-block">Payment Method</span>
-                      <strong className="text-dark">Pay at Property / Counter</strong>
+                      <strong className="text-dark">{paymentLabels[selectedBooking.paymentMethod] ?? selectedBooking.paymentMethod ?? 'Method not recorded'}</strong>
+                      <span className={selectedBooking.paymentStatus === 'Paid' ? 'd-block text-success' : 'd-block text-muted'}>
+                        {selectedBooking.paymentStatus ?? 'Status unavailable'}
+                      </span>
+                      <ManualPaymentGuidance booking={selectedBooking} />
+                      {canContinuePayPal(selectedBooking) && (
+                          <Link className="ktg-btn-teal mt-2" to={paymentUrl(selectedBooking.bookingId)}>Continue to PayPal Sandbox</Link>
+                        )}
                     </div>
                     <div className="text-end">
                       <span className="small text-muted d-block">Grand Total</span>

@@ -8,7 +8,7 @@ import { useAuth } from '../auth/useAuth.js'
 import { validateLogin } from '../utils/validators.js'
 import './pages.css'
 
-export default function LoginPage({ variant = 'user', onSuccess }) {
+export default function LoginPage({ variant = 'user', onSuccess, description }) {
   const { signIn, signOut } = useAuth()
   const isAdmin = variant === 'admin'
   const [form, setForm] = useState({ username: '', password: '' })
@@ -53,7 +53,7 @@ export default function LoginPage({ variant = 'user', onSuccess }) {
         <p>
           {isAdmin
             ? 'Sign in with an administrator account to manage Karnel Travels.'
-            : 'Sign in to book services and track your orders.'}
+            : description ?? 'Sign in to book services and track your orders.'}
         </p>
       </header>
 

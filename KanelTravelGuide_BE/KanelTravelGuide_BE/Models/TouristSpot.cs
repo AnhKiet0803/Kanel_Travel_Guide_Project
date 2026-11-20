@@ -8,6 +8,7 @@ public class TouristSpot
     public int CategoryId { get; set; }
     public CategoryType CategoryType { get; set; } = null!;
     public string SpotName { get; set; } = string.Empty;
+    public byte[]? ThumbnailImage { get; set; }
     public string? ThumbnailUrl { get; set; }
     public string? Description { get; set; }
     public string? DetailedContent { get; set; }

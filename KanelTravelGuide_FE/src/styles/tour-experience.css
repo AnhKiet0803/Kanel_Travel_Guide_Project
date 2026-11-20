@@ -1,0 +1,70 @@
+.tour-experience{background:#f4f7f6;padding:32px 18px 64px;color:#1a352f;text-align:left}
+.tour-shell{max-width:1180px;margin-inline:auto}
+.tour-hero{overflow:hidden;display:grid;border-radius:20px;background:#123d35;color:#ecf7ee}
+.tour-hero-with-image{grid-template-columns:1fr 1fr}
+.tour-hero-copy{padding:clamp(24px,5vw,60px);align-self:center}
+.tour-hero h1,.tour-checkout-title{font:700 clamp(2rem,5vw,4.4rem)/1.06 Georgia,serif;margin:16px 0 24px}
+.tour-hero h1{color:#fff}
+.tour-hero>img{width:100%;height:100%;min-height:280px;object-fit:cover}
+.tour-meta,.tour-hero-links{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.tour-meta{color:#d5eee4;font-size:.875rem}
+.tour-hero-links a{color:#ecf7ee;text-underline-offset:4px}
+.tour-badge{background:#d9ecd6;color:#194538;border-radius:6px;padding:4px 8px;font-weight:700}
+.tour-reviews{margin-top:24px}
+.tour-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(275px,365px);align-items:start;gap:24px;margin-top:24px}
+.tour-content{display:grid;gap:20px;min-width:0}
+.tour-card{background:#fff;border:1px solid #dce8e2;border-radius:16px;padding:clamp(18px,3vw,30px);min-width:0}
+.tour-card h2{font:700 1.6rem Georgia,serif;margin:0 0 16px}
+.tour-card p{line-height:1.6}
+.tour-sticky{position:sticky;top:16px}
+.tour-price{display:grid;gap:4px;margin-bottom:16px}
+.tour-price strong{font-size:2rem;color:#134737}
+.tour-price del,.tour-muted{color:#506a60;font-size:.9rem}
+.tour-offer{display:grid;gap:5px;padding:13px 14px;border-radius:9px;background:#edf5e8;color:#245a3b;margin:0 0 16px}
+.tour-offer span{font-size:.88rem}
+.tour-primary{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:9px;padding:13px;background:#116451;color:#fff;font-weight:700;text-align:center;text-decoration:none;cursor:pointer}
+.tour-primary:hover{background:#104b40;color:#fff}
+.tour-primary:disabled{opacity:.6;cursor:wait}
+.tour-itinerary{list-style:none;padding:0;margin:0 0 18px}
+.tour-itinerary li{padding:12px 0 12px 15px;border-left:3px solid #b3d4c6;line-height:1.65;white-space:pre-wrap}
+.tour-itinerary li+li{border-top:1px solid #e4ede8}
+.tour-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tour-form-grid label{display:grid;gap:6px;font-weight:600}
+.tour-wide{grid-column:1/-1}
+.tour-card input:not([type=radio]):not([type=checkbox]),.tour-card textarea{width:100%;padding:10px 12px;border:1px solid #bcd2c7;border-radius:7px;font:inherit}
+.tour-choice{display:flex;align-items:flex-start;gap:10px;border:1px solid #dce8e2;padding:13px;border-radius:8px;margin:8px 0;cursor:pointer}
+.tour-choice:has(input:checked){border-color:#24836c;background:#f0f8f3}
+.tour-choice input{margin-top:5px;accent-color:#116451}
+.tour-choice span{display:grid;gap:4px}
+.tour-choice small{color:#506a60}
+.tour-summary{margin:16px 0}
+.tour-summary div{display:flex;justify-content:space-between;gap:10px;padding:8px 0}
+.tour-summary dd{margin:0;font-weight:650}
+.tour-summary-total{border-top:1px solid #dce8e2;margin-top:6px;font-size:1.18rem}
+.tour-error{color:#9d3029}
+@media(max-width:760px){.tour-columns,.tour-hero-with-image{grid-template-columns:1fr}.tour-sticky{position:static}.tour-hero>img{height:240px;min-height:0}}
+@media(max-width:480px){.tour-form-grid{grid-template-columns:1fr}.tour-wide{grid-column:auto}}
+
+.tour-departure-overview { scroll-margin-top: 24px; }
+.tour-departure-filter,.tour-departure-top,.tour-departure-bottom {
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+}
+.tour-departure-filter { margin-bottom:16px; }
+.tour-departure-filter label { display:grid; gap:5px; font-weight:650; }
+.tour-departure-filter input {
+    min-height:42px; border:1px solid #bcd2c7; border-radius:8px; background-color:#fff; color:inherit;
+}
+.tour-departure-list { display:grid; gap:12px; padding:0; margin:0; list-style:none; }
+.tour-departure-row { border:1px solid #dce8e2; border-radius:12px; padding:14px; }
+.tour-departure-row h3 { font-size:1rem; margin:4px 0 0; }
+.tour-seats { padding:4px 9px; border-radius:12px; background:#e3f3e8; color:#1c5a3d; font-size:.8rem; font-weight:700; }
+.tour-seats-sold { background:#f5e8e7; color:#82342a; }
+.tour-departure-bottom { border-top:1px solid #e4ede8; margin-top:12px; padding-top:12px; }
+.tour-departure-bottom .tour-primary { width:auto; padding:8px 12px; }
+.tour-departure-fares { display:flex; flex-wrap:wrap; gap:10px 18px; margin:0; }
+.tour-departure-fares dt { color:#506a60; font-size:.82rem; font-weight:500; }
+.tour-departure-fares dd { margin:0; font-weight:700; }
+
+.tour-departure-row.is-selected { border-color:#24836c; background:#f4faf7; }
+.tour-traveler-fields { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:12px 0; }
+.tour-traveler-fields label { display:grid; min-width:0; gap:5px; font-size:.875rem; font-weight:650; }

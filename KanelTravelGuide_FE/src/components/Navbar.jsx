@@ -50,17 +50,10 @@ const services = [
 
 const bookings = [
     {
-        label: 'Book a Tour',
-        description: 'Plan your next adventure',
+        label: 'Book a Service',
+        description: 'Book tours, transport, stays or dining',
         icon: 'bi-calendar2-check',
-        path: '/tours/booking',
-        category: 'new',
-    },
-    {
-        label: 'Book Transport',
-        description: 'Reserve your transportation',
-        icon: 'bi-bus-front',
-        path: '/transport/booking',
+        path: '/booking',
         category: 'new',
     },
     {
@@ -68,13 +61,6 @@ const bookings = [
         description: 'Manage your reservations',
         icon: 'bi-ticket-perforated',
         path: '/my-bookings',
-        category: 'manage',
-    },
-    {
-        label: 'Booking History',
-        description: 'View your past journeys',
-        icon: 'bi-clock-history',
-        path: '/booking-history',
         category: 'manage',
     },
 ];
@@ -97,8 +83,6 @@ const menuGroups = {
         items: bookings,
         categories: [
             { id: 'all', label: 'All Bookings' },
-            { id: 'new', label: 'New Booking' },
-            { id: 'manage', label: 'My Trips' },
         ],
     },
 };
@@ -362,7 +346,7 @@ function Navbar() {
                                             </Link>
                                             {user.role === 'Admin' && (
                                                 <Link
-                                                    to="/admin/feedbacks"
+                                                    to="/admin"
                                                     className="karnel-user-link"
                                                     role="menuitem"
                                                     onClick={closeAll}

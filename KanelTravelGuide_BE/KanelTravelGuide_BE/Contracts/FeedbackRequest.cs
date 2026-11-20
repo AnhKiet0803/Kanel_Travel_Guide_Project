@@ -4,14 +4,14 @@ namespace KanelTravelGuide_BE.Contracts;
 
 public class FeedbackRequest : IValidatableObject
 {
-    [Required(ErrorMessage = "Full name is required.")]
-    [MaxLength(100, ErrorMessage = "Full name must be at most 100 characters.")]
-    public string FullName { get; set; } = string.Empty;
+    [Range(1, int.MaxValue)]
+    public int? TourId { get; set; }
 
-    [Required(ErrorMessage = "Email is required.")]
-    [EmailAddress(ErrorMessage = "Email format is invalid.")]
+    [MaxLength(100, ErrorMessage = "Full name must be at most 100 characters.")]
+    public string? FullName { get; set; }
+
     [MaxLength(100, ErrorMessage = "Email must be at most 100 characters.")]
-    public string Email { get; set; } = string.Empty;
+    public string? Email { get; set; }
 
     public int? Rating { get; set; }
 
@@ -24,7 +24,17 @@ public class FeedbackRequest : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (Rating is < 1 or > 5)
+        if (!TourId.HasValue)
+        {
+            if (string.IsNullOrWhiteSpace(FullName))
+                yield return new ValidationResult("Full name is required.", [nameof(FullName)]);
+            if (string.IsNullOrWhiteSpace(Email))
+                yield return new ValidationResult("Email is required.", [nameof(Email)]);
+            else if (!new EmailAddressAttribute().IsValid(Email.Trim()))
+                yield return new ValidationResult("Email format is invalid.", [nameof(Email)]);
+        }
+
+        if (Rating is < 1 or > 5 || (TourId.HasValue && Rating == null))
         {
             yield return new ValidationResult("Rating must be from 1 to 5 stars.", [nameof(Rating)]);
         }

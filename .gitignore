@@ -1,2 +1,10 @@
 .DS_Store
 docker-compose.mac.yml
+
+.vs/
+**/.vs/
+**/bin/
+**/obj/
+**/node_modules/
+**/.env
+**/.env.local

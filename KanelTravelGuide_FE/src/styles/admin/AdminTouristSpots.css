@@ -550,6 +550,16 @@
         font-weight: 600;
     }
 
+.ats-table th:last-child,
+.ats-table td:last-child:not([colspan]) {
+    width: 1%;
+}
+
+.ats-table .ktg-actions {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
 .ats-page .ats-action {
     display: inline-flex;
     align-items: center;

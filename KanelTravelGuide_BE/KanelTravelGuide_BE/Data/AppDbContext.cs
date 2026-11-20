@@ -21,6 +21,7 @@ public class AppDbContext : DbContext
     public DbSet<Schedule> Schedules => Set<Schedule>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
     public DbSet<TourPackage> TourPackages => Set<TourPackage>();
+    public DbSet<TourDeparture> TourDepartures => Set<TourDeparture>();
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<BookingDetail> BookingDetails => Set<BookingDetail>();
     public DbSet<Notification> Notifications => Set<Notification>();
@@ -153,11 +154,28 @@ public class AppDbContext : DbContext
             entity.HasKey(x => x.TourId);
             entity.Property(x => x.TourName).HasMaxLength(255);
             entity.Property(x => x.Duration).HasMaxLength(50);
+            entity.Property(x => x.MeetingPoint).HasMaxLength(255);
+            entity.Property(x => x.EndPoint).HasMaxLength(255);
+            entity.Property(x => x.TransportDescription).HasMaxLength(2000);
+            entity.Property(x => x.AccommodationDescription).HasMaxLength(2000);
+            entity.Property(x => x.GuideDescription).HasMaxLength(2000);
+            entity.Property(x => x.MealsDescription).HasMaxLength(2000);
+            entity.Property(x => x.IncludedServices).HasMaxLength(4000);
+            entity.Property(x => x.ExcludedServices).HasMaxLength(4000);
             entity.Property(x => x.StandardPrice).HasPrecision(18, 2);
             entity.Property(x => x.SalePrice).HasPrecision(18, 2);
             entity.Property(x => x.IsFeatured).HasDefaultValue(false);
             entity.HasOne(x => x.TouristSpot).WithMany(x => x.TourPackages).HasForeignKey(x => x.SpotId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.Promotion).WithMany(x => x.TourPackages).HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<TourDeparture>(entity =>
+        {
+            entity.ToTable("TourDepartures");
+            entity.HasKey(x => x.TourDepartureId);
+            entity.Property(x => x.AdultPrice).HasPrecision(18, 2);
+            entity.HasIndex(x => new { x.TourId, x.DepartureDate });
+            entity.HasOne(x => x.Tour).WithMany().HasForeignKey(x => x.TourId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Booking>(entity =>
@@ -178,9 +196,13 @@ public class AppDbContext : DbContext
             entity.Property(x => x.BookingDate).HasDefaultValueSql("GETDATE()");
             entity.Property(x => x.DiscountAmount).HasPrecision(18, 2).HasDefaultValue(0);
             entity.Property(x => x.TotalAmount).HasPrecision(18, 2);
+            entity.Property(x => x.PayPalOrderId).HasMaxLength(64);
+            entity.Property(x => x.PayPalAmountUsd).HasPrecision(18, 2);
+            entity.Property(x => x.PaymentMethod).HasMaxLength(30);
             entity.Property(x => x.PaymentStatus).HasMaxLength(50).HasDefaultValue("Unpaid");
             entity.Property(x => x.BookingStatus).HasMaxLength(50).HasDefaultValue("Pending");
             entity.Property(x => x.Notes).HasMaxLength(500);
+            entity.HasOne(x => x.TourDeparture).WithMany().HasForeignKey(x => x.TourDepartureId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.User).WithMany(x => x.Bookings).HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.Promotion).WithMany().HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
         });
@@ -189,6 +211,7 @@ public class AppDbContext : DbContext
         {
             entity.ToTable("BookingDetails");
             entity.HasKey(x => x.DetailId);
+            entity.Property(x => x.TravelerType).HasMaxLength(20);
             entity.Property(x => x.Quantity).HasDefaultValue(1);
             entity.Property(x => x.UnitPrice).HasPrecision(18, 2);
             entity.HasOne(x => x.Booking).WithMany(x => x.Details).HasForeignKey(x => x.BookingId).OnDelete(DeleteBehavior.Cascade);
@@ -225,6 +248,9 @@ public class AppDbContext : DbContext
         {
             entity.ToTable("Feedbacks", table => table.HasCheckConstraint("CK_Feedbacks_Rating", "[rating] IS NULL OR [rating] BETWEEN 1 AND 5"));
             entity.HasKey(x => x.FeedbackId);
+            entity.HasOne(x => x.Tour).WithMany().HasForeignKey(x => x.TourId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.Spot).WithMany().HasForeignKey(x => x.SpotId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.AuthorUser).WithMany().HasForeignKey(x => x.AuthorUserId).OnDelete(DeleteBehavior.SetNull);
             entity.Property(x => x.FullName).HasMaxLength(100);
             entity.Property(x => x.Email).HasMaxLength(100);
             entity.Property(x => x.Title).HasMaxLength(200);

@@ -1,16 +1,23 @@
 // CN22: Admin Bookings and Order Management
 import { useEffect, useState } from 'react'
 import { adminListBookings, adminUpdateBookingStatus, getBookingById } from '../../api/bookingApi.js'
+import { paymentLabels } from '../../api/payPalApi.js'
 import '../../components/admin.css'
+
+const BOOKINGS_PER_PAGE = 10
+const formatUsd = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+const paymentMethodLabel = (method) => paymentLabels[method] ?? method ?? 'Method not recorded'
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState([])
+  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   // Filters
   const [statusFilter, setStatusFilter] = useState('')
   const [paymentFilter, setPaymentFilter] = useState('')
+  const [methodFilter, setMethodFilter] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
 
   // View / Edit Modal
@@ -44,14 +51,15 @@ export default function AdminBookingsPage() {
 
   function handleSearchSubmit(e) {
     e.preventDefault()
+    setPage(1)
     loadBookings()
   }
 
-  async function handleOpenDetail(id) {
+  async function handleOpenDetail(booking) {
     setLoadingDetail(true)
     try {
-      const data = await getBookingById(id)
-      setSelectedBooking(data)
+      const data = await getBookingById(booking.bookingId)
+      setSelectedBooking({ ...booking, ...data })
       setNewBookingStatus(data.bookingStatus)
       setNewPaymentStatus(data.paymentStatus)
     } catch (err) {
@@ -98,17 +106,28 @@ export default function AdminBookingsPage() {
     }
   }
 
+  const visibleBookings = methodFilter === ''
+    ? bookings
+    : bookings.filter((booking) => (booking.paymentMethod ?? 'unrecorded') === methodFilter)
+  const pageCount = Math.max(1, Math.ceil(visibleBookings.length / BOOKINGS_PER_PAGE))
+  const currentPage = Math.min(page, pageCount)
+  const offset = (currentPage - 1) * BOOKINGS_PER_PAGE
+  const pageBookings = visibleBookings.slice(offset, offset + BOOKINGS_PER_PAGE)
+
+  const paidCount = visibleBookings.filter((booking) => booking.paymentStatus === 'Paid').length
+  const unpaidCount = visibleBookings.filter((booking) => booking.paymentStatus === 'Unpaid').length
+
   return (
     <div className="ktg-admin-page">
       <div className="mb-4">
-        <h2 className="fw-bold mb-1">Bookings & Orders Management (CN22)</h2>
-        <p className="text-muted mb-0">Track reservations, update payment status, and process cancellations</p>
+        <h2 className="fw-bold mb-1">Bookings & Payments</h2>
+        <p className="text-muted mb-0">View payment records and manage bookings across all customers.</p>
       </div>
 
       {/* Filter Toolbar */}
       <div className="card shadow-sm border-0 p-3 mb-4 bg-light">
         <form onSubmit={handleSearchSubmit} className="row g-2 align-items-end">
-          <div className="col-md-4">
+          <div className="col-md-6 col-xl-3">
             <label className="form-label small fw-semibold text-secondary">Search Customer / Code</label>
             <input
               type="text"
@@ -118,12 +137,12 @@ export default function AdminBookingsPage() {
               onChange={(e) => setSearchKeyword(e.target.value)}
             />
           </div>
-          <div className="col-md-3">
+          <div className="col-md-6 col-xl-2">
             <label className="form-label small fw-semibold text-secondary">Booking Status</label>
             <select
               className="form-select form-select-sm"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(event) => { setStatusFilter(event.target.value); setPage(1) }}
             >
               <option value="">All Statuses</option>
               <option value="Pending">Pending</option>
@@ -132,19 +151,27 @@ export default function AdminBookingsPage() {
               <option value="Cancelled">Cancelled</option>
             </select>
           </div>
-          <div className="col-md-3">
+          <div className="col-md-6 col-xl-2">
             <label className="form-label small fw-semibold text-secondary">Payment Status</label>
             <select
               className="form-select form-select-sm"
               value={paymentFilter}
-              onChange={(e) => setPaymentFilter(e.target.value)}
+              onChange={(event) => { setPaymentFilter(event.target.value); setPage(1) }}
             >
               <option value="">All Payments</option>
               <option value="Unpaid">Unpaid</option>
               <option value="Paid">Paid</option>
             </select>
           </div>
-          <div className="col-md-2 d-grid">
+          <div className="col-md-6 col-xl-3">
+            <label className="form-label small fw-semibold text-secondary" htmlFor="admin-payment-method">Payment method</label>
+            <select id="admin-payment-method" className="form-select form-select-sm" value={methodFilter} onChange={(event) => { setMethodFilter(event.target.value); setPage(1) }}>
+              <option value="">All methods</option>
+              {Object.entries(paymentLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              <option value="unrecorded">Method not recorded</option>
+            </select>
+          </div>
+          <div className="col-md-6 col-xl-2 d-grid">
             <button type="submit" className="btn btn-sm btn-primary">
               <i className="bi bi-search me-1"></i> Search
             </button>
@@ -152,14 +179,19 @@ export default function AdminBookingsPage() {
         </form>
       </div>
 
-      {loading && <p className="text-muted">Loading bookings...</p>}
+      {!loading && !error && (
+        <p className="text-muted mb-3" aria-live="polite">
+          {visibleBookings.length} matching bookings · {paidCount} paid · {unpaidCount} unpaid
+        </p>
+      )}
+      {loading && <p className="text-muted" role="status">Loading bookings...</p>}
       {error && <div className="alert alert-danger">{error}</div>}
 
-      {!loading && !error && bookings.length === 0 && (
+      {!loading && !error && visibleBookings.length === 0 && (
         <div className="alert alert-light border text-center py-4">No bookings found.</div>
       )}
 
-      {!loading && !error && bookings.length > 0 && (
+      {!loading && !error && visibleBookings.length > 0 && (
         <div className="card shadow-sm border-0">
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
@@ -177,7 +209,7 @@ export default function AdminBookingsPage() {
                 </tr>
               </thead>
               <tbody>
-                {bookings.map((b) => (
+                {pageBookings.map((b) => (
                   <tr key={b.bookingId}>
                     <td>
                       <strong className="text-primary">{b.bookingCode}</strong>
@@ -196,13 +228,15 @@ export default function AdminBookingsPage() {
                     <td>{b.totalPassengers}</td>
                     <td className="fw-bold">{formatPrice(b.totalAmount)}</td>
                     <td>
+                      <strong className="d-block mb-1">{paymentMethodLabel(b.paymentMethod)}</strong>
                       <span
                         className={`badge ${
                           b.paymentStatus === 'Paid' ? 'bg-success' : 'bg-light text-dark border'
                         }`}
                       >
-                        {b.paymentStatus}
+                        {b.paymentStatus ?? "Status unavailable"}
                       </span>
+                      {b.payPalAmountUsd != null && <span className="d-block small text-muted mt-1">{formatUsd(b.payPalAmountUsd)}</span>}
                     </td>
                     <td>
                       <span className={`badge ${getStatusBadge(b.bookingStatus)}`}>
@@ -212,7 +246,8 @@ export default function AdminBookingsPage() {
                     <td className="text-end">
                       <button
                         className="btn btn-sm btn-outline-primary"
-                        onClick={() => handleOpenDetail(b.bookingId)}
+                        disabled={loadingDetail}
+                        onClick={() => handleOpenDetail(b)}
                       >
                         Manage
                       </button>
@@ -222,6 +257,19 @@ export default function AdminBookingsPage() {
               </tbody>
             </table>
           </div>
+          <nav className="d-flex flex-wrap justify-content-between align-items-center border-top p-3 gap-2"
+            aria-label="Admin bookings pagination">
+            <span className="small text-muted" role="status">
+              Showing {offset + 1}–{offset + pageBookings.length} of {visibleBookings.length} bookings
+            </span>
+            {pageCount > 1 && <div className="d-flex align-items-center gap-2">
+              <button type="button" className="btn btn-sm btn-outline-secondary" disabled={currentPage === 1}
+                onClick={() => setPage(currentPage - 1)}>Previous</button>
+              <span className="small">Page {currentPage} of {pageCount}</span>
+              <button type="button" className="btn btn-sm btn-outline-secondary" disabled={currentPage === pageCount}
+                onClick={() => setPage(currentPage + 1)}>Next</button>
+            </div>}
+          </nav>
         </div>
       )}
 
@@ -252,10 +300,22 @@ export default function AdminBookingsPage() {
                     <div className="col-md-6">
                       <span className="text-muted small d-block">Booking Information:</span>
                       <span>Type: <strong>{selectedBooking.bookingType}</strong></span>
+
                       <span className="d-block">Travel / Check-in: <strong>{selectedBooking.startDate}</strong></span>
                       <span className="d-block">Passengers / Units: <strong>{selectedBooking.totalPassengers}</strong></span>
                     </div>
                   </div>
+
+                  <section className="border rounded p-3 mb-3" aria-labelledby="admin-payment-details">
+                    <h6 className="fw-bold mb-2" id="admin-payment-details">Payment details</h6>
+                    <dl className="row small mb-0">
+                      <dt className="col-5">Method</dt><dd className="col-7">{paymentMethodLabel(selectedBooking.paymentMethod)}</dd>
+                      <dt className="col-5">Status</dt><dd className="col-7">{selectedBooking.paymentStatus ?? 'Status unavailable'}</dd>
+                      <dt className="col-5">Booking total</dt><dd className="col-7">{formatPrice(selectedBooking.totalAmount)}</dd>
+                      {selectedBooking.payPalOrderId && <><dt className="col-5">PayPal order ID</dt><dd className="col-7 text-break">{selectedBooking.payPalOrderId}</dd></>}
+                      {selectedBooking.payPalAmountUsd != null && <><dt className="col-5">PayPal order amount</dt><dd className="col-7">{formatUsd(selectedBooking.payPalAmountUsd)}</dd></>}
+                    </dl>
+                  </section>
 
                   {selectedBooking.notes && (
                     <div className="alert alert-light border small mb-3">
@@ -277,7 +337,7 @@ export default function AdminBookingsPage() {
                       {selectedBooking.details?.map((d) => (
                         <tr key={d.detailId}>
                           <td>
-                            {d.tourId && `Tour #${d.tourId}`}
+                            {d.travelerType ? d.travelerType + ' fare' : d.tourId && `Tour #${d.tourId}`}
                             {d.scheduleId && `Schedule #${d.scheduleId}`}
                             {d.serviceItemId && `Service Item #${d.serviceItemId}`}
                           </td>

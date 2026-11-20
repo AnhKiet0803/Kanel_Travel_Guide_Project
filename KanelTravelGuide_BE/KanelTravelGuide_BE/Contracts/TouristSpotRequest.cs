@@ -16,6 +16,10 @@ public class TouristSpotRequest
     [StringLength(500)]
     public string? ThumbnailUrl { get; set; }
 
+    [MaxLength(2 * 1024 * 1024)]
+    public byte[]? ThumbnailImage { get; set; }
+    public bool RemoveThumbnail { get; set; }
+
     public string? Description { get; set; }
 
     public string? DetailedContent { get; set; }

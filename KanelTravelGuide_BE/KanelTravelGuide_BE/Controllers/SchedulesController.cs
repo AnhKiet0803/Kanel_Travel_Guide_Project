@@ -19,7 +19,7 @@ public class SchedulesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int? routeId, [FromQuery] string? status)
+    public async Task<IActionResult> GetAll([FromQuery] int? routeId, [FromQuery] string? status, [FromQuery] DateOnly? date)
     {
         var query = _db.Schedules
             .AsNoTracking()
@@ -49,11 +49,20 @@ public class SchedulesController : ControllerBase
                 departureTime = s.DepartureTime.ToString("HH:mm:ss"),
                 s.TicketPrice,
                 s.AvailableSeats,
+                remainingSeats = (s.AvailableSeats ?? s.Vehicle.TotalSeats) - (date == null ? 0 :
+                    _db.BookingDetails.Where(d => d.ScheduleId == s.ScheduleId && d.Booking.StartDate == date
+                        && d.Booking.BookingStatus != "Cancelled" && d.Booking.BookingStatus != "Hủy")
+                        .Sum(d => d.Quantity)),
                 s.Status
             })
             .ToListAsync();
 
-        return Ok(items);
+        return Ok(items.Select(item => new
+        {
+            item.ScheduleId, item.RouteId, item.departureLocationName, item.destinationLocationName,
+            item.VehicleId, item.vehicleName, item.vehicleType, item.departureTime, item.TicketPrice,
+            item.AvailableSeats, remainingSeats = Math.Max(item.remainingSeats, 0), item.Status
+        }));
     }
 
     [HttpGet("{id}")]

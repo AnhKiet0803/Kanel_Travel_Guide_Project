@@ -1,18 +1,71 @@
-const KEY = 'karnel-admin-tours-demo';
-export const USE_DEMO_TOURS = import.meta.env.VITE_USE_DEMO_TOURS !== 'false';
-const API = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5011/api').replace(/\/$/, '');
-const seed = [
-  {id:1,title:'Ha Long Bay Cruise',destination:'Ha Long',duration:3,price:2590000,image:'https://images.unsplash.com/photo-1528127269322-539801943592?w=1200',description:'Khám phá vịnh Hạ Long và trải nghiệm du thuyền.',itinerary:['Ngày 1: Khởi hành và nhận phòng','Ngày 2: Tham quan vịnh và chèo kayak','Ngày 3: Trở về'],status:'active'},
-  {id:2,title:'Sapa Mountain Escape',destination:'Sa Pa',duration:4,price:3290000,image:'https://images.unsplash.com/photo-1500534623283-312aade485b7?w=1200',description:'Khám phá núi rừng và bản làng Sa Pa.',itinerary:['Ngày 1: Di chuyển đến Sa Pa','Ngày 2: Trekking bản làng','Ngày 3: Tham quan Fansipan','Ngày 4: Trở về'],status:'active'},
-  {id:3,title:'Da Nang & Hoi An',destination:'Da Nang',duration:3,price:2890000,image:'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=1200',description:'Trải nghiệm Đà Nẵng và phố cổ Hội An.',itinerary:['Ngày 1: Đà Nẵng','Ngày 2: Hội An','Ngày 3: Trở về'],status:'active'},
-];
-function read(){try{const v=localStorage.getItem(KEY);return v?JSON.parse(v):seed;}catch{return seed;}}
-function write(items){localStorage.setItem(KEY,JSON.stringify(items));window.dispatchEvent(new Event('karnel-tours-updated'));}
-async function request(path, options){const res=await fetch(`${API}/tours${path}`,{headers:{'Content-Type':'application/json'},...options});if(!res.ok)throw new Error(`API error ${res.status}`);return res.status===204?null:res.json();}
-export const tourService={
-  list:async()=>USE_DEMO_TOURS?read():request(''),
-  get:async(id)=>USE_DEMO_TOURS?read().find(x=>String(x.id)===String(id)):request(`/${id}`),
-  save:async(data)=>{if(!USE_DEMO_TOURS)return request(data.id?`/${data.id}`:'',{method:data.id?'PUT':'POST',body:JSON.stringify(data)});const items=read();const item={...data,id:data.id||Date.now()};const index=items.findIndex(x=>String(x.id)===String(item.id));if(index>=0)items[index]=item;else items.unshift(item);write(items);return item;},
-  remove:async(id)=>{if(!USE_DEMO_TOURS)return request(`/${id}`,{method:'DELETE'});write(read().filter(x=>String(x.id)!==String(id)));},
+import { request } from '../api/http.js';
+import { listSpots } from '../api/touristSpotsApi.js';
+
+const pathFor = (id) => '/tours/' + encodeURIComponent(id);
+const loadSpots = () => listSpots().catch(() => []);
+
+export function readTourItinerary(value) {
+    const text = value?.trim() ?? '';
+    const meetingPoint = text.match(/^Meeting point:[ \t]*([^\r\n]+)(?:\r?\n|$)/i);
+    return {
+        meetingPoint: meetingPoint?.[1].trim() ?? '',
+        itinerary: meetingPoint ? text.slice(meetingPoint[0].length).trim() : text,
+    };
+}
+
+export function writeTourItinerary(meetingPoint, itinerary) {
+    return [meetingPoint && 'Meeting point: ' + meetingPoint, itinerary].filter(Boolean).join('\n\n') || null;
+}
+
+function presentTour(tour, spots) {
+    const spot = spots.find((item) => item.SpotId === tour.spotId);
+    return {
+        ...tour,
+        id: tour.tourId,
+        title: tour.tourName,
+        destination: tour.spotName,
+        locationId: spot?.LocationId,
+        locationName: spot?.LocationName,
+        description: readTourItinerary(tour.itineraryDetail).itinerary,
+        price: tour.matchingAdultPrice ?? tour.salePrice ?? tour.standardPrice,
+        image: spot?.ThumbnailUrl,
+    };
+}
+
+export const tourService = {
+    async list(filters = {}, spotsRequest = loadSpots()) {
+        const query = new URLSearchParams(filters).toString();
+        const [tours, spots] = await Promise.all([request('/tours' + (query ? '?' + query : '')), spotsRequest.catch(() => [])]);
+        return tours.map((tour) => presentTour(tour, spots));
+    },
+    async get(id) {
+        const [tour, spots, promotions] = await Promise.all([
+            request(pathFor(id)), loadSpots(), listTourPromotions().catch(() => []),
+        ]);
+        return {
+            ...presentTour(tour, spots),
+            promotion: promotions.find((item) => item.promotionId === tour.promotionId) ?? null,
+        };
+    },
+    save(data, id) {
+        return request(id == null ? '/tours' : pathFor(id), {
+            method: id == null ? 'POST' : 'PUT',
+            body: JSON.stringify(data),
+        });
+    },
+    remove(id) {
+        return request(pathFor(id), { method: 'DELETE' });
+    },
 };
-export const money=(v)=>new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND'}).format(Number(v)||0);
+
+export const listTourPromotions = (filters = {}) => {
+    const query = new URLSearchParams(filters).toString();
+    return request('/promotions' + (query ? '?' + query : ''));
+};
+
+export const promotionInstant = (value) => new Date(/(?:Z|[+-]\d\d:\d\d)$/i.test(value) ? value : value + 'Z');
+
+export const money = (value) => new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+}).format(value);

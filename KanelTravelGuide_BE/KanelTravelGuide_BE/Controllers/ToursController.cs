@@ -1,6 +1,7 @@
 using KanelTravelGuide_BE.Contracts;
 using KanelTravelGuide_BE.Data;
 using KanelTravelGuide_BE.Models;
+using KanelTravelGuide_BE.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,7 +20,8 @@ public class ToursController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int? spotId, [FromQuery] bool? isFeatured, [FromQuery] string? q)
+    public async Task<IActionResult> GetAll([FromQuery] int? spotId, [FromQuery] bool? isFeatured, [FromQuery] string? q,
+        [FromQuery] DateOnly? date, [FromQuery] DateOnly? fromDate, [FromQuery] DateOnly? toDate)
     {
         var query = _db.TourPackages
             .AsNoTracking()
@@ -41,6 +43,29 @@ public class ToursController : ControllerBase
             query = query.Where(t => t.TourName.ToLower().Contains(keyword) || (t.ItineraryDetail != null && t.ItineraryDetail.ToLower().Contains(keyword)));
         }
 
+        fromDate = date ?? fromDate;
+        toDate = date ?? toDate;
+        if (fromDate > toDate)
+        {
+            return BadRequest(new { message = "The end date must be on or after the start date." });
+        }
+
+        var filterByDate = fromDate.HasValue || toDate.HasValue;
+        var today = TourPricing.Today;
+        var firstDate = fromDate is { } start && start > today ? start : today;
+        var lastDate = toDate ?? DateOnly.MaxValue;
+        var matchingDepartures = _db.TourDepartures.Where(d =>
+            d.DepartureDate >= firstDate && d.DepartureDate <= lastDate &&
+            d.Capacity > _db.Bookings.Where(b => b.TourDepartureId == d.TourDepartureId
+                && b.BookingStatus != "Cancelled" && b.BookingStatus != "Hủy").Sum(b => b.TotalPassengers));
+
+        if (filterByDate)
+        {
+            query = query.Where(t => matchingDepartures.Any(d => d.TourId == t.TourId));
+        }
+
+        var publicReviews = _db.Feedbacks.Where(review => review.IsApproved && review.Rating >= 1 && review.Rating <= 5);
+
         var tours = await query
             .OrderByDescending(t => t.IsFeatured)
             .ThenBy(t => t.SalePrice ?? t.StandardPrice)
@@ -55,7 +80,25 @@ public class ToursController : ControllerBase
                 t.StandardPrice,
                 t.SalePrice,
                 t.ItineraryDetail,
-                t.IsFeatured
+                t.MeetingPoint,
+                t.EndPoint,
+                t.TransportDescription,
+                t.AccommodationDescription,
+                t.GuideDescription,
+                t.MealsDescription,
+                t.IncludedServices,
+                t.ExcludedServices,
+                t.IsFeatured,
+                matchingDepartureDate = filterByDate
+                    ? matchingDepartures.Where(d => d.TourId == t.TourId).OrderBy(d => d.DepartureDate)
+                        .Select(d => (DateOnly?)d.DepartureDate).FirstOrDefault()
+                    : null,
+                matchingAdultPrice = filterByDate
+                    ? matchingDepartures.Where(d => d.TourId == t.TourId).Min(d => (decimal?)d.AdultPrice)
+                    : null,
+                reviewCount = publicReviews.Count(review => review.TourId == t.TourId),
+                averageRating = publicReviews.Where(review => review.TourId == t.TourId)
+                    .Average(review => (double?)review.Rating)
             })
             .ToListAsync();
 
@@ -79,6 +122,14 @@ public class ToursController : ControllerBase
                 t.StandardPrice,
                 t.SalePrice,
                 t.ItineraryDetail,
+                t.MeetingPoint,
+                t.EndPoint,
+                t.TransportDescription,
+                t.AccommodationDescription,
+                t.GuideDescription,
+                t.MealsDescription,
+                t.IncludedServices,
+                t.ExcludedServices,
                 t.IsFeatured
             })
             .FirstOrDefaultAsync();
@@ -90,6 +141,8 @@ public class ToursController : ControllerBase
 
         return Ok(tour);
     }
+
+    private static string? CleanText(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     [Authorize(Roles = "Admin")]
     [HttpPost]
@@ -122,6 +175,14 @@ public class ToursController : ControllerBase
             StandardPrice = request.StandardPrice,
             SalePrice = request.SalePrice,
             ItineraryDetail = string.IsNullOrWhiteSpace(request.ItineraryDetail) ? null : request.ItineraryDetail.Trim(),
+            MeetingPoint = CleanText(request.MeetingPoint),
+            EndPoint = CleanText(request.EndPoint),
+            TransportDescription = CleanText(request.TransportDescription),
+            AccommodationDescription = CleanText(request.AccommodationDescription),
+            GuideDescription = CleanText(request.GuideDescription),
+            MealsDescription = CleanText(request.MealsDescription),
+            IncludedServices = CleanText(request.IncludedServices),
+            ExcludedServices = CleanText(request.ExcludedServices),
             IsFeatured = request.IsFeatured
         };
 
@@ -148,6 +209,14 @@ public class ToursController : ControllerBase
             tour.StandardPrice,
             tour.SalePrice,
             tour.ItineraryDetail,
+            tour.MeetingPoint,
+            tour.EndPoint,
+            tour.TransportDescription,
+            tour.AccommodationDescription,
+            tour.GuideDescription,
+            tour.MealsDescription,
+            tour.IncludedServices,
+            tour.ExcludedServices,
             tour.IsFeatured
         });
     }
@@ -187,6 +256,14 @@ public class ToursController : ControllerBase
         tour.StandardPrice = request.StandardPrice;
         tour.SalePrice = request.SalePrice;
         tour.ItineraryDetail = string.IsNullOrWhiteSpace(request.ItineraryDetail) ? null : request.ItineraryDetail.Trim();
+        if (request.MeetingPoint != null) tour.MeetingPoint = CleanText(request.MeetingPoint);
+        if (request.EndPoint != null) tour.EndPoint = CleanText(request.EndPoint);
+        if (request.TransportDescription != null) tour.TransportDescription = CleanText(request.TransportDescription);
+        if (request.AccommodationDescription != null) tour.AccommodationDescription = CleanText(request.AccommodationDescription);
+        if (request.GuideDescription != null) tour.GuideDescription = CleanText(request.GuideDescription);
+        if (request.MealsDescription != null) tour.MealsDescription = CleanText(request.MealsDescription);
+        if (request.IncludedServices != null) tour.IncludedServices = CleanText(request.IncludedServices);
+        if (request.ExcludedServices != null) tour.ExcludedServices = CleanText(request.ExcludedServices);
         tour.IsFeatured = request.IsFeatured;
 
         await _db.SaveChangesAsync();
@@ -211,6 +288,14 @@ public class ToursController : ControllerBase
             tour.StandardPrice,
             tour.SalePrice,
             tour.ItineraryDetail,
+            tour.MeetingPoint,
+            tour.EndPoint,
+            tour.TransportDescription,
+            tour.AccommodationDescription,
+            tour.GuideDescription,
+            tour.MealsDescription,
+            tour.IncludedServices,
+            tour.ExcludedServices,
             tour.IsFeatured
         });
     }
@@ -223,6 +308,13 @@ public class ToursController : ControllerBase
         if (tour == null)
         {
             return NotFound(new { message = "Tour not found." });
+        }
+
+        if (await _db.BookingDetails.AnyAsync(detail => detail.TourId == id)
+            || await _db.Feedbacks.AnyAsync(feedback => feedback.TourId == id)
+            || await _db.TourDepartures.AnyAsync(departure => departure.TourId == id))
+        {
+            return Conflict(new { message = "This tour has bookings, reviews or departures and cannot be deleted." });
         }
 
         _db.TourPackages.Remove(tour);

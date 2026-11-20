@@ -42,7 +42,8 @@ public class PromotionsController : ControllerBase
                 p.DiscountAmount,
                 p.StartDate,
                 p.EndDate,
-                p.IsActive
+                p.IsActive,
+                TourIds = p.TourPackages.OrderBy(t => t.TourId).Select(t => t.TourId).ToList()
             })
             .ToListAsync();
 
@@ -64,7 +65,8 @@ public class PromotionsController : ControllerBase
                 p.DiscountAmount,
                 p.StartDate,
                 p.EndDate,
-                p.IsActive
+                p.IsActive,
+                TourIds = p.TourPackages.OrderBy(t => t.TourId).Select(t => t.TourId).ToList()
             })
             .FirstOrDefaultAsync();
 
@@ -80,6 +82,8 @@ public class PromotionsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(PromotionRequest request)
     {
+        if (request.StartDate > request.EndDate)
+            return BadRequest(new { message = "End date must be on or after the start date." });
         if (!string.IsNullOrWhiteSpace(request.PromoCode))
         {
             var code = request.PromoCode.Trim().ToUpperInvariant();
@@ -100,6 +104,9 @@ public class PromotionsController : ControllerBase
             IsActive = request.IsActive
         };
 
+        var linkError = await UpdateTourLinks(promo, request.TourIds);
+        if (linkError != null) return linkError;
+
         _db.Promotions.Add(promo);
         await _db.SaveChangesAsync();
 
@@ -112,7 +119,8 @@ public class PromotionsController : ControllerBase
             promo.DiscountAmount,
             promo.StartDate,
             promo.EndDate,
-            promo.IsActive
+            promo.IsActive,
+            TourIds = promo.TourPackages.OrderBy(t => t.TourId).Select(t => t.TourId).ToList()
         });
     }
 
@@ -120,7 +128,10 @@ public class PromotionsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, PromotionRequest request)
     {
-        var promo = await _db.Promotions.FindAsync(id);
+        if (request.StartDate > request.EndDate)
+            return BadRequest(new { message = "End date must be on or after the start date." });
+
+        var promo = await _db.Promotions.Include(p => p.TourPackages).SingleOrDefaultAsync(p => p.PromotionId == id);
         if (promo == null)
         {
             return NotFound(new { message = "Promotion not found." });
@@ -147,6 +158,9 @@ public class PromotionsController : ControllerBase
         promo.EndDate = request.EndDate;
         promo.IsActive = request.IsActive;
 
+        var linkError = await UpdateTourLinks(promo, request.TourIds);
+        if (linkError != null) return linkError;
+
         await _db.SaveChangesAsync();
 
         return Ok(new
@@ -158,8 +172,30 @@ public class PromotionsController : ControllerBase
             promo.DiscountAmount,
             promo.StartDate,
             promo.EndDate,
-            promo.IsActive
+            promo.IsActive,
+            TourIds = promo.TourPackages.OrderBy(t => t.TourId).Select(t => t.TourId).ToList()
         });
+    }
+
+    private async Task<IActionResult?> UpdateTourLinks(Promotion promotion, List<int>? tourIds)
+    {
+        if (tourIds == null) return null;
+
+        var ids = tourIds.ToHashSet();
+        var tours = await _db.TourPackages.Where(t => ids.Contains(t.TourId)).ToListAsync();
+        if (tours.Count != ids.Count)
+            return BadRequest(new { message = "One or more selected tours no longer exist." });
+
+        var linked = tours.FirstOrDefault(t => t.PromotionId.HasValue && t.PromotionId != promotion.PromotionId);
+        if (linked != null)
+            return Conflict(new { message = $"{linked.TourName} already has another promotion. Update its linked promotion in Admin Tours first." });
+
+        foreach (var previous in promotion.TourPackages.Where(t => !ids.Contains(t.TourId)).ToList())
+            previous.PromotionId = null;
+        foreach (var tour in tours)
+            tour.Promotion = promotion;
+
+        return null;
     }
 
     [Authorize(Roles = "Admin")]
@@ -171,6 +207,10 @@ public class PromotionsController : ControllerBase
         {
             return NotFound(new { message = "Promotion not found." });
         }
+
+        if (await _db.TourPackages.AnyAsync(t => t.PromotionId == id)
+            || await _db.Bookings.AnyAsync(b => b.PromotionId == id))
+            return Conflict(new { message = "This promotion is linked to a tour or booking. Disable it to stop new use." });
 
         _db.Promotions.Remove(promo);
         await _db.SaveChangesAsync();

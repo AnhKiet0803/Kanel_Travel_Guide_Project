@@ -90,18 +90,19 @@ function FeedbackPanel() {
                 <tr key={item.feedbackId}>
                   <td>
                     {item.fullName}
-                    <br />
-                    <small>{item.email}</small>
+                    {item.email && <><br /><small>{item.email}</small></>}
                   </td>
                   <td>{item.rating ? `${item.rating} ★` : '—'}</td>
                   <td>
+                    {item.tourName && <p><strong>Tour:</strong> {item.tourName}</p>}
+                    {item.spotName && <p><strong>Destination:</strong> {item.spotName}</p>}
                     {item.title && <strong>{item.title}</strong>}
                     <p>{item.content}</p>
                   </td>
                   <td>{formatDate(item.createdAt)}</td>
                   <td>
                     <span className={item.isApproved ? 'ktg-badge ktg-badge-ok' : 'ktg-badge'}>
-                      {item.isApproved ? 'Approved' : 'Pending approval'}
+                      {item.isApproved ? 'Published' : item.tourId == null && item.spotId == null ? 'Pending approval' : 'Hidden / pending'}
                     </span>
                   </td>
                   <td>
@@ -111,7 +112,7 @@ function FeedbackPanel() {
                         className="ktg-button ktg-button-small"
                         onClick={() => run(() => setFeedbackApproval(item.feedbackId, !item.isApproved))}
                       >
-                        {item.isApproved ? 'Hide' : 'Approve'}
+                        {item.isApproved ? 'Hide' : item.tourId == null && item.spotId == null ? 'Approve' : 'Publish'}
                       </button>
                       <button
                         type="button"

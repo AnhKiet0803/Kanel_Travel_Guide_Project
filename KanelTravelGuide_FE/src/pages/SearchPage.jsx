@@ -426,9 +426,7 @@ export default function SearchPage() {
                           <div className="ktg-price-val">{formatPrice(tour.price)}</div>
                         </div>
                         <Link
-                          to={`/booking?type=Tour&tourId=${tour.tourId}&tourName=${encodeURIComponent(
-                            tour.tourName
-                          )}&price=${tour.price}`}
+                          to={`/tours/booking?tourId=${tour.tourId}`}
                           className="ktg-btn-teal"
                         >
                           Book Tour

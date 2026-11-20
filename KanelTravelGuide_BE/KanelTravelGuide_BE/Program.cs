@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddHttpClient("PayPalSandbox", client => client.Timeout = TimeSpan.FromSeconds(20));
 builder.Services.AddOpenApi();
 builder.Services.AddSingleton<JwtTokenService>();
 
@@ -31,6 +32,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
         options.Events = new JwtBearerEvents
         {
+            OnTokenValidated = async context =>
+            {
+                var userId = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var role = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                var db = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+                if (!int.TryParse(userId, out var id) || !await db.Users.AnyAsync(
+                    user => user.UserId == id && user.IsActive && user.Role == role,
+                    context.HttpContext.RequestAborted))
+                {
+                    context.Fail("The account has been removed, locked, or its role has changed.");
+                }
+            },
             OnChallenge = async context =>
             {
                 context.HandleResponse();

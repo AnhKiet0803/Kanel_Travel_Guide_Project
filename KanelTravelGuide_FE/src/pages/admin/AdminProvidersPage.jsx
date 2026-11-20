@@ -211,10 +211,10 @@ export default function AdminProvidersPage() {
   }
 
   return (
-    <div className="ktg-admin-page">
+    <div className="ktg-admin-page ktg-stay-dining">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 className="fw-bold mb-1">Stay & Dining Management (CN19)</h2>
+          <h1 className="fw-bold mb-1">Stay & Dining Management (CN19)</h1>
           <p className="text-muted mb-0">Manage Hotels, Restaurants, Resorts and their Rooms/Tables</p>
         </div>
         <button className="btn btn-primary" onClick={handleOpenCreate}>
@@ -560,11 +560,11 @@ export default function AdminProvidersPage() {
                       {managingProvider.items.map((it) => (
                         <tr key={it.itemId}>
                           <td>{it.itemName}</td>
-                          <td>{it.capacity} persons</td>
-                          <td>{formatPrice(it.price)}</td>
+                          <td>{it.capacity == null ? 'Ask provider' : `${it.capacity} persons`}</td>
+                          <td>{!it.isAvailable && it.price === 0 ? 'Contact for price' : formatPrice(it.price)}</td>
                           <td>
                             <span className={`badge ${it.isAvailable ? 'bg-success' : 'bg-secondary'}`}>
-                              {it.isAvailable ? 'Yes' : 'No'}
+                              {it.isAvailable ? 'Yes' : 'Check with provider'}
                             </span>
                           </td>
                           <td className="text-end">

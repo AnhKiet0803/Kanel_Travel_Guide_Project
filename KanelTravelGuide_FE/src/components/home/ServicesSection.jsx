@@ -17,8 +17,9 @@ export default function ServicesSection() {
                   aria-label={`Explore ${service.name}`}>
               <img src={service.image} alt="" loading="lazy"
                    onError={(event) => {
-                     event.currentTarget.onerror = null;
-                     event.currentTarget.src = '/images/services/fallback.jpg';
+                     if (!event.currentTarget.src.endsWith('/images/services/fallback.jpg')) {
+                       event.currentTarget.src = '/images/services/fallback.jpg';
+                     }
                    }} />
               <span className="home-service-shade" aria-hidden="true" />
               <span className="home-service-arrow" aria-hidden="true">

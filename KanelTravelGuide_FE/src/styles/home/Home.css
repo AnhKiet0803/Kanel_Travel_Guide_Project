@@ -666,3 +666,26 @@
         height: 290px;
     }
 }
+
+.karnel-home .home-review-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    margin-bottom: 12px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #f2f7f9;
+    color: var(--home-navy);
+    font-size: .8rem;
+    text-decoration: none;
+}
+
+.karnel-home .home-review-badge:hover { text-decoration: underline; }
+.karnel-home .home-review-badge i { color: #a86200; }
+.karnel-home .home-review-badge-overlay {
+    position: absolute;
+    top: 22px;
+    left: 22px;
+    margin: 0;
+    background: #fff;
+}

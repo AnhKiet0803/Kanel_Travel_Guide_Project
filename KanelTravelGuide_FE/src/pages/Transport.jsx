@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { getRoutes, getSchedules, transportModeFor } from '../api/transportApi.js';
+import { getLocations } from '../api/servicesApi.js';
 import '../styles/transport/Transport.css';
 
-// Front-end only: all schedules, seats, fares, promotions and reviews are DEMO data.
-const today = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+
+const today = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh', dateStyle: 'short' }).format(new Date());
 const money = n => new Intl.NumberFormat('vi-VN').format(n) + 'đ';
 const minutes = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
 const clock = (t, duration) => { const x = (minutes(t) + duration) % 1440; return `${String(Math.floor(x / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`; };
@@ -16,34 +19,40 @@ const IMG = {
     flight: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=700&q=85',
     interior: 'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?auto=format&fit=crop&w=700&q=85',
 };
-const DATA = [
-    { id: 1, mode: 'bus', from: 'Hanoi', to: 'Ha Long', name: 'Karnel Express', sub: 'Premium Coach · 45 seats', variant: 'Coach', depart: '07:00', duration: 150, price: 220000, seats: 18, rating: 4.7, operator: 'Karnel Express', pickup: 'Hanoi Central Station', dropoff: 'Ha Long City Center', amenities: ['Wi-Fi', 'Air conditioning', 'USB charging'], image: IMG.bus, featured: true, promotion: { name: 'LAST-MINUTE DEAL', originalPrice: 275000, discountPercent: 20, extraLabel: '⚡ Extra 10% off · max 50k', endsAt: '2026-11-15T23:59:59+07:00' } },
-    { id: 2, mode: 'bus', from: 'Hanoi', to: 'Ha Long', name: 'Premium Limousine', sub: 'Luxury Limousine · 16 seats', variant: 'Limousine', depart: '09:30', duration: 140, price: 350000, seats: 6, rating: 4.9, operator: 'Premium Limousine', pickup: 'Hanoi Old Quarter', dropoff: 'Bai Chay', amenities: ['Wi-Fi', 'Reclining seats', 'USB charging'], image: IMG.limousine },
-    { id: 3, mode: 'bus', from: 'Hanoi', to: 'Ha Long', name: 'Karnel Sleeper', sub: 'Sleeper Bus · 34 seats', variant: 'Sleeper bus', depart: '18:30', duration: 165, price: 260000, seats: 9, rating: 4.5, operator: 'Karnel Express', pickup: 'My Dinh Station', dropoff: 'Bai Chay', amenities: ['Air conditioning', 'Sleeper seats', 'Wi-Fi'], image: IMG.bus, promotion: { name: 'LIMITED OFFER', originalPrice: 325000, discountPercent: 20, extraLabel: '⚡ Save 20% · max 100k' } },
-    { id: 4, mode: 'bus', from: 'Hanoi', to: 'Ha Long', name: 'Coastal Shuttle', sub: 'Standard Coach · 40 seats', variant: 'Coach', depart: '13:00', duration: 175, price: 190000, seats: 22, rating: 4.3, operator: 'Coastal Shuttle', pickup: 'Hanoi Central Station', dropoff: 'Ha Long City Center', amenities: ['Air conditioning'], image: IMG.bus },
-    { id: 5, mode: 'bus', from: 'Hanoi', to: 'Ha Long', name: 'Evening Limousine', sub: 'VIP Limousine · 12 seats', variant: 'Limousine', depart: '20:00', duration: 145, price: 390000, seats: 0, rating: 4.8, operator: 'Premium Limousine', pickup: 'Hanoi Old Quarter', dropoff: 'Bai Chay', amenities: ['Wi-Fi', 'Reclining seats'], image: IMG.limousine },
-    { id: 6, mode: 'bus', from: 'Da Nang', to: 'Hoi An', name: 'Hoi An Shuttle', sub: 'Limousine · 16 seats', variant: 'Limousine', depart: '10:00', duration: 55, price: 140000, seats: 8, rating: 4.7, operator: 'Hoi An Shuttle', pickup: 'Da Nang Center', dropoff: 'Hoi An Old Town', amenities: ['Wi-Fi', 'Air conditioning'], image: IMG.limousine },
-    { id: 11, mode: 'flight', from: 'Hanoi', to: 'Da Nang', name: 'Vietnam Airlines', sub: 'VN 167 · Economy', variant: 'Economy', depart: '06:45', duration: 85, price: 1578000, seats: 23, rating: 4.7, operator: 'Vietnam Airlines', pickup: 'HAN · Noi Bai Airport', dropoff: 'DAD · Da Nang Airport', amenities: ['Cabin baggage', 'Checked baggage', 'Meal'], image: IMG.flight },
-    { id: 12, mode: 'flight', from: 'Hanoi', to: 'Da Nang', name: 'Vietjet Air', sub: 'VJ 515 · Economy', variant: 'Economy', depart: '08:15', duration: 80, price: 1199000, seats: 14, rating: 4.2, operator: 'Vietjet Air', pickup: 'HAN · Noi Bai Airport', dropoff: 'DAD · Da Nang Airport', amenities: ['Cabin baggage'], image: IMG.flight, featured: true },
-    { id: 13, mode: 'flight', from: 'Hanoi', to: 'Da Nang', name: 'Vietnam Airlines', sub: 'VN 171 · Business', variant: 'Business', depart: '13:20', duration: 85, price: 2980000, seats: 5, rating: 4.8, operator: 'Vietnam Airlines', pickup: 'HAN · Noi Bai Airport', dropoff: 'DAD · Da Nang Airport', amenities: ['Cabin baggage', 'Checked baggage', 'Meal'], image: IMG.flight },
-    { id: 14, mode: 'flight', from: 'Hanoi', to: 'Da Nang', name: 'Vietjet Air', sub: 'VJ 523 · Economy', variant: 'Economy', depart: '19:30', duration: 85, price: 1359000, seats: 18, rating: 4.3, operator: 'Vietjet Air', pickup: 'HAN · Noi Bai Airport', dropoff: 'DAD · Da Nang Airport', amenities: ['Cabin baggage'], image: IMG.flight },
-    { id: 15, mode: 'flight', from: 'Ho Chi Minh City', to: 'Da Nang', name: 'Vietnam Airlines', sub: 'VN 120 · Economy', variant: 'Economy', depart: '11:10', duration: 90, price: 1490000, seats: 16, rating: 4.6, operator: 'Vietnam Airlines', pickup: 'SGN · Tan Son Nhat Airport', dropoff: 'DAD · Da Nang Airport', amenities: ['Cabin baggage', 'Checked baggage'], image: IMG.flight },
-    { id: 21, mode: 'train', from: 'Hanoi', to: 'Da Nang', name: 'SE1 Express', sub: 'Train SE1 · Vietnam Railways', variant: 'Express', depart: '21:45', duration: 929, price: 771000, seats: 54, rating: 4.5, operator: 'Vietnam Railways', pickup: 'Hanoi Railway Station', dropoff: 'Da Nang Railway Station', amenities: ['Air conditioning', 'Sleeper berths'], image: IMG.train, classes: [{ name: 'Soft seat', price: 771000, seats: 54 }, { name: '6-berth sleeper', price: 1093000, seats: 16 }, { name: '4-berth sleeper', price: 1399000, seats: 37 }], featured: true },
-    { id: 22, mode: 'train', from: 'Hanoi', to: 'Da Nang', name: 'SE7 Express', sub: 'Train SE7 · Vietnam Railways', variant: 'Standard', depart: '06:00', duration: 975, price: 706000, seats: 32, rating: 4.3, operator: 'Vietnam Railways', pickup: 'Hanoi Railway Station', dropoff: 'Da Nang Railway Station', amenities: ['Air conditioning', 'Sleeper berths'], image: IMG.train, classes: [{ name: 'Soft seat', price: 706000, seats: 32 }, { name: '6-berth sleeper', price: 1056000, seats: 7 }, { name: '4-berth sleeper', price: 1364000, seats: 16 }] },
-    { id: 23, mode: 'train', from: 'Hanoi', to: 'Da Nang', name: 'SE5 Express', sub: 'Train SE5 · Vietnam Railways', variant: 'Standard', depart: '08:00', duration: 981, price: 729000, seats: 24, rating: 4.2, operator: 'Vietnam Railways', pickup: 'Hanoi Railway Station', dropoff: 'Da Nang Railway Station', amenities: ['Air conditioning', 'Sleeper berths'], image: IMG.train, classes: [{ name: 'Soft seat', price: 729000, seats: 24 }, { name: '6-berth sleeper', price: 1065000, seats: 8 }, { name: '4-berth sleeper', price: 1319000, seats: 18 }] },
-    { id: 24, mode: 'train', from: 'Hanoi', to: 'Da Nang', name: 'SE3 Express', sub: 'Train SE3 · Vietnam Railways', variant: 'Express', depart: '19:20', duration: 948, price: 819000, seats: 12, rating: 4.6, operator: 'Vietnam Railways', pickup: 'Hanoi Railway Station', dropoff: 'Da Nang Railway Station', amenities: ['Air conditioning', 'Sleeper berths'], image: IMG.train, classes: [{ name: 'Soft seat', price: 819000, seats: 12 }, { name: '4-berth sleeper', price: 1435000, seats: 1 }] },
-];
+function presentSchedule(schedule, route) {
+    const type = schedule.vehicleType.toLowerCase();
+    const mode = transportModeFor(type);
+    const duration = route?.estimatedDuration || '';
+    const hours = Number(duration.match(/(\d+)\s*h/i)?.[1] ?? 0);
+    const mins = Number(duration.match(/(\d+)\s*m/i)?.[1] ?? 0);
+    const variant = type.includes('limousine') ? 'Limousine'
+        : mode === 'bus' && /sleeper/i.test(schedule.vehicleName) ? 'Sleeper bus' : schedule.vehicleType;
+    return {
+        id: schedule.scheduleId, routeId: schedule.routeId, mode, variant,
+        from: schedule.departureLocationName, to: schedule.destinationLocationName,
+        name: schedule.vehicleName, sub: schedule.vehicleType, operator: schedule.vehicleName,
+        depart: schedule.departureTime.slice(0, 5), duration: hours * 60 + mins,
+        price: schedule.ticketPrice, seats: schedule.remainingSeats ?? schedule.availableSeats,
+        pickup: schedule.departureLocationName, dropoff: schedule.destinationLocationName,
+        image: variant === 'Limousine' ? IMG.limousine : IMG[mode],
+    };
+}
+
+const enoughSeats = (trip, count) => trip.seats == null || trip.seats >= count;
+const seatLabel = trip => trip.seats == null ? 'Availability checked at checkout' : trip.seats > 0 ? trip.seats + ' seats available' : 'Sold out';
+const arrival = trip => trip.duration ? clock(trip.depart, trip.duration) : '—';
+
 const CONFIG = {
-    bus: { from: 'Hanoi', to: 'Ha Long', headline: 'Comfortable road journeys', subtitle: 'Compare coaches, sleeper buses and premium limousines.', sort: ['Recommended', 'Lowest price', 'Highest price', 'Earliest departure', 'Latest departure', 'Shortest duration', 'Top rated'], filterLabel: 'Vehicle type', filters: ['Coach', 'Limousine', 'Sleeper bus'] },
-    flight: { from: 'Hanoi', to: 'Da Nang', headline: 'Flights made simple', subtitle: 'Explore airlines, flight times and fares in one place.', sort: ['Recommended', 'Lowest price', 'Highest price', 'Earliest departure', 'Latest departure', 'Shortest duration', 'Top rated'], filterLabel: 'Cabin class', filters: ['Economy', 'Business'] },
-    train: { from: 'Hanoi', to: 'Da Nang', headline: 'Scenic journeys by rail', subtitle: 'Compare trains, seat classes and sleeper berths.', sort: ['Recommended', 'Lowest price', 'Highest price', 'Earliest departure', 'Latest departure', 'Shortest duration', 'Top rated'], filterLabel: 'Train type', filters: ['Express', 'Standard'] },
+    bus: { headline: 'Comfortable road journeys', subtitle: 'Compare coaches, sleeper buses and premium limousines.', sort: ['Recommended', 'Lowest price', 'Highest price', 'Earliest departure', 'Latest departure', 'Shortest duration'], filterLabel: 'Vehicle type' },
+    flight: { headline: 'Flights made simple', subtitle: 'Explore airlines, flight times and fares in one place.', sort: ['Recommended', 'Lowest price', 'Highest price', 'Earliest departure', 'Latest departure', 'Shortest duration'], filterLabel: 'Vehicle type' },
+    train: { headline: 'Scenic journeys by rail', subtitle: 'Compare trains, seat classes and sleeper berths.', sort: ['Recommended', 'Lowest price', 'Highest price', 'Earliest departure', 'Latest departure', 'Shortest duration'], filterLabel: 'Train type' },
 };
 const detailTabs = ['Offers', 'Pick-up / Drop-off', 'Reviews', 'Policy', 'Photos', 'Amenities'];
 
-// Demo passenger selector. Age limits and infant seat rules may differ by operator.
+
 const DEFAULT_PASSENGERS = { adults: 1, children: 0, infants: 0 };
 const passengerCount = p => p.adults + p.children + p.infants;
-const seatCount = p => p.adults + p.children; // Infants assumed to travel without a separate seat in this demo.
+const seatCount = passengerCount;
 const passengerLabel = p => `${passengerCount(p)} passenger${passengerCount(p) === 1 ? '' : 's'}`;
 
 function PassengerPicker({ value, onChange }) {
@@ -74,37 +83,16 @@ function PassengerPicker({ value, onChange }) {
                     <button type="button" aria-label={`Add ${row.title.toLowerCase()}`} disabled={passengerCount(value) >= 9 || (row.key === 'infants' && value.infants >= value.adults)} onClick={() => change(row.key, 1)}>+</button>
                 </div>
             </div>)}
-            <p className="ktr-passenger-note">Demo: maximum 9 passengers, at least 1 adult and 1 adult per infant. Infants do not occupy a separate seat in this demo. Actual rules and fares depend on the operator.</p>
+            <p className="ktr-passenger-note">Up to 9 travelers. Ask the operator about age-specific fares.</p>
             <button type="button" className="ktr-passenger-apply" onClick={() => setIsOpen(false)}>Apply · {passengerLabel(value)}</button>
         </div>}
     </div>;
 }
 
-// Bus-specific filter metadata is illustrative until the backend provides these fields.
-const BUS_EXTRA = {
-    1: { features: ['Instant confirmation', 'No upfront payment', 'Discounts & promotions'], deck: 'Lower', position: 'Front' },
-    2: { features: ['Premium limousine', 'Instant confirmation', 'Seat preview'], deck: 'Lower', position: 'Middle' },
-    3: { features: ['Sleeper comfort', 'Discounts & promotions', 'Seat preview'], deck: 'Upper', position: 'Back' },
-    4: { features: ['No upfront payment', 'Pick-up service'], deck: 'Lower', position: 'Middle' },
-    5: { features: ['Premium limousine', 'Pick-up service', 'Seat preview'], deck: 'Upper', position: 'Front' },
-    6: { features: ['Instant confirmation', 'Pick-up service'], deck: 'Lower', position: 'Back' },
-};
-const BUS_FEATURES = [
-    ['Instant confirmation', 'Booking confirmed immediately'],
-    ['No upfront payment', 'Pay later where supported'],
-    ['Pick-up service', 'Pick-up at selected locations'],
-    ['Discounts & promotions', 'Special promotional fares'],
-    ['Premium limousine', 'Premium limousine service'],
-    ['Sleeper comfort', 'Sleeper seats or berths'],
-    ['Seat preview', 'Preview seat position'],
-];
-const BUS_VARIANTS = ['Coach', 'Limousine', 'Sleeper bus'];
-const BUS_RATINGS = [4, 4.5, 4.7];
 const BUS_SORT = [
     ['Recommended', 'Default'],
     ['Earliest departure', 'Earliest departure'],
     ['Latest departure', 'Latest departure'],
-    ['Top rated', 'Highest rating'],
     ['Lowest price', 'Price: low to high'],
     ['Highest price', 'Price: high to low'],
 ];
@@ -150,8 +138,8 @@ function Time12Input({ label, value, onCommit }) {
         </div>
     </label>;
 }
-function BusFilterPanel({ sort, setSort, operators, pickups, dropoffs, variants, ratings, features, decks, positions,
-    setOperators, setPickups, setDropoffs, setVariants, setRatings, setFeatures, setDecks, setPositions,
+function BusFilterPanel({ sort, setSort, operators, pickups, dropoffs, variants,
+    setOperators, setPickups, setDropoffs, setVariants,
     departureRange, setDepartureRange, priceRange, setPriceRange, seatNeed, setSeatNeed,
     busTrips, reset, onChangeFilter }) {
     const [queries, setQueries] = useState({});
@@ -191,7 +179,7 @@ function BusFilterPanel({ sort, setSort, operators, pickups, dropoffs, variants,
         <BusFilterGroup title="Bus operator">{optionList(busTrips.map(t => t.operator), operators, setOperators, 'operator')}</BusFilterGroup>
         <BusFilterGroup title="Pick-up point">{optionList(busTrips.map(t => t.pickup), pickups, setPickups, 'pickup')}</BusFilterGroup>
         <BusFilterGroup title="Drop-off point">{optionList(busTrips.map(t => t.dropoff), dropoffs, setDropoffs, 'dropoff')}</BusFilterGroup>
-        <BusFilterGroup title="Price range">
+        <BusFilterGroup title="Price range (maximum position includes all fares)">
             <div className="ktr-price-range" style={{ '--range-start': `${priceRange[0] / 500000 * 100}%`, '--range-end': `${priceRange[1] / 500000 * 100}%` }}>
                 <div className="ktr-price-track" aria-hidden="true" />
                 <input className="ktr-price-thumb ktr-price-thumb-start" type="range" aria-label="Minimum price" min="0" max="500000" step="10000" value={priceRange[0]}
@@ -207,16 +195,8 @@ function BusFilterPanel({ sort, setSort, operators, pickups, dropoffs, variants,
                     onChange={e => { const n = Math.max(priceRange[0], Math.min(500000, Number(e.target.value) || 0)); setPriceRange([priceRange[0], n]); onChangeFilter(); }} /></label>
             </div>
         </BusFilterGroup>
-        <BusFilterGroup title="Customer rating"><div className="ktr-bf-rating-list">{BUS_RATINGS.map(n => <FilterCheck key={n} label={`★ ${n}+`} checked={ratings.includes(n)}
-            onChange={checked => toggleOption(setRatings, n, checked)} />)}</div></BusFilterGroup>
-        <BusFilterGroup title="Popular amenities">{BUS_FEATURES.map(([name, description]) => <div key={name} className="ktr-bf-feature"><FilterCheck label={name}
-            checked={features.includes(name)} onChange={checked => toggleOption(setFeatures, name, checked)} /><small>{description}</small></div>)}</BusFilterGroup>
-        <BusFilterGroup title="Bus type">{BUS_VARIANTS.map(v => <FilterCheck key={v} label={v} checked={variants.includes(v)}
-            onChange={checked => toggleOption(setVariants, v, checked)} />)}</BusFilterGroup>
-        <BusFilterGroup title="Seat position"><div className="ktr-bf-seat-count"><span>Seats needed</span><div><button type="button" disabled={seatNeed <= 1} onClick={() => { setSeatNeed(n => n - 1); onChangeFilter(); }}>−</button><strong>{seatNeed}</strong><button type="button" disabled={seatNeed >= 9} onClick={() => { setSeatNeed(n => n + 1); onChangeFilter(); }}>+</button></div></div>
-            <strong className="ktr-bf-subheading">Deck</strong><div className="ktr-bf-chip-list">{['Upper', 'Lower'].map(v => <label key={v}><input type="checkbox" checked={decks.includes(v)} onChange={e => toggleOption(setDecks, v, e.target.checked)} />{v}</label>)}</div>
-            <strong className="ktr-bf-subheading">Seat area</strong><div className="ktr-bf-chip-list">{['Front', 'Middle', 'Back'].map(v => <label key={v}><input type="checkbox" checked={positions.includes(v)} onChange={e => toggleOption(setPositions, v, e.target.checked)} />{v}</label>)}</div>
-            <small className="ktr-bf-hint">Seat position is illustrative demo metadata, not live seat availability.</small>
+        <BusFilterGroup title="Vehicle type">{optionList(busTrips.map(t => t.variant), variants, setVariants, 'variant')}</BusFilterGroup>
+        <BusFilterGroup title="Seats"><div className="ktr-bf-seat-count"><span>Seats needed</span><div><button type="button" disabled={seatNeed <= 1} onClick={() => { setSeatNeed(n => n - 1); onChangeFilter(); }}>−</button><strong>{seatNeed}</strong><button type="button" disabled={seatNeed >= 9} onClick={() => { setSeatNeed(n => n + 1); onChangeFilter(); }}>+</button></div></div>
         </BusFilterGroup>
     </div>;
 }
@@ -224,63 +204,40 @@ function BusFilterPanel({ sort, setSort, operators, pickups, dropoffs, variants,
 function FilterCheck({ label, checked, onChange }) { return <label className="ktr-check"><input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} /><span>{label}</span></label>; }
 function Details({ trip, tab, setTab, onClose }) {
     return <div className="ktr-details"><div className="ktr-detail-tabs" role="tablist" aria-label="Trip details">{detailTabs.map(t => <button role="tab" aria-selected={tab === t} className={tab === t ? 'active' : ''} key={t} onClick={() => setTab(t)}>{t}</button>)}<button className="ktr-close" aria-label="Close details" onClick={onClose}>×</button></div><div className="ktr-detail-body">
-        {tab === 'Offers' && (trip.promotion
-            ? <div className="ktr-offers"><div className="ktr-offer"><span>🎟</span><div><strong>{trip.promotion.name}</strong><small>Original {money(trip.promotion.originalPrice)} → {money(trip.price)} · -{trip.promotion.discountPercent}%</small><p>Sample promotional fare. {trip.promotion.extraLabel} is an additional illustrative offer, not automatically deducted.</p></div></div></div>
-            : <div className="ktr-info"><h4>No promotions available for this trip</h4><p>This departure currently shows its standard demo fare.</p></div>)}
-        {tab === 'Pick-up / Drop-off' && <div className="ktr-stops"><div><b>{trip.depart} · {trip.pickup}</b><small>Departure point (demo)</small></div><div><b>{clock(trip.depart, trip.duration)} · {trip.dropoff}</b><small>Arrival point (demo){minutes(trip.depart) + trip.duration >= 1440 ? ' · Next day' : ''}</small></div></div>}
-        {tab === 'Reviews' && <div className="ktr-info"><h4>★ {trip.rating.toFixed(1)} / 5</h4><p>Illustrative rating. Verified traveler reviews will appear when review data is available.</p></div>}
-        {tab === 'Policy' && <div className="ktr-info"><h4>Booking and cancellation terms</h4><p>Changes, refunds and baggage or seat conditions depend on the operator. This demo does not represent a confirmed policy.</p></div>}
+        {tab === 'Offers' && <div className="ktr-info"><h4>Listed fare</h4><p>{money(trip.price)} per ticket. Apply available vouchers at checkout.</p></div>}
+        {tab === 'Pick-up / Drop-off' && <div className="ktr-stops"><div><b>{trip.depart} · {trip.pickup}</b><small>Departure location</small></div><div><b>{arrival(trip)} · {trip.dropoff}</b><small>Estimated arrival location</small></div></div>}
+        {tab === 'Reviews' && <div className="ktr-info"><p>No reviews published.</p></div>}
+        {tab === 'Policy' && <div className="ktr-info"><p>Contact the operator for changes, refunds and baggage conditions.</p></div>}
         {tab === 'Photos' && <div className="ktr-photos"><img src={trip.image} alt={`${trip.name} illustrative photo`} /><img src={trip.mode === 'bus' ? IMG.interior : trip.image} alt="Illustrative travel photo" /></div>}
-        {tab === 'Amenities' && <div className="ktr-amenities">{trip.amenities.map(a => <span key={a}>✓ {a}</span>)}</div>}
+        {tab === 'Amenities' && <div className="ktr-amenities"><span>Contact the operator for amenities.</span></div>}
     </div></div>;
 }
-function PromoCountdown({ endsAt }) {
-    const remaining = () => Math.max(0, Math.floor((new Date(endsAt).getTime() - Date.now()) / 1000));
-    const [seconds, setSeconds] = useState(remaining);
-    React.useEffect(() => {
-        const timer = setInterval(() => setSeconds(remaining()), 1000);
-        return () => clearInterval(timer);
-    }, [endsAt]);
-    if (!seconds) return <span>Offer ended</span>;
-    const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
-    const m = String(Math.floor(seconds % 3600 / 60)).padStart(2, '0');
-    const s = String(seconds % 60).padStart(2, '0');
-    return <span>Ends in <strong>{h}:{m}:{s}</strong></span>;
-}
 function BusTripCard({ trip, expanded, onToggle, tab, setTab, onBook, requiredSeats }) {
-    const promo = trip.promotion;
     const nextDay = minutes(trip.depart) + trip.duration >= 1440;
-    return <article className={`ktr-trip ktr-bus-card ${promo ? 'ktr-has-promo' : 'ktr-no-promo'} ${expanded ? 'expanded' : ''}`}>
-        {promo && <div className="ktr-bus-promo-strip">
-            <strong>◷ {promo.name}</strong>
-            <span>{promo.endsAt ? <PromoCountdown endsAt={promo.endsAt} /> : 'Special promotional fare'}</span>
-        </div>}
+    return <article className={`ktr-trip ktr-bus-card ktr-no-promo ${expanded ? 'expanded' : ''}`}>
         <div className="ktr-bus-layout">
-            <div className="ktr-bus-photo"><img src={trip.image} alt={`${trip.name} demo bus`} loading="lazy" /></div>
+            <div className="ktr-bus-photo"><img src={trip.image} alt={`${trip.name} illustrative vehicle`} loading="lazy" /></div>
             <div className="ktr-bus-main">
-                <div className="ktr-bus-heading"><h3>{trip.name}</h3><span className="ktr-bus-rating">★ {trip.rating.toFixed(1)}</span></div>
+                <div className="ktr-bus-heading"><h3>{trip.name}</h3></div>
                 <p className="ktr-bus-type">{trip.sub}</p>
                 <div className="ktr-bus-stops">
                     <div><span className="ktr-stop-icon">◉</span><strong>{trip.depart}</strong><span className="ktr-stop-label"> · {trip.pickup}</span></div>
-                    <div className="ktr-bus-duration">{durationText(trip.duration)}</div>
-                    <div><span className="ktr-stop-icon">♦</span><strong>{clock(trip.depart, trip.duration)}</strong><span className="ktr-stop-label"> · {trip.dropoff}</span>{nextDay && <small> (+1 day)</small>}</div>
+                    <div className="ktr-bus-duration">{trip.duration ? durationText(trip.duration) : 'Duration unavailable'}</div>
+                    <div><span className="ktr-stop-icon">♦</span><strong>{arrival(trip)}</strong><span className="ktr-stop-label"> · {trip.dropoff}</span>{nextDay && <small> (+1 day)</small>}</div>
                 </div>
             </div>
             <div className="ktr-bus-right">
-                {promo && <span className="ktr-promo-caption">♨ {promo.name}</span>}
-                <strong className={`ktr-bus-price ${promo ? 'discounted' : ''}`}>{money(trip.price)}</strong>
-                {promo && <div className="ktr-bus-original"><s>{money(promo.originalPrice)}</s><b>-{promo.discountPercent}%</b></div>}
-                {promo?.extraLabel && <span className="ktr-bus-extra">{promo.extraLabel}</span>}
-                <span className="ktr-bus-seats">{trip.seats ? `${trip.seats} seats available` : 'Sold out'} <small>· demo</small></span>
+                <strong className="ktr-bus-price">{money(trip.price)}</strong>
+                <span className="ktr-bus-seats">{seatLabel(trip)}</span>
                 <div className="ktr-bus-actions">
                     <button type="button" className="ktr-bus-detail-button" aria-expanded={expanded} onClick={onToggle}>{expanded ? 'Hide details ▴' : 'View details ▾'}</button>
-                    <button type="button" className="ktr-bus-book-button" disabled={trip.seats < requiredSeats} onClick={() => onBook(trip)}>{trip.seats >= requiredSeats ? 'Choose seat' : 'Not enough seats'}</button>
+                    <button type="button" className="ktr-bus-book-button" disabled={!enoughSeats(trip, requiredSeats)} onClick={() => onBook(trip)}>{enoughSeats(trip, requiredSeats) ? 'Select tickets' : 'Not enough seats'}</button>
                 </div>
             </div>
         </div>
         <div className="ktr-bus-bottom">
-            <span>✓ INSTANT CONFIRMATION{trip.variant === 'Limousine' ? ' · PREMIUM SERVICE' : ''}</span>
-            <strong>NO UPFRONT PAYMENT <small>(DEMO)</small></strong>
+            <span>{trip.variant}</span>
+            <strong>PAYMENT OPTIONS AT CHECKOUT</strong>
         </div>
         {expanded && <Details trip={trip} tab={tab} setTab={setTab} onClose={onToggle} />}
     </article>;
@@ -289,39 +246,50 @@ function TripCard({ trip, expanded, onToggle, tab, setTab, onBook, requiredSeats
     if (trip.mode === 'bus') return <BusTripCard trip={trip} expanded={expanded} onToggle={onToggle} tab={tab} setTab={setTab} onBook={onBook} requiredSeats={requiredSeats} />;
     const nextDay = minutes(trip.depart) + trip.duration >= 1440;
     return <article className={`ktr-trip ${trip.mode} ${expanded ? 'expanded' : ''}`}>
-        {trip.featured && <div className="ktr-featured">✦ RECOMMENDED OPTION <span>Popular demo choice</span></div>}
         <div className="ktr-trip-content"><div className="ktr-trip-photo"><img src={trip.image} alt={`${trip.name} illustrative transport`} loading="lazy" /><span>{trip.mode === 'flight' ? 'FLIGHT' : 'TRAIN'}</span></div>
-            <div className="ktr-trip-center"><div className="ktr-trip-title"><h3>{trip.name}</h3><span className="ktr-rating">★ {trip.rating.toFixed(1)}</span></div><p className="ktr-sub">{trip.sub}</p><div className="ktr-timeline"><div><strong>{trip.depart}</strong><small>{trip.mode === 'flight' ? trip.pickup : trip.from}</small></div><div className="ktr-journey"><small>{durationText(trip.duration)}</small><span>● ────── ✦ ────── ●</span><small>{nextDay ? '+1 day' : 'Direct journey'}</small></div><div><strong>{clock(trip.depart, trip.duration)}</strong><small>{trip.mode === 'flight' ? trip.dropoff : trip.to}</small></div></div><div className="ktr-points">{trip.mode === 'flight' ? 'Direct flight' : `From ${trip.pickup} · To ${trip.dropoff}`}</div>{trip.mode === 'train' && <div className="ktr-classes">{trip.classes.map(c => <div key={c.name}><strong>{c.name}</strong><span>From {money(c.price)}</span><small>{c.seats} seats (demo)</small></div>)}</div>}</div>
-            <div className="ktr-trip-side"><span>From</span><strong>{money(trip.price)}</strong><small>/ passenger</small><em className={trip.seats ? 'available' : 'sold'}>{trip.seats ? `${trip.seats} seats · demo` : 'Sold out · demo'}</em><button disabled={trip.seats < requiredSeats} onClick={() => onBook(trip)}>{trip.seats >= requiredSeats ? 'Book Now' : 'Not enough seats'}</button></div></div>
-        <div className="ktr-trip-footer"><span>✓ {trip.amenities.slice(0, 2).join(' · ')}</span><button aria-expanded={expanded} onClick={onToggle}>{expanded ? 'Hide details −' : 'View details + '}</button></div>
+            <div className="ktr-trip-center"><div className="ktr-trip-title"><h3>{trip.name}</h3></div><p className="ktr-sub">{trip.sub}</p><div className="ktr-timeline"><div><strong>{trip.depart}</strong><small>{trip.mode === 'flight' ? trip.pickup : trip.from}</small></div><div className="ktr-journey"><small>{trip.duration ? durationText(trip.duration) : 'Duration unavailable'}</small><span>● ────── ✦ ────── ●</span><small>{nextDay ? '+1 day' : 'Direct journey'}</small></div><div><strong>{arrival(trip)}</strong><small>{trip.mode === 'flight' ? trip.dropoff : trip.to}</small></div></div><div className="ktr-points">{trip.mode === 'flight' ? 'Direct flight' : `From ${trip.pickup} · To ${trip.dropoff}`}</div></div>
+            <div className="ktr-trip-side"><span>From</span><strong>{money(trip.price)}</strong><small>/ passenger</small><em className={enoughSeats(trip, 1) ? 'available' : 'sold'}>{seatLabel(trip)}</em><button disabled={!enoughSeats(trip, requiredSeats)} onClick={() => onBook(trip)}>{enoughSeats(trip, requiredSeats) ? 'Book Now' : 'Not enough seats'}</button></div></div>
+        <div className="ktr-trip-footer"><span>{trip.variant}</span><button aria-expanded={expanded} onClick={onToggle}>{expanded ? 'Hide details −' : 'View details + '}</button></div>
         {expanded && <Details trip={trip} tab={tab} setTab={setTab} onClose={onToggle} />}</article>;
 }
-function SeatSelection({ trip, onClose, onConfirm }) {
-    const [quantity, setQuantity] = useState(1);
-    const [chosenClass, setChosenClass] = useState(trip.classes?.[0]?.name || 'Standard seat');
-    const option = trip.classes?.find(c => c.name === chosenClass);
-    const available = option ? option.seats : trip.seats;
-    const unitPrice = option ? option.price : trip.price;
+function SeatSelection({ trip, initialQuantity, onClose, onConfirm }) {
+    const [quantity, setQuantity] = useState(initialQuantity);
+    const available = Math.min(9, trip.seats ?? 9);
     return <div className="ktr-booking-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
         <section className="ktr-booking-dialog" role="dialog" aria-modal="true" aria-label="Select tickets">
-            <div className="ktr-booking-header"><div><span>SELECT YOUR TICKETS · DEMO</span><h3>{trip.name}</h3><small>{trip.from} → {trip.to} · {trip.depart}</small></div><button type="button" aria-label="Close" onClick={onClose}>×</button></div>
-            {trip.mode === 'train' && <label className="ktr-booking-class">Seat / berth type<select value={chosenClass} onChange={e => { setChosenClass(e.target.value); setQuantity(1); }}>{trip.classes.map(c => <option key={c.name} value={c.name}>{c.name} · {money(c.price)} · {c.seats} available</option>)}</select></label>}
-            <div className="ktr-booking-count"><div><strong>Number of {trip.mode === 'train' ? 'tickets' : 'seats'}</strong><small>{available} available · demo inventory</small></div><div className="ktr-passenger-counter"><button type="button" disabled={quantity <= 1} onClick={() => setQuantity(q => q - 1)}>−</button><output>{quantity}</output><button type="button" disabled={quantity >= Math.min(9, available)} onClick={() => setQuantity(q => q + 1)}>+</button></div></div>
-            <div className="ktr-booking-summary"><span>{quantity} × {money(unitPrice)}</span><strong>{money(quantity * unitPrice)}</strong></div>
-            <p className="ktr-booking-disclaimer">This is a front-end demonstration. Seat numbers, child fares and booking confirmation require backend integration.</p>
-            <button className="ktr-booking-confirm" type="button" disabled={quantity > available} onClick={() => onConfirm(trip, quantity, chosenClass, unitPrice)}>Continue · {quantity} ticket{quantity > 1 ? 's' : ''}</button>
+            <div className="ktr-booking-header"><div><span>SELECT YOUR TICKETS</span><h3>{trip.name}</h3><small>{trip.from} → {trip.to} · {trip.depart}</small></div><button type="button" aria-label="Close" onClick={onClose}>×</button></div>
+            <div className="ktr-booking-count"><div><strong>Number of tickets</strong><small>{seatLabel(trip)}</small></div><div className="ktr-passenger-counter"><button type="button" disabled={quantity <= 1} onClick={() => setQuantity(q => q - 1)}>−</button><output>{quantity}</output><button type="button" disabled={quantity >= available} onClick={() => setQuantity(q => q + 1)}>+</button></div></div>
+            <div className="ktr-booking-summary"><span>{quantity} × {money(trip.price)}</span><strong>{money(quantity * trip.price)}</strong></div>
+            <button className="ktr-booking-confirm" type="button" disabled={quantity > available} onClick={() => onConfirm(trip, quantity)}>Continue · {quantity} ticket{quantity > 1 ? 's' : ''}</button>
         </section>
     </div>;
 }
+
 export default function Transport() {
+    const [params] = useSearchParams();
+    return <TransportDirectory key={params.toString()} params={params} />;
+}
+
+const placeMatches = (place, query, descriptions) => {
+    const normalize = value => value.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/đ/g, 'd');
+    return !query || normalize(place + ' ' + (descriptions.get(place) || '')).includes(normalize(query));
+};
+
+function TransportDirectory({ params }) {
+    const navigate = useNavigate();
     const [mode, setMode] = useState('bus');
-    const [draft, setDraft] = useState({ from: 'Hanoi', to: 'Ha Long', date: today(), returnDate: '', time: 'all', passengers: { ...DEFAULT_PASSENGERS } });
+    const [routes, setRoutes] = useState(null);
+    const [placeDescriptions, setPlaceDescriptions] = useState(() => new Map());
+    const [trips, setTrips] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
+    const [draft, setDraft] = useState({ from: params.get('search') || '', to: params.get('destination') || '',
+        date: params.get('date') || today(), time: 'all', passengers: { ...DEFAULT_PASSENGERS } });
     const [search, setSearch] = useState({ ...draft });
     const [sort, setSort] = useState('Recommended');
     const [variants, setVariants] = useState([]);
     const [operators, setOperators] = useState([]);
     const [price, setPrice] = useState(3500000);
-    const [minRating, setMinRating] = useState(0);
     const [onlyAvailable, setOnlyAvailable] = useState(false);
     const [sidebarTime, setSidebarTime] = useState('all');
     const [expanded, setExpanded] = useState(null);
@@ -330,15 +298,11 @@ export default function Transport() {
     const [showFilters, setShowFilters] = useState(false);
     const [notice, setNotice] = useState('');
     const [selectedTrip, setSelectedTrip] = useState(null);
-    const [open, setOpen] = useState({ type: true, operator: true, time: true, price: true, rating: false, status: false });
+    const [open, setOpen] = useState({ type: true, operator: true, time: true, price: true, status: false });
 
     // Bus filters: multiple selections are supported for each checkbox group.
     const [busPickups, setBusPickups] = useState([]);
     const [busDropoffs, setBusDropoffs] = useState([]);
-    const [busRatings, setBusRatings] = useState([]);
-    const [busFeatures, setBusFeatures] = useState([]);
-    const [busDecks, setBusDecks] = useState([]);
-    const [busPositions, setBusPositions] = useState([]);
     const [busDepartureRange, setBusDepartureRange] = useState(['00:00', '24:00']);
     const [busPriceRange, setBusPriceRange] = useState([0, 500000]);
     const [busSeatNeed, setBusSeatNeed] = useState(1);
@@ -346,10 +310,6 @@ export default function Transport() {
     const resetBus = () => {
         setBusPickups([]);
         setBusDropoffs([]);
-        setBusRatings([]);
-        setBusFeatures([]);
-        setBusDecks([]);
-        setBusPositions([]);
         setBusDepartureRange(['00:00', '24:00']);
         setBusPriceRange([0, 500000]);
         setBusSeatNeed(1);
@@ -360,71 +320,95 @@ export default function Transport() {
     };
 
     const config = CONFIG[mode];
-    const allMode = useMemo(() => DATA.filter(t => t.mode === mode), [mode]);
+    const allMode = useMemo(() => trips.filter(t => t.mode === mode), [trips, mode]);
+    const places = [...new Set((routes ?? []).flatMap(route => [route.departureLocationName, route.destinationLocationName]))].sort();
+
+    useEffect(() => {
+        let active = true;
+        getLocations().then(data => {
+            if (active) setPlaceDescriptions(new Map(data.map(location => [location.locationName, location.description])));
+        }).catch(() => {});
+        getRoutes().then(data => { if (active) setRoutes(data); })
+            .catch(error => { if (active) { setLoadError(error.message); setLoading(false); } });
+        return () => { active = false; };
+    }, []);
+
+    useEffect(() => {
+        if (!routes || !search.date) return;
+        let active = true;
+        setLoading(true);
+        setLoadError('');
+        setTrips([]);
+        getSchedules({ date: search.date, status: 'Running' })
+            .then(data => {
+                if (active) setTrips(data.map(schedule => presentSchedule(schedule, routes.find(route => route.routeId === schedule.routeId))));
+            })
+            .catch(error => { if (active) setLoadError(error.message); })
+            .finally(() => { if (active) setLoading(false); });
+        return () => { active = false; };
+    }, [routes, search.date]);
     const modeOperators = useMemo(() => [...new Set(allMode.map(t => t.operator))], [allMode]);
-    const setTransportMode = id => { resetBus(); setMode(id); const next = { from: CONFIG[id].from, to: CONFIG[id].to, date: draft.date, returnDate: '', time: 'all', passengers: draft.passengers }; setSelectedTrip(null); setDraft(next); setSearch(next); setSort('Recommended'); setVariants([]); setOperators([]); setPrice(3500000); setMinRating(0); setOnlyAvailable(false); setSidebarTime('all'); setPage(1); setExpanded(null); setNotice(''); };
-    const reset = () => { setVariants([]); setOperators([]); setPrice(3500000); setMinRating(0); setOnlyAvailable(false); setSidebarTime('all'); setPage(1); };
+    const setTransportMode = id => { resetBus(); setMode(id); const next = { ...draft, time: 'all' }; setSelectedTrip(null); setDraft(next); setSearch(next); setSort('Recommended'); setVariants([]); setOperators([]); setPrice(3500000); setOnlyAvailable(false); setSidebarTime('all'); setPage(1); setExpanded(null); setNotice(''); };
+    const reset = () => { setVariants([]); setOperators([]); setPrice(3500000); setOnlyAvailable(false); setSidebarTime('all'); setPage(1); };
     const toggle = (item, value, set) => set(prev => value ? [...prev, item] : prev.filter(x => x !== item));
     const filtered = useMemo(() => {
         const inWindow = (time, id) => { const w = WINDOWS.find(x => x.id === id) || WINDOWS[0]; return minutes(time) >= w.start && minutes(time) < w.end; };
-        const result = allMode.filter(t => t.from.toLowerCase() === search.from.trim().toLowerCase() && t.to.toLowerCase() === search.to.trim().toLowerCase() && inWindow(t.depart, search.time) && inWindow(t.depart, sidebarTime) && (!variants.length || variants.includes(t.variant)) && (!operators.length || operators.includes(t.operator)) && t.price <= price && t.rating >= minRating && (!onlyAvailable || t.seats >= (mode === 'flight' ? seatCount(search.passengers) : 1)));
-        return [...result].sort((a, b) => sort === 'Lowest price' ? a.price - b.price : sort === 'Highest price' ? b.price - a.price : sort === 'Earliest departure' ? minutes(a.depart) - minutes(b.depart) : sort === 'Latest departure' ? minutes(b.depart) - minutes(a.depart) : sort === 'Shortest duration' ? a.duration - b.duration : sort === 'Top rated' ? b.rating - a.rating : Number(Boolean(b.featured)) - Number(Boolean(a.featured)));
-    }, [allMode, search, sidebarTime, variants, operators, price, minRating, onlyAvailable, sort]);
+        const result = allMode.filter(t => placeMatches(t.from, search.from, placeDescriptions) && placeMatches(t.to, search.to, placeDescriptions) && inWindow(t.depart, search.time) && inWindow(t.depart, sidebarTime) && (!variants.length || variants.includes(t.variant)) && (!operators.length || operators.includes(t.operator)) && (price === 3500000 || t.price <= price) && (!onlyAvailable || enoughSeats(t, mode === 'flight' ? seatCount(search.passengers) : 1)));
+        return [...result].sort((a, b) => sort === 'Lowest price' ? a.price - b.price : sort === 'Highest price' ? b.price - a.price : sort === 'Earliest departure' ? minutes(a.depart) - minutes(b.depart) : sort === 'Latest departure' ? minutes(b.depart) - minutes(a.depart) : sort === 'Shortest duration' ? a.duration - b.duration : minutes(a.depart) - minutes(b.depart));
+    }, [allMode, placeDescriptions, search, sidebarTime, variants, operators, price, onlyAvailable, sort]);
     const busFiltered = useMemo(() => {
         if (mode !== 'bus') return filtered;
         const [start, end] = busDepartureRange.map(minutes);
         const [low, high] = busPriceRange;
         return allMode.filter(t => {
-            const extra = BUS_EXTRA[t.id] || { features: [], deck: '', position: '' };
-            return t.from.toLowerCase() === search.from.trim().toLowerCase()
-                && t.to.toLowerCase() === search.to.trim().toLowerCase()
+            return placeMatches(t.from, search.from, placeDescriptions)
+                && placeMatches(t.to, search.to, placeDescriptions)
                 && minutes(t.depart) >= start && minutes(t.depart) <= end
-                && t.price >= low && t.price <= high
+                && t.price >= low && (high === 500000 || t.price <= high)
                 && (!operators.length || operators.includes(t.operator))
                 && (!variants.length || variants.includes(t.variant))
                 && (!busPickups.length || busPickups.includes(t.pickup))
                 && (!busDropoffs.length || busDropoffs.includes(t.dropoff))
-                && (!busRatings.length || busRatings.some(n => t.rating >= n))
-                && (!busFeatures.length || busFeatures.some(n => extra.features.includes(n)))
-                && (!busDecks.length || busDecks.includes(extra.deck))
-                && (!busPositions.length || busPositions.includes(extra.position))
-                && t.seats >= busSeatNeed;
-        }).sort((a, b) => busSort === 'Lowest price' ? a.price - b.price : busSort === 'Highest price' ? b.price - a.price : busSort === 'Earliest departure' ? minutes(a.depart) - minutes(b.depart) : busSort === 'Latest departure' ? minutes(b.depart) - minutes(a.depart) : busSort === 'Top rated' ? b.rating - a.rating : Number(Boolean(b.featured)) - Number(Boolean(a.featured)));
-    }, [mode, filtered, allMode, search, operators, variants, busPickups, busDropoffs, busRatings, busFeatures, busDecks, busPositions, busDepartureRange, busPriceRange, busSeatNeed, busSort]);
+                && enoughSeats(t, busSeatNeed);
+        }).sort((a, b) => busSort === 'Lowest price' ? a.price - b.price : busSort === 'Highest price' ? b.price - a.price : busSort === 'Earliest departure' ? minutes(a.depart) - minutes(b.depart) : busSort === 'Latest departure' ? minutes(b.depart) - minutes(a.depart) : minutes(a.depart) - minutes(b.depart));
+    }, [mode, filtered, allMode, placeDescriptions, search, operators, variants, busPickups, busDropoffs, busDepartureRange, busPriceRange, busSeatNeed, busSort]);
     const results = mode === 'bus' ? busFiltered : filtered;
     const PAGE_SIZE = 4; const pages = Math.max(1, Math.ceil(results.length / PAGE_SIZE)); const visible = results.slice((Math.min(page, pages) - 1) * PAGE_SIZE, Math.min(page, pages) * PAGE_SIZE);
     const updateDraft = (key, value) => setDraft(s => ({ ...s, [key]: value }));
-    const submit = e => { e.preventDefault(); if (mode === 'flight' && draft.passengers.infants > draft.passengers.adults) { setNotice('Each infant must be accompanied by an adult.'); return; } if (draft.from.trim().toLowerCase() === draft.to.trim().toLowerCase()) { setNotice('Departure and destination must be different.'); return; } if (draft.returnDate && draft.returnDate < draft.date) { setNotice('Return date cannot be before departure date.'); return; } setSearch({ ...draft }); setPage(1); setExpanded(null); setNotice(''); };
-    const book = trip => {
-        if (trip.mode !== 'flight') { setSelectedTrip(trip); return; }
-        const p = search.passengers; const needed = seatCount(p);
-        if (trip.seats < needed) { setNotice(`Only ${trip.seats} seats remain. Your flight search requires ${needed} seats.`); return; }
-        setNotice(`Flight booking demo: ${trip.name} · ${p.adults} adult(s), ${p.children} child(ren), ${p.infants} infant(s). Fare per adult ${money(trip.price)}; child/infant pricing requires airline integration.`);
-    };
-    const confirmSeats = (trip, quantity, seatClass, unitPrice) => {
-        setSelectedTrip(null);
-        setNotice(`Ticket selection demo: ${trip.name} · ${quantity} ticket(s) · ${trip.mode === 'train' ? seatClass + ' · ' : ''}${money(quantity * unitPrice)} total. Passenger information and payment will be handled in a later booking step.`);
-    };
+    function submit(event) {
+        event.preventDefault();
+        if (draft.from && draft.from === draft.to) {
+            setNotice('Departure and destination must be different.');
+            return;
+        }
+        if (draft.date !== search.date) { setTrips([]); setLoading(true); }
+        setSearch({ ...draft });
+        setPage(1);
+        setExpanded(null);
+        setNotice('');
+    }
+
+    function confirmSeats(trip, quantity) {
+        const params = new URLSearchParams({ type: 'Transport', routeId: trip.routeId, scheduleId: trip.id, date: search.date, quantity, mode: trip.mode });
+        navigate('/transport/booking?' + params);
+    }
     return <main className="ktr-page"><section className="ktr-hero"><div className="ktr-container"><div className="ktr-breadcrumb">Home / Transportation</div><div className="ktr-kicker">KARNEL TRAVELS · DISCOVER MORE</div><h1>Transportation</h1><p>{config.headline}. {config.subtitle}</p></div></section>
         <div className="ktr-container ktr-main"><section className="ktr-search"><div className="ktr-modes" role="tablist" aria-label="Transport mode">{MODES.map(m => <button role="tab" aria-selected={mode === m.id} key={m.id} className={mode === m.id ? 'selected' : ''} onClick={() => setTransportMode(m.id)}><span>{m.icon}</span>{m.name}</button>)}</div>
-            <form onSubmit={submit}><div className="ktr-search-grid"><label><span>From</span><select value={draft.from} onChange={e => updateDraft('from', e.target.value)}>{['Hanoi', 'Ha Long', 'Da Nang', 'Hoi An', 'Ho Chi Minh City', 'Ninh Binh'].map(x => <option key={x}>{x}</option>)}</select></label><button type="button" className="ktr-swap" title="Swap locations" onClick={() => setDraft(s => ({ ...s, from: s.to, to: s.from }))}>⇄</button><label><span>To</span><select value={draft.to} onChange={e => updateDraft('to', e.target.value)}>{['Ha Long', 'Hanoi', 'Da Nang', 'Hoi An', 'Ho Chi Minh City', 'Ninh Binh'].map(x => <option key={x}>{x}</option>)}</select></label><label><span>Departure date</span><input type="date" min={today()} value={draft.date} onChange={e => updateDraft('date', e.target.value)} required /></label><label><span>Return date <em>(optional)</em></span><input type="date" min={draft.date || today()} value={draft.returnDate} onChange={e => updateDraft('returnDate', e.target.value)} /></label><button className="ktr-search-submit" type="submit">⌕ Search routes</button></div></form>{mode === 'flight' && <div className="ktr-flight-passengers"><PassengerPicker value={draft.passengers} onChange={value => updateDraft('passengers', value)} /></div>}</section>
+            <form onSubmit={submit}><div className="ktr-search-grid"><label><span>From</span><select value={draft.from} onChange={e => updateDraft('from', e.target.value)}><option value="">Any departure</option>{draft.from && !places.includes(draft.from) && <option value={draft.from}>{draft.from}</option>}{places.map(x => <option key={x}>{x}</option>)}</select></label><button type="button" className="ktr-swap" title="Swap locations" onClick={() => setDraft(s => ({ ...s, from: s.to, to: s.from }))}>⇄</button><label><span>To</span><select value={draft.to} onChange={e => updateDraft('to', e.target.value)}><option value="">Any destination</option>{draft.to && !places.includes(draft.to) && <option value={draft.to}>{draft.to}</option>}{places.map(x => <option key={x}>{x}</option>)}</select></label><label><span>Departure date</span><input type="date" min={today()} value={draft.date} onChange={e => updateDraft('date', e.target.value)} required /></label><label><span>Return date <em>(optional)</em></span><input type="text" value="Book return separately" disabled /></label><button className="ktr-search-submit" type="submit">⌕ Search routes</button></div></form>{mode === 'flight' && <div className="ktr-flight-passengers"><PassengerPicker value={draft.passengers} onChange={value => updateDraft('passengers', value)} /></div>}</section>
             {notice && <div className="ktr-notice" role="status"><span>{notice}</span><button onClick={() => setNotice('')} aria-label="Dismiss">×</button></div>}
             <div className="ktr-results-layout"><aside className={`ktr-sidebar ${showFilters ? 'visible' : ''}`}>
                 {mode === 'bus' ? <BusFilterPanel sort={busSort} setSort={setBusSort} operators={operators} setOperators={setOperators}
                     pickups={busPickups} setPickups={setBusPickups} dropoffs={busDropoffs} setDropoffs={setBusDropoffs}
-                    variants={variants} setVariants={setVariants} ratings={busRatings} setRatings={setBusRatings}
-                    features={busFeatures} setFeatures={setBusFeatures} decks={busDecks} setDecks={setBusDecks}
-                    positions={busPositions} setPositions={setBusPositions} departureRange={busDepartureRange} setDepartureRange={setBusDepartureRange}
+                    variants={variants} setVariants={setVariants} departureRange={busDepartureRange} setDepartureRange={setBusDepartureRange}
                     priceRange={busPriceRange} setPriceRange={setBusPriceRange} seatNeed={busSeatNeed} setSeatNeed={setBusSeatNeed}
                     busTrips={allMode} reset={resetBus} onChangeFilter={() => setPage(1)} /> : <><div className="ktr-sidebar-heading"><h2>Filters</h2><button onClick={reset}>Reset all</button></div>
-                    <div className="ktr-filter-section"><button className="ktr-filter-heading" onClick={() => setOpen(s => ({ ...s, type: !s.type }))}>{config.filterLabel}<span>{open.type ? '−' : '+'}</span></button>{open.type && <div>{config.filters.map(v => <FilterCheck key={v} label={v} checked={variants.includes(v)} onChange={x => toggle(v, x, setVariants)} />)}</div>}</div>
+                    <div className="ktr-filter-section"><button className="ktr-filter-heading" onClick={() => setOpen(s => ({ ...s, type: !s.type }))}>{config.filterLabel}<span>{open.type ? '−' : '+'}</span></button>{open.type && <div>{[...new Set(allMode.map(t => t.variant))].map(v => <FilterCheck key={v} label={v} checked={variants.includes(v)} onChange={x => toggle(v, x, setVariants)} />)}</div>}</div>
                     <div className="ktr-filter-section"><button className="ktr-filter-heading" onClick={() => setOpen(s => ({ ...s, operator: !s.operator }))}>{mode === 'flight' ? 'Airline' : mode === 'train' ? 'Rail operator' : 'Bus operator'}<span>{open.operator ? '−' : '+'}</span></button>{open.operator && <div>{modeOperators.map(v => <FilterCheck key={v} label={v} checked={operators.includes(v)} onChange={x => toggle(v, x, setOperators)} />)}</div>}</div>
                     <div className="ktr-filter-section"><button className="ktr-filter-heading" onClick={() => setOpen(s => ({ ...s, time: !s.time }))}>Departure time<span>{open.time ? '−' : '+'}</span></button>{open.time && <div className="ktr-time-grid">{WINDOWS.map(w => <button key={w.id} className={sidebarTime === w.id ? 'selected' : ''} onClick={() => { setSidebarTime(w.id); setPage(1); }}>{w.name}</button>)}</div>}</div>
-                    <div className="ktr-filter-section"><button className="ktr-filter-heading" onClick={() => setOpen(s => ({ ...s, price: !s.price }))}>Maximum price<span>{open.price ? '−' : '+'}</span></button>{open.price && <div className="ktr-price"><strong>{money(price)}</strong><input type="range" min="100000" max="3500000" step="50000" value={price} onChange={e => { setPrice(Number(e.target.value)); setPage(1); }} /><div><small>100.000đ</small><small>3.500.000đ</small></div></div>}</div>
-                    <div className="ktr-filter-section"><button className="ktr-filter-heading" onClick={() => setOpen(s => ({ ...s, rating: !s.rating }))}>Rating<span>{open.rating ? '−' : '+'}</span></button>{open.rating && <div className="ktr-radio-list">{[0, 4, 4.5, 4.8].map(n => <label key={n}><input type="radio" name="rating" checked={minRating === n} onChange={() => { setMinRating(n); setPage(1); }} />{n === 0 ? 'All ratings' : `★ ${n}+`}</label>)}</div>}</div>
+                    <div className="ktr-filter-section"><button className="ktr-filter-heading" onClick={() => setOpen(s => ({ ...s, price: !s.price }))}>Maximum price<span>{open.price ? '−' : '+'}</span></button>{open.price && <div className="ktr-price"><strong>{price === 3500000 ? 'Any price' : money(price)}</strong><input type="range" min="100000" max="3500000" step="50000" value={price} onChange={e => { setPrice(Number(e.target.value)); setPage(1); }} /><div><small>100.000đ</small><small>No limit at maximum</small></div></div>}</div>
                     <div className="ktr-filter-section"><button className="ktr-filter-heading" onClick={() => setOpen(s => ({ ...s, status: !s.status }))}>Availability<span>{open.status ? '−' : '+'}</span></button>{open.status && <FilterCheck label="Available seats only" checked={onlyAvailable} onChange={setOnlyAvailable} />}</div>
-                </>}</aside><section className="ktr-results"><div className="ktr-results-head"><div><span className="ktr-eyebrow">EXPLORE YOUR OPTIONS</span><h2>{search.from} <span>→</span> {search.to}</h2><p>{results.length} {mode === 'flight' ? 'flights' : mode === 'train' ? 'trains' : 'departures'} found · {mode === 'flight' ? `${passengerLabel(search.passengers)} · ${seatCount(search.passengers)} seat(s) needed · ` : ''}Demo results</p></div><div className="ktr-results-actions"><button className="ktr-mobile-filter" onClick={() => setShowFilters(x => !x)}>☷ Filters</button>{mode !== 'bus' && <label>Sort by <select value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}>{config.sort.map(s => <option key={s}>{s}</option>)}</select></label>}</div></div><div className="ktr-info-banner">ⓘ All dates, fares, remaining seats and offers are sample data. Choosing a date updates the search form; real date-based availability requires an API.</div>
-                    <div className="ktr-trip-list">{visible.map(t => <TripCard key={t.id} trip={t} expanded={expanded === t.id} onToggle={() => { setExpanded(x => x === t.id ? null : t.id); setTab('Offers'); }} tab={tab} setTab={setTab} onBook={book} requiredSeats={mode === 'flight' ? seatCount(search.passengers) : mode === 'bus' ? busSeatNeed : 1} />)}{!visible.length && <div className="ktr-empty"><div>⌕</div><h3>No matching trips</h3><p>Try another route or adjust the filters.</p><button onClick={mode === 'bus' ? resetBus : reset}>Clear filters</button></div>}</div>
+                </>}</aside><section className="ktr-results"><div className="ktr-results-head"><div><span className="ktr-eyebrow">EXPLORE YOUR OPTIONS</span><h2>{search.from || 'All departures'} <span>→</span> {search.to || 'All destinations'}</h2><p>{results.length} {mode === 'flight' ? 'flights' : mode === 'train' ? 'trains' : 'departures'} found · {mode === 'flight' ? `${passengerLabel(search.passengers)} · ${seatCount(search.passengers)} seat(s) needed · ` : ''}{search.date}</p></div><div className="ktr-results-actions"><button className="ktr-mobile-filter" onClick={() => setShowFilters(x => !x)}>☷ Filters</button>{mode !== 'bus' && <label>Sort by <select value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}>{config.sort.map(s => <option key={s}>{s}</option>)}</select></label>}</div></div>{loadError ? <div className="ktr-info-banner" role="alert">{loadError}</div> : loading ? <div className="ktr-info-banner" role="status">Loading schedules…</div> : null}
+                    <div className="ktr-trip-list">{visible.map(t => <TripCard key={t.id} trip={t} expanded={expanded === t.id} onToggle={() => { setExpanded(x => x === t.id ? null : t.id); setTab('Offers'); }} tab={tab} setTab={setTab} onBook={setSelectedTrip} requiredSeats={mode === 'flight' ? seatCount(search.passengers) : mode === 'bus' ? busSeatNeed : 1} />)}{!visible.length && !loadError && !loading && <div className="ktr-empty"><div>⌕</div><h3>No matching trips</h3><p>Try another route or adjust the filters.</p><button onClick={mode === 'bus' ? resetBus : reset}>Clear filters</button></div>}</div>
                     {pages > 1 && <nav className="ktr-pagination" aria-label="Results pages"><button disabled={page === 1} onClick={() => { setPage(p => p - 1); setExpanded(null); }}>‹ Previous</button>{Array.from({ length: pages }, (_, i) => <button className={page === i + 1 ? 'current' : ''} key={i} onClick={() => { setPage(i + 1); setExpanded(null); }}>{i + 1}</button>)}<button disabled={page === pages} onClick={() => { setPage(p => p + 1); setExpanded(null); }}>Next ›</button></nav>}
-                </section></div></div>{selectedTrip && <SeatSelection trip={selectedTrip} onClose={() => setSelectedTrip(null)} onConfirm={confirmSeats} />}</main>;
+                </section></div></div>{selectedTrip && <SeatSelection trip={selectedTrip} initialQuantity={mode === 'flight' ? seatCount(search.passengers) : mode === 'bus' ? busSeatNeed : 1} onClose={() => setSelectedTrip(null)} onConfirm={confirmSeats} />}</main>;
 }

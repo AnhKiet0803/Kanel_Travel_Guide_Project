@@ -1,9 +1,15 @@
 // Shared API request helper.
 // The API address comes from the VITE_API_URL env variable (.env.local); default is the local backend.
-// credentials: 'include' makes the browser send the login cookie (spec: Cookie Authentication);
-// the backend must enable CORS with AllowCredentials for http://localhost:5173.
+// Authenticated requests include the JWT issued by /auth/login.
 
-const API_BASE = (import.meta.env.VITE_API_URL ?? 'http://localhost:5011/api').replace(/\/$/, '')
+export const API_BASE = (import.meta.env.VITE_API_URL ?? 'http://localhost:5011/api').replace(/\/$/, '')
+
+const TOKEN_KEY = 'kanel-access-token'
+
+export function setAccessToken(token) {
+  if (token) sessionStorage.setItem(TOKEN_KEY, token)
+  else sessionStorage.removeItem(TOKEN_KEY)
+}
 
 export class ApiError extends Error {
   constructor(message, status) {
@@ -14,12 +20,16 @@ export class ApiError extends Error {
 }
 
 export async function request(path, options = {}) {
+  const token = sessionStorage.getItem(TOKEN_KEY)
+  const headers = new Headers(options.headers)
+  if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
+  if (token && !headers.has('Authorization')) headers.set('Authorization', 'Bearer ' + token)
+
   let response
   try {
     response = await fetch(`${API_BASE}${path}`, {
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
       ...options,
+      headers,
     })
   } catch {
     throw new ApiError('Cannot reach the server. Please try again later.', 0)

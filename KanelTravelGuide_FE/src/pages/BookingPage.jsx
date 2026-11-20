@@ -1,119 +1,198 @@
 // CN13: Booking form for Tours, Transport, and Accommodation
 // Maintained by Tiến (recca279)
 import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import { createBooking } from '../api/bookingApi.js'
-import { getRoutes, getSchedules } from '../api/transportApi.js'
+import { getSchedules, transportModeFor } from '../api/transportApi.js'
+import { listTourDepartures } from '../api/tourDepartureApi.js'
+import { getServiceById, getServices } from '../api/servicesApi.js'
+import { createPayPalOrder, getPayPalOptions, paymentLabels } from '../api/payPalApi.js'
+import { listTourPromotions, tourService } from '../services/tourService.js'
 import '../styles/services.css'
 import './pages.css'
 
 export default function BookingPage() {
+  const [params] = useSearchParams()
+  const { pathname } = useLocation()
+  const transport = pathname === '/transport/booking' || (!params.has('type') && !params.has('serviceItemId'))
+  return <ServiceBookingPage key={pathname + params.toString()} transport={transport} />
+}
+
+function ServiceBookingPage({ transport }) {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
 
-  const initialType = searchParams.get('type') || 'Accommodation'
-  const initialTourId = searchParams.get('tourId') || ''
-  const initialTourName = searchParams.get('tourName') || ''
-  const initialServiceItemId = searchParams.get('serviceItemId') || ''
-  const initialItemName = searchParams.get('itemName') || ''
-  const initialPrice = parseFloat(searchParams.get('price') || searchParams.get('unitPrice') || '0')
-  const initialProviderName = searchParams.get('providerName') || ''
+  const [selectedItemId, setSelectedItemId] = useState(searchParams.get('serviceItemId') || '')
+  const [providerId, setProviderId] = useState(searchParams.get('providerId') || '')
+  const [providers, setProviders] = useState([])
+  const [tours, setTours] = useState([])
+  const [selectedTourId, setSelectedTourId] = useState(searchParams.get('tourId') || '')
+  const [selectedDepartureId, setSelectedDepartureId] = useState(searchParams.get('departureId') || '')
+  const [tourSchedule, setTourSchedule] = useState(null)
+  const [adults, setAdults] = useState(() => Math.max(1, Math.min(30, Number(searchParams.get('adults')) || 2)))
+  const [childAges, setChildAges] = useState(() => Array.from(
+    { length: Math.max(0, Math.min(29, parseInt(searchParams.get('children'), 10) || 0)) }, () => ''
+  ))
+  const requestedScheduleId = Number(searchParams.get('scheduleId'))
+  const [provider, setProvider] = useState(null)
+  const requestedType = searchParams.get('type')
+  const [bookingType, setBookingType] = useState(requestedType === 'Tour' || selectedTourId ? 'Tour'
+    : requestedType === 'Dining' ? 'Dining' : transport || requestedType === 'Transport' || requestedScheduleId ? 'Transport' : 'Accommodation')
+  const isTour = bookingType === 'Tour'
+  const isTransport = bookingType === 'Transport'
 
-  const [bookingType, setBookingType] = useState(
-    ['Tour', 'Transport', 'Accommodation'].includes(initialType) ? initialType : 'Accommodation'
-  )
-
-  // Customer form fields
   const [customerName, setCustomerName] = useState(user?.fullName || '')
   const [customerPhone, setCustomerPhone] = useState(user?.phone || '')
   const [customerEmail, setCustomerEmail] = useState(user?.email || '')
-  const [startDate, setStartDate] = useState(
-    new Date(Date.now() + 86400000).toISOString().split('T')[0]
-  )
-  const [totalPassengers, setTotalPassengers] = useState(1)
+  const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh', dateStyle: 'short' }).format(new Date())
+  const [startDate, setStartDate] = useState(searchParams.get('date') || today)
+  const [totalPassengers, setTotalPassengers] = useState(() => Math.max(1, Math.min(30, Number(searchParams.get('quantity')) || 1)))
   const [promoCodeInput, setPromoCodeInput] = useState('')
   const [appliedPromo, setAppliedPromo] = useState(null)
   const [promoError, setPromoError] = useState('')
+  const [checkingPromo, setCheckingPromo] = useState(false)
   const [notes, setNotes] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState('card')
-
-  // Service item state
-  const [selectedServiceItemId, setSelectedServiceItemId] = useState(initialServiceItemId)
-  const [selectedItemName, setSelectedItemName] = useState(initialItemName || 'Deluxe Ocean View Room')
-  const [selectedTourId, setSelectedTourId] = useState(initialTourId)
-  const [selectedTourName, setSelectedTourName] = useState(initialTourName || 'Full Day Da Nang City & Marble Mountain')
-  const [unitPrice, setUnitPrice] = useState(initialPrice || 1850000)
-  const [providerName, setProviderName] = useState(initialProviderName || 'Karnel Beach Luxury Hotel')
-
-  // Transport state
-  const [routes, setRoutes] = useState([])
-  const [selectedRouteId, setSelectedRouteId] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState('PayAfterConfirmation')
+  const [paypalOptions, setPaypalOptions] = useState(null)
+  const [selectedMode, setSelectedMode] = useState(searchParams.get('mode') || '')
+  const [selectedRouteId, setSelectedRouteId] = useState(Number(searchParams.get('routeId')) || '')
   const [schedules, setSchedules] = useState([])
-  const [selectedScheduleId, setSelectedScheduleId] = useState('')
-
+  const [selectedScheduleId, setSelectedScheduleId] = useState(requestedScheduleId || '')
+  const [loadingSchedules, setLoadingSchedules] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [successBooking, setSuccessBooking] = useState(null)
 
-  // Update user info if logged in
   useEffect(() => {
-    if (user) {
-      if (!customerName) setCustomerName(user.fullName || user.username || '')
-      if (!customerEmail) setCustomerEmail(user.email || '')
-      if (!customerPhone && user.phone) setCustomerPhone(user.phone)
-    }
+    if (!user) return
+    setCustomerName((value) => value || user.fullName || user.username || '')
+    setCustomerEmail((value) => value || user.email || '')
+    setCustomerPhone((value) => value || user.phone || '')
   }, [user])
 
-  // Load routes if booking type is Transport
   useEffect(() => {
-    if (bookingType === 'Transport') {
-      getRoutes()
-        .then((data) => {
-          const list = Array.isArray(data) ? data : []
-          setRoutes(list)
-          if (list.length > 0 && !selectedRouteId) {
-            setSelectedRouteId(list[0].routeId)
-          }
+    getPayPalOptions().then(setPaypalOptions).catch(() => setPaypalOptions(null))
+  }, [])
+
+  useEffect(() => {
+    if (bookingType === 'Transport') return
+    let active = true
+    const load = bookingType === 'Tour'
+      ? tourService.list().then(items => { if (active) setTours(items) })
+      : getServices(bookingType === 'Dining' ? { type: 'Restaurant' } : {})
+        .then(items => {
+          if (active) setProviders(items.filter(item => bookingType === 'Dining'
+            ? item.serviceType === 'Restaurant' : ['Hotel', 'Resort'].includes(item.serviceType)))
         })
-        .catch(() => {})
-    }
+    load.catch(failure => { if (active) setError(failure.message) })
+    return () => { active = false }
   }, [bookingType])
 
-  // Load schedules when route selected
   useEffect(() => {
-    if (selectedRouteId) {
-      getSchedules({ routeId: selectedRouteId })
-        .then((data) => {
-          const list = Array.isArray(data) ? data : []
-          setSchedules(list)
-          if (list.length > 0) {
-            setSelectedScheduleId(list[0].scheduleId)
-            setUnitPrice(list[0].ticketPrice || 150000)
-          }
-        })
-        .catch(() => {})
-    }
-  }, [selectedRouteId])
+    if (!providerId || !['Dining', 'Accommodation'].includes(bookingType)) return
+    let active = true
+    getServiceById(providerId, startDate ? { date: startDate } : undefined)
+      .then(data => { if (active) setProvider({ ...data, availabilityDate: startDate }) })
+      .catch(failure => { if (active) setError(failure.message) })
+    return () => { active = false }
+  }, [providerId, bookingType, startDate])
 
-  function formatPrice(num) {
-    if (num == null) return '0 VND'
-    return Number(num).toLocaleString('vi-VN') + ' VND'
+  function changeCategory(type) {
+    if (bookingType === type) return
+    setError(null)
+    setProviders([])
+    setProvider(null)
+    setProviderId('')
+    setSelectedItemId('')
+    setAppliedPromo(null)
+    setPromoCodeInput('')
+    setPromoError('')
+    setBookingType(type)
   }
 
-  function handleApplyPromo(e) {
+  useEffect(() => {
+    if (!isTour || !selectedTourId) return
+    let active = true
+    listTourDepartures(selectedTourId)
+      .then(items => { if (active) setTourSchedule({ tourId: selectedTourId, items }) })
+      .catch(failure => { if (active) setTourSchedule({ tourId: selectedTourId, error: failure.message }) })
+    return () => { active = false }
+  }, [isTour, selectedTourId])
+
+  useEffect(() => {
+    if (!isTransport || !startDate) return
+    let active = true
+    setLoadingSchedules(true)
+    setSchedules([])
+    getSchedules({ status: 'Running', date: startDate })
+      .then(data => { if (active) setSchedules(data) })
+      .catch(failure => { if (active) setError(failure.message) })
+      .finally(() => { if (active) setLoadingSchedules(false) })
+    return () => { active = false }
+  }, [isTransport, startDate])
+
+  const serviceItems = provider?.items?.filter(item => item.isAvailable && (item.remainingQuantity ?? item.totalQuantity) > 0) ?? []
+  const serviceItem = serviceItems.find(item => String(item.itemId) === selectedItemId)
+  const selectedTour = tours.find(tour => String(tour.id) === selectedTourId)
+  const tourDepartures = tourSchedule?.tourId === selectedTourId ? tourSchedule.items ?? [] : []
+  const departure = tourDepartures.find(item => String(item.tourDepartureId) === selectedDepartureId && item.seatsLeft > 0)
+  const bookingDate = isTour ? departure?.departureDate : startDate
+  const quantity = isTour ? adults + childAges.length : totalPassengers
+  const linkedSchedule = schedules.find(item => item.scheduleId === Number(selectedScheduleId))
+  const transportMode = selectedMode || transportModeFor(linkedSchedule?.vehicleType)
+  const modeSchedules = schedules.filter(item => transportModeFor(item.vehicleType) === transportMode)
+  const routes = [...new Map(modeSchedules.map(item => [item.routeId, item])).values()]
+  const routeId = routes.some(item => item.routeId === Number(selectedRouteId)) ? Number(selectedRouteId) : routes[0]?.routeId
+  const routeSchedules = modeSchedules.filter(item => item.routeId === routeId)
+  const schedule = routeSchedules.find(item => item.scheduleId === Number(selectedScheduleId))
+    ?? routeSchedules.find(item => item.remainingSeats !== 0)
+  const selectedItemName = serviceItem?.itemName ?? ''
+  const returnParams = new URLSearchParams({ type: bookingType, date: bookingDate || startDate, quantity })
+  if (isTour) {
+    returnParams.set('tourId', selectedTourId)
+    returnParams.set('departureId', selectedDepartureId)
+    returnParams.set('adults', adults)
+    returnParams.set('children', childAges.length)
+  } else if (isTransport) {
+    returnParams.set('mode', transportMode)
+    if (routeId) returnParams.set('routeId', routeId)
+    if (schedule) returnParams.set('scheduleId', schedule.scheduleId)
+  } else {
+    if (providerId) returnParams.set('providerId', providerId)
+    if (selectedItemId) returnParams.set('serviceItemId', selectedItemId)
+  }
+  const unitPrice = (bookingType === 'Transport' ? schedule?.ticketPrice : serviceItem?.price) ?? 0
+  const maxQuantity = isTour ? departure?.seatsLeft : isTransport ? schedule?.remainingSeats : serviceItem?.remainingQuantity ?? serviceItem?.totalQuantity
+  const validSelection = isTour ? Boolean(departure) : isTransport ? !loadingSchedules && Boolean(schedule)
+    : Boolean(serviceItem && provider.availabilityDate === startDate && (bookingType === 'Dining') === (provider.serviceType === 'Restaurant'))
+  const validQuantity = Number.isInteger(quantity) && quantity >= 1 && quantity <= 30
+    && (maxQuantity == null || quantity <= maxQuantity) && (!isTour || Number.isInteger(adults) && adults >= 1)
+  const validChildAges = !isTour || childAges.every(age => /^[2-9]$|^1[0-7]$/.test(age))
+
+  function formatPrice(num) {
+    return Number(num ?? 0).toLocaleString('vi-VN') + ' VND'
+  }
+
+  async function handleApplyPromo(e) {
     e.preventDefault()
     setPromoError('')
     const code = promoCodeInput.trim().toUpperCase()
-    if (!code) return
-
-    if (code === 'KARNEL10') {
-      setAppliedPromo({ code, discountPercent: 10, label: '10% Exclusive Discount' })
-    } else if (code === 'WELCOME') {
-      setAppliedPromo({ code, discountFixed: 100000, label: '100,000 VND Welcome Voucher' })
-    } else {
-      setPromoError('Invalid promotion code. Try "KARNEL10" or "WELCOME".')
+    if (!code || checkingPromo) return
+    setCheckingPromo(true)
+    try {
+      const promo = (await listTourPromotions()).find((item) => item.promoCode.toUpperCase() === code)
+      if (!promo) {
+        setPromoError('Invalid or expired promotion code.')
+        return
+      }
+      setAppliedPromo({ code: promo.promoCode, discountPercent: promo.discountPercent, discountFixed: promo.discountAmount, label: promo.title })
+    } catch (failure) {
+      setPromoError(failure.message)
+    } finally {
+      setCheckingPromo(false)
     }
   }
 
@@ -123,68 +202,61 @@ export default function BookingPage() {
     setPromoError('')
   }
 
-  // Calculate totals
-  const subtotal = (unitPrice || 0) * (parseInt(totalPassengers) || 1)
-  let discountAmount = 0
-  if (appliedPromo) {
-    if (appliedPromo.discountPercent) {
-      discountAmount = (subtotal * appliedPromo.discountPercent) / 100
-    } else if (appliedPromo.discountFixed) {
-      discountAmount = Math.min(subtotal, appliedPromo.discountFixed)
-    }
-  }
+  const subtotal = isTour
+    ? (departure?.adultPrice ?? 0) * adults + (departure?.childPrice ?? 0) * childAges.length
+    : unitPrice * totalPassengers
+  const discountAmount = Math.min(subtotal, appliedPromo?.discountPercent > 0
+    ? Math.round(subtotal * appliedPromo.discountPercent) / 100 : appliedPromo?.discountFixed ?? 0)
   const grandTotal = Math.max(0, subtotal - discountAmount)
+  const noPaymentDue = validSelection && grandTotal === 0
+  const canPayPal = Boolean(validSelection && paypalOptions?.enabled && user && grandTotal > 0)
+  const chosenMethod = paymentMethod === 'PayPalSandbox' && !canPayPal || paymentMethod === 'BankTransfer' && grandTotal <= 0
+    ? 'PayAfterConfirmation' : paymentMethod
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (loading) return
     setError(null)
-
-    if (!customerName.trim() || !customerPhone.trim() || !customerEmail.trim()) {
-      setError('Please provide your full name, contact phone number, and email address.')
+    if (!user) {
+      setError('Sign in to save your reservation in My Bookings.')
+      return
+    }
+    if (!validSelection || !validQuantity || !validChildAges || !bookingDate || bookingDate < today) {
+      setError('Choose an available option, quantity and date.')
       return
     }
 
-    if (!startDate) {
-      setError('Please select a valid travel or check-in date.')
-      return
-    }
-
-    // Build booking detail
-    const detail = {
-      quantity: parseInt(totalPassengers) || 1,
-      unitPrice: unitPrice
-    }
-
-    if (bookingType === 'Tour') {
-      detail.tourId = selectedTourId ? parseInt(selectedTourId) : 1
-    } else if (bookingType === 'Transport') {
-      if (!selectedScheduleId) {
-        setError('Please select a travel departure schedule.')
-        return
-      }
-      detail.scheduleId = parseInt(selectedScheduleId)
-    } else {
-      detail.serviceItemId = selectedServiceItemId ? parseInt(selectedServiceItemId) : 101
-    }
-
-    const payload = {
-      customerName: customerName.trim(),
-      customerPhone: customerPhone.trim(),
-      customerEmail: customerEmail.trim(),
-      bookingType: bookingType,
-      startDate: startDate,
-      totalPassengers: parseInt(totalPassengers) || 1,
-      notes: notes.trim() || null,
-      promoCode: appliedPromo ? appliedPromo.code : null,
-      details: [detail]
-    }
+    const bookingKind = isTour ? 'Tour' : isTransport ? 'Transport' : 'Service'
+    const detail = isTour ? { tourId: Number(selectedTourId) }
+      : isTransport ? { scheduleId: schedule.scheduleId } : { serviceItemId: serviceItem.itemId }
 
     setLoading(true)
     try {
-      const result = await createBooking(payload)
-      setSuccessBooking(result || { bookingCode: 'KTG-' + Math.floor(100000 + Math.random() * 900000) })
-    } catch (err) {
-      setError(err.message || 'Failed to submit reservation. Please try again.')
+      const result = await createBooking({
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        customerEmail: customerEmail.trim(),
+        bookingType: bookingKind,
+        startDate: bookingDate,
+        totalPassengers: quantity,
+        ...(isTour ? { tourDepartureId: departure.tourDepartureId, adultCount: adults, childAges: childAges.map(Number) } : {}),
+        paymentMethod: chosenMethod,
+        notes: notes.trim() || null,
+        promoCode: appliedPromo?.code ?? null,
+        details: [{ ...detail, quantity }],
+      })
+      setSuccessBooking(result)
+      if (result.paymentMethod === 'PayPalSandbox') {
+        try {
+          const order = await createPayPalOrder(result.bookingId)
+          if (order.approvalUrl) window.location.assign(order.approvalUrl)
+          else navigate('/tours/payment-return?bookingId=' + result.bookingId + '&resume=1')
+        } catch (failure) {
+          setError(failure.message)
+        }
+      }
+    } catch (failure) {
+      setError(failure.message || 'Failed to submit reservation. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -203,9 +275,9 @@ export default function BookingPage() {
               >
                 <i className="bi bi-check-lg"></i>
               </div>
-              <h2 className="ktg-serif-title text-white mb-1">Reservation Confirmed!</h2>
+              <h2 className="ktg-serif-title text-white mb-1">Reservation received</h2>
               <p className="text-white-50 mb-0">
-                Thank you, {customerName}. Your booking voucher has been issued.
+                Thank you, {customerName}. Your reservation is awaiting confirmation or payment.
               </p>
             </div>
 
@@ -215,7 +287,7 @@ export default function BookingPage() {
                   Booking Reference Code
                 </span>
                 <span className="h3 fw-bold text-primary mb-0 font-monospace">
-                  {successBooking.bookingCode || 'KTG-839214'}
+                  {successBooking.bookingCode}
                 </span>
               </div>
 
@@ -226,23 +298,32 @@ export default function BookingPage() {
                 </div>
                 <div className="col-6">
                   <span className="text-muted d-block">Travel / Check-in Date:</span>
-                  <strong className="text-dark">{startDate}</strong>
+                  <strong className="text-dark">{bookingDate}</strong>
                 </div>
                 <div className="col-6">
-                  <span className="text-muted d-block">Number of Guests / Units:</span>
-                  <strong className="text-dark">{totalPassengers}</strong>
+                  <span className="text-muted d-block">{isTour ? 'Number of travelers' : isTransport ? 'Number of tickets' : bookingType === 'Dining' ? 'Number of options' : 'Number of rooms (one night)'}:</span>
+                  <strong className="text-dark">{quantity}</strong>
                 </div>
                 <div className="col-6">
                   <span className="text-muted d-block">Payment Status:</span>
-                  <span className="badge bg-success">Confirmed (Pay at Check-in)</span>
+                  <span className="badge bg-secondary">{successBooking.totalAmount === 0 ? 'No payment due' : successBooking.paymentStatus}</span>
+                  {successBooking.totalAmount > 0 && <span className="d-block">{paymentLabels[successBooking.paymentMethod]}</span>}
                 </div>
               </div>
 
               <div className="border-top pt-3 d-flex justify-content-between align-items-center mb-4">
                 <span className="fw-bold fs-5 text-dark">Total Amount:</span>
-                <span className="fw-bold fs-4 text-primary">{formatPrice(grandTotal)}</span>
+                <span className="fw-bold fs-4 text-primary">{formatPrice(successBooking.totalAmount)}</span>
               </div>
 
+              {error && <p className="text-danger" role="alert">{error}</p>}
+              {successBooking.paymentMethod === 'PayPalSandbox' && (
+                <Link className="ktg-btn-teal mb-3" to={'/tours/payment-return?bookingId=' + successBooking.bookingId + '&resume=1'}>
+                  {loading ? 'Opening PayPal…' : 'Continue to PayPal Sandbox'}
+                </Link>
+              )}
+              {successBooking.paymentMethod === 'BankTransfer' && <p>Wait for booking confirmation and transfer instructions before paying.</p>}
+              {successBooking.paymentMethod === 'PayAfterConfirmation' && <p>{successBooking.totalAmount === 0 ? 'No online payment is due for this reservation.' : 'Check My Bookings for confirmation and payment instructions.'}</p>}
               <div className="d-flex gap-3">
                 <Link to="/my-bookings" className="ktg-btn-navy flex-grow-1 justify-content-center py-3">
                   <i className="bi bi-journal-bookmark-fill"></i> View In My Bookings
@@ -307,21 +388,21 @@ export default function BookingPage() {
                     <button
                       type="button"
                       className={`ktg-pill-tab ${bookingType === 'Accommodation' ? 'active' : ''}`}
-                      onClick={() => setBookingType('Accommodation')}
+                      onClick={() => changeCategory('Accommodation')} aria-pressed={bookingType === 'Accommodation'}
                     >
                       <i className="bi bi-building"></i> Hotel & Resort
                     </button>
-                    <button
-                      type="button"
-                      className={`ktg-pill-tab ${bookingType === 'Tour' ? 'active' : ''}`}
-                      onClick={() => setBookingType('Tour')}
-                    >
+                    <button type="button" className={`ktg-pill-tab ${bookingType === 'Dining' ? 'active' : ''}`} onClick={() => changeCategory('Dining')} aria-pressed={bookingType === 'Dining'}>
+                      <i className="bi bi-cup-hot"></i> Dining
+                    </button>
+                    <button type="button" className={`ktg-pill-tab ${bookingType === 'Tour' ? 'active' : ''}`}
+                      onClick={() => changeCategory('Tour')} aria-pressed={bookingType === 'Tour'}>
                       <i className="bi bi-compass"></i> Guided Tour
                     </button>
                     <button
                       type="button"
                       className={`ktg-pill-tab ${bookingType === 'Transport' ? 'active' : ''}`}
-                      onClick={() => setBookingType('Transport')}
+                      onClick={() => changeCategory('Transport')} aria-pressed={bookingType === 'Transport'}
                     >
                       <i className="bi bi-bus-front"></i> Transport Ticket
                     </button>
@@ -330,79 +411,96 @@ export default function BookingPage() {
 
                 {/* Specific Fields depending on Category */}
                 <div className="bg-light p-3 rounded-4 mb-4 border">
-                  {bookingType === 'Accommodation' && (
+                  {['Dining', 'Accommodation'].includes(bookingType) && (
                     <div className="row g-3">
-                      <div className="col-md-7">
-                        <label className="form-label small fw-bold text-secondary">
-                          Property / Room Name
+                      <div className="col-md-6">
+                        <label className="form-label small fw-bold text-secondary" htmlFor="booking-provider">
+                          {bookingType === 'Dining' ? 'Restaurant' : 'Hotel or resort'}
                         </label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={selectedItemName}
-                          onChange={(e) => setSelectedItemName(e.target.value)}
-                          placeholder="e.g. Deluxe Ocean View Room"
-                          required
-                        />
+                        <select id="booking-provider" className="form-select" value={providerId} onChange={event => {
+                          setError(null)
+                          setProvider(null)
+                          setProviderId(event.target.value)
+                          setSelectedItemId('')
+                        }}>
+                          <option value="">Choose a provider</option>
+                          {providers.map(item => <option key={item.providerId} value={item.providerId}>{item.providerName}</option>)}
+                        </select>
                       </div>
-                      <div className="col-md-5">
-                        <label className="form-label small fw-bold text-secondary">
-                          Nightly Rate (VND)
+                      <div className="col-md-6">
+                        <label className="form-label small fw-bold text-secondary" htmlFor="booking-item">
+                          {bookingType === 'Dining' ? 'Dining option' : 'Room or villa'}
                         </label>
-                        <input
-                          type="number"
-                          className="form-control"
-                          value={unitPrice}
-                          onChange={(e) => setUnitPrice(parseFloat(e.target.value) || 0)}
-                          required
-                        />
+                        <select id="booking-item" className="form-select" value={serviceItem ? selectedItemId : ''}
+                          disabled={!serviceItems.length || provider?.availabilityDate !== startDate}
+                          onChange={event => setSelectedItemId(event.target.value)}>
+                          <option value="">{provider && !serviceItems.length ? 'No options for this date' : 'Choose an option'}</option>
+                          {serviceItems.map(item => <option key={item.itemId} value={item.itemId}>{item.itemName} · {formatPrice(item.price)}</option>)}
+                        </select>
                       </div>
                     </div>
                   )}
-
                   {bookingType === 'Tour' && (
-                    <div className="row g-3">
+                    <div className="row g-3 align-items-end">
                       <div className="col-md-7">
-                        <label className="form-label small fw-bold text-secondary">
-                          Tour Name
-                        </label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={selectedTourName}
-                          onChange={(e) => setSelectedTourName(e.target.value)}
-                          required
-                        />
+                        <label className="form-label small fw-bold text-secondary" htmlFor="booking-tour">Tour</label>
+                        <select id="booking-tour" className="form-select" value={selectedTourId} onChange={event => {
+                          setSelectedTourId(event.target.value)
+                          setSelectedDepartureId('')
+                          setTourSchedule(null)
+                        }}>
+                          <option value="">Choose a tour</option>
+                          {tours.map(tour => <option key={tour.id} value={tour.id}>{tour.title}</option>)}
+                        </select>
                       </div>
                       <div className="col-md-5">
-                        <label className="form-label small fw-bold text-secondary">
-                          Rate per Person (VND)
-                        </label>
-                        <input
-                          type="number"
-                          className="form-control"
-                          value={unitPrice}
-                          onChange={(e) => setUnitPrice(parseFloat(e.target.value) || 0)}
-                          required
-                        />
+                        <label className="form-label small fw-bold text-secondary" htmlFor="booking-departure">Departure</label>
+                        <select id="booking-departure" className="form-select" value={selectedDepartureId}
+                          disabled={!tourDepartures.some(item => item.seatsLeft > 0)}
+                          onChange={event => setSelectedDepartureId(event.target.value)}>
+                          <option value="">{!selectedTourId ? 'Choose a tour first' : !tourSchedule
+                            ? 'Loading departures…' : !tourDepartures.length ? 'No upcoming departures' : 'Choose a departure'}</option>
+                          {tourDepartures.map(item => <option key={item.tourDepartureId} value={item.tourDepartureId}
+                            disabled={item.seatsLeft <= 0}>
+                            {item.departureDate}{item.departureTime ? ' ' + item.departureTime.slice(0, 5) : ''} – {item.returnDate} · {item.seatsLeft > 0 ? item.seatsLeft + ' seats left' : 'Sold out'}
+                          </option>)}
+                        </select>
+                        {tourSchedule?.error && <p className="text-danger small mt-2 mb-0" role="alert">{tourSchedule.error}</p>}
                       </div>
                     </div>
                   )}
 
-                  {bookingType === 'Transport' && (
+                  {isTransport && (
                     <div className="row g-3">
+                      <div className="col-12">
+                        <label className="form-label small fw-bold text-secondary" htmlFor="booking-transport-mode">Transport type</label>
+                        <select id="booking-transport-mode" className="form-select" value={transportMode} onChange={event => {
+                          setSelectedMode(event.target.value)
+                          setSelectedRouteId('')
+                          setSelectedScheduleId('')
+                        }}>
+                          <option value="bus">Bus / Limousine</option>
+                          <option value="flight">Flight</option>
+                          <option value="train">Train</option>
+                        </select>
+                      </div>
                       <div className="col-md-6">
                         <label className="form-label small fw-bold text-secondary">
                           Travel Route
                         </label>
                         <select
                           className="form-select"
-                          value={selectedRouteId}
-                          onChange={(e) => setSelectedRouteId(e.target.value)}
+                          value={routeId ?? ''}
+                          disabled={!routes.length}
+                          onChange={(e) => {
+                            setSelectedScheduleId('')
+                            setSelectedRouteId(e.target.value)
+                          }}
                         >
+                          {!routes.length && <option value="">{loadingSchedules ? 'Loading routes…' : 'No routes for this transport type'}</option>}
                           {routes.map((r) => (
                             <option key={r.routeId} value={r.routeId}>
-                              {r.origin} ➔ {r.destination} ({r.transportType})
+                              {r.departureLocationName} ➔ {r.destinationLocationName}
                             </option>
                           ))}
                         </select>
@@ -413,16 +511,14 @@ export default function BookingPage() {
                         </label>
                         <select
                           className="form-select"
-                          value={selectedScheduleId}
-                          onChange={(e) => {
-                            setSelectedScheduleId(e.target.value)
-                            const sch = schedules.find((s) => s.scheduleId === parseInt(e.target.value))
-                            if (sch) setUnitPrice(sch.ticketPrice || 0)
-                          }}
+                          value={schedule?.scheduleId ?? ''}
+                          onChange={(e) => setSelectedScheduleId(e.target.value)}
+                          disabled={loadingSchedules || !routeSchedules.length}
                         >
-                          {schedules.map((s) => (
-                            <option key={s.scheduleId} value={s.scheduleId}>
-                              {s.departureTime?.slice(0, 5)} - {formatPrice(s.ticketPrice)}
+                          {!schedule && <option value="">{loadingSchedules ? 'Loading…' : routeSchedules.length ? 'Select a departure' : 'No schedules'}</option>}
+                          {routeSchedules.map((s) => (
+                            <option key={s.scheduleId} value={s.scheduleId} disabled={s.remainingSeats === 0}>
+                              {s.departureTime?.slice(0, 5)} · {s.vehicleName} · {formatPrice(s.ticketPrice)}{s.remainingSeats != null ? ' · ' + s.remainingSeats + ' seats left' : ''}
                             </option>
                           ))}
                         </select>
@@ -431,6 +527,38 @@ export default function BookingPage() {
                   )}
                 </div>
 
+                {isTour ? (
+                  <div className="row g-3 mb-4">
+                    <div className="col-md-6">
+                      <label className="form-label fw-bold small" htmlFor="booking-adults">Adults (18+)</label>
+                      <input id="booking-adults" className="form-control" type="number" min="1" max="30" required
+                        value={adults || ''} onChange={event => setAdults(Number(event.target.value))} />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label fw-bold small" htmlFor="booking-children">Children (2–17)</label>
+                      <select id="booking-children" className="form-select" value={childAges.length} onChange={event => {
+                        const count = Number(event.target.value)
+                        setChildAges(ages => Array.from({ length: count }, (_, index) => ages[index] ?? ''))
+                      }}>
+                        {Array.from({ length: 30 }, (_, count) => <option key={count} value={count}>{count}</option>)}
+                      </select>
+                    </div>
+                    {childAges.map((age, index) => (
+                      <div className="col-md-4" key={index}>
+                        <label className="form-label small fw-bold" htmlFor={`booking-child-age-${index}`}>Child {index + 1} age at departure</label>
+                        <select id={`booking-child-age-${index}`} className="form-select" value={age} required
+                          onChange={event => {
+                            const value = event.target.value
+                            setChildAges(ages => ages.map((previous, i) => i === index ? value : previous))
+                          }}>
+                          <option value="">Select age</option>
+                          {Array.from({ length: 16 }, (_, offset) => <option key={offset} value={offset + 2}>{offset + 2}</option>)}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                <>
                 {/* Date & Guests */}
                 <div className="row g-3 mb-4">
                   <div className="col-md-6">
@@ -441,14 +569,17 @@ export default function BookingPage() {
                       type="date"
                       className="form-control"
                       value={startDate}
-                      min={new Date().toISOString().split('T')[0]}
-                      onChange={(e) => setStartDate(e.target.value)}
+                      min={today}
+                      onChange={(e) => {
+                        setSchedules([])
+                        setStartDate(e.target.value)
+                      }}
                       required
                     />
                   </div>
                   <div className="col-md-6">
                     <label className="form-label fw-bold text-dark small">
-                      <i className="bi bi-people-fill me-1 text-primary"></i> Number of Guests / Units
+                      <i className="bi bi-people-fill me-1 text-primary"></i> {bookingType === 'Transport' ? 'Number of tickets' : bookingType === 'Dining' ? 'Number of options' : 'Number of rooms (one night)'}
                     </label>
                     <input
                       type="number"
@@ -456,12 +587,13 @@ export default function BookingPage() {
                       min="1"
                       max="30"
                       value={totalPassengers}
-                      onChange={(e) => setTotalPassengers(parseInt(e.target.value) || 1)}
+                      onChange={(e) => setTotalPassengers(Number(e.target.value))}
                       required
                     />
                   </div>
                 </div>
 
+                </>)}
                 {/* Primary Guest Contact Information */}
                 <h4 className="ktg-serif-title mb-3 fs-5 pt-2 border-top">
                   Guest Contact Details
@@ -523,56 +655,37 @@ export default function BookingPage() {
 
                 {/* Payment Selection */}
                 <h4 className="ktg-serif-title mb-3 fs-5 pt-2 border-top">
-                  Payment Preference
+                  {noPaymentDue ? 'No payment due' : 'Payment Preference'}
                 </h4>
 
-                <div className="d-flex flex-column gap-2 mb-4">
-                  <label className={`p-3 rounded-3 border d-flex align-items-center justify-content-between cursor-pointer ${paymentMethod === 'card' ? 'border-primary bg-light' : ''}`}>
-                    <div className="d-flex align-items-center gap-2">
-                      <input
-                        type="radio"
-                        name="payMethod"
-                        value="card"
-                        checked={paymentMethod === 'card'}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                      />
-                      <span className="fw-semibold text-dark">International Card / Credit Card</span>
-                    </div>
-                    <span className="text-muted small">Visa, MasterCard, JCB</span>
-                  </label>
+                {noPaymentDue ? (
+                  <p className="text-muted mb-4" role="status">
+                    {bookingType === 'Dining' && unitPrice === 0
+                      ? 'There is no fee to reserve this table. Pay for food and drinks at the restaurant.'
+                      : 'You can submit this reservation without making a payment.'}
+                  </p>
+                ) : <div className="d-flex flex-column gap-2 mb-4">
+                  {[
+                    ['PayPalSandbox', 'PayPal Sandbox', canPayPal ? 'Test checkout in USD' : !user ? 'Sign in to use PayPal' : !paypalOptions?.enabled ? 'Currently unavailable' : 'Available for a positive balance'],
+                    ['BankTransfer', 'Bank transfer', 'Instructions after confirmation'],
+                    ['PayAfterConfirmation', 'Pay after confirmation', 'No upfront charge'],
+                  ].map(([method, label, description]) => (
+                    <label key={method} className={`p-3 rounded-3 border d-flex align-items-center justify-content-between cursor-pointer ${chosenMethod === method ? 'border-primary bg-light' : ''}`}>
+                      <span className="d-flex align-items-center gap-2">
+                        <input type="radio" name="payMethod" value={method} checked={chosenMethod === method}
+                          disabled={method === 'PayPalSandbox' && !canPayPal || method === 'BankTransfer' && grandTotal <= 0} onChange={() => setPaymentMethod(method)} />
+                        <span className="fw-semibold text-dark">{label}</span>
+                      </span>
+                      <span className="text-muted small">{description}</span>
+                    </label>
+                  ))}
+                </div>}
 
-                  <label className={`p-3 rounded-3 border d-flex align-items-center justify-content-between cursor-pointer ${paymentMethod === 'qr' ? 'border-primary bg-light' : ''}`}>
-                    <div className="d-flex align-items-center gap-2">
-                      <input
-                        type="radio"
-                        name="payMethod"
-                        value="qr"
-                        checked={paymentMethod === 'qr'}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                      />
-                      <span className="fw-semibold text-dark">VNPAY QR / Banking App / Momo</span>
-                    </div>
-                    <span className="badge bg-success">Instant 0% Fee</span>
-                  </label>
-
-                  <label className={`p-3 rounded-3 border d-flex align-items-center justify-content-between cursor-pointer ${paymentMethod === 'later' ? 'border-primary bg-light' : ''}`}>
-                    <div className="d-flex align-items-center gap-2">
-                      <input
-                        type="radio"
-                        name="payMethod"
-                        value="later"
-                        checked={paymentMethod === 'later'}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                      />
-                      <span className="fw-semibold text-dark">Pay at Property / Check-in Counter</span>
-                    </div>
-                    <span className="text-muted small">No upfront charge</span>
-                  </label>
-                </div>
-
+                {!user && <p><Link to="/login" state={{ returnTo: location.pathname + '?' + returnParams }}>Sign in</Link> to save your reservation.</p>}
+                {validSelection && !validQuantity && <p className="text-danger" role="status">The selected option does not have enough availability for this quantity.</p>}
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !validSelection || !validQuantity || !validChildAges || !user}
                   className="ktg-btn-teal w-100 justify-content-center py-3 fs-5"
                 >
                   {loading ? (
@@ -581,7 +694,10 @@ export default function BookingPage() {
                     </>
                   ) : (
                     <>
-                      <i className="bi bi-shield-lock-fill"></i> Confirm Reservation ({formatPrice(grandTotal)})
+                      <i className={noPaymentDue ? 'bi bi-calendar-check' : 'bi bi-shield-lock-fill'} aria-hidden="true" />
+                      {noPaymentDue
+                        ? bookingType === 'Dining' ? 'Reserve table' : 'Confirm Reservation'
+                        : 'Confirm Reservation (' + formatPrice(grandTotal) + ')'}
                     </>
                   )}
                 </button>
@@ -598,15 +714,12 @@ export default function BookingPage() {
               <div className="bg-light p-3 rounded-3 mb-3 border">
                 <span className="badge bg-primary text-uppercase mb-1">{bookingType}</span>
                 <h5 className="fw-bold mb-1 text-dark">
-                  {bookingType === 'Accommodation'
-                    ? selectedItemName
-                    : bookingType === 'Tour'
-                    ? selectedTourName
-                    : 'Transport Travel Ticket'}
+                  {bookingType === 'Tour' ? selectedTour?.title || 'Choose a tour' : bookingType === 'Transport'
+                    ? schedule?.vehicleName || 'Transport ticket' : selectedItemName || 'Choose an option'}
                 </h5>
-                <span className="text-muted small">
-                  <i className="bi bi-calendar3 me-1"></i> Date: {startDate}
-                </span>
+                {bookingDate && <span className="text-muted small">
+                  <i className="bi bi-calendar3 me-1"></i> Date: {bookingDate}{isTour && departure?.departureTime ? ' · ' + departure.departureTime.slice(0, 5) : ''}
+                </span>}
               </div>
 
               {/* Promo Code Form */}
@@ -636,7 +749,7 @@ export default function BookingPage() {
                       value={promoCodeInput}
                       onChange={(e) => setPromoCodeInput(e.target.value)}
                     />
-                    <button type="submit" className="btn btn-sm btn-outline-primary">
+                    <button type="submit" disabled={checkingPromo} className="btn btn-sm btn-outline-primary">
                       Apply
                     </button>
                   </form>
@@ -646,17 +759,24 @@ export default function BookingPage() {
 
               {/* Price rows */}
               <div className="small text-secondary mb-3">
-                <div className="d-flex justify-content-between py-1">
+                {isTour ? <>
+                  <div className="d-flex justify-content-between py-1">
+                    <span>Adults × {adults}</span><strong>{departure ? formatPrice(departure.adultPrice * adults) : '—'}</strong>
+                  </div>
+                  {childAges.length > 0 && <div className="d-flex justify-content-between py-1">
+                    <span>Children × {childAges.length}</span><strong>{departure ? formatPrice(departure.childPrice * childAges.length) : '—'}</strong>
+                  </div>}
+                </> : <div className="d-flex justify-content-between py-1">
                   <span>Unit Price:</span>
-                  <span className="text-dark fw-semibold">{formatPrice(unitPrice)}</span>
-                </div>
+                  <span className="text-dark fw-semibold">{validSelection ? formatPrice(unitPrice) : '—'}</span>
+                </div>}
                 <div className="d-flex justify-content-between py-1">
                   <span>Quantity / Persons:</span>
-                  <span className="text-dark fw-semibold">x {totalPassengers}</span>
+                  <span className="text-dark fw-semibold">x {quantity}</span>
                 </div>
                 <div className="d-flex justify-content-between py-1">
                   <span>Subtotal:</span>
-                  <span className="text-dark fw-semibold">{formatPrice(subtotal)}</span>
+                  <span className="text-dark fw-semibold">{validSelection ? formatPrice(subtotal) : '—'}</span>
                 </div>
                 {discountAmount > 0 && (
                   <div className="d-flex justify-content-between py-1 text-success fw-bold">
@@ -665,8 +785,8 @@ export default function BookingPage() {
                   </div>
                 )}
                 <div className="d-flex justify-content-between py-1">
-                  <span>Taxes & Service Charge:</span>
-                  <span className="text-success fw-semibold">Included</span>
+                  <span>Payment method</span>
+                  <span className="fw-semibold">{noPaymentDue ? 'No payment due' : paymentLabels[chosenMethod]}</span>
                 </div>
               </div>
 
@@ -674,7 +794,7 @@ export default function BookingPage() {
                 <div>
                   <span className="small text-muted d-block">Grand Total</span>
                   <div className="ktg-serif-title fs-3 text-primary mb-0">
-                    {formatPrice(grandTotal)}
+                    {validSelection ? formatPrice(grandTotal) : '—'}
                   </div>
                 </div>
                 <span className="badge bg-light text-secondary border">VND</span>
@@ -683,12 +803,12 @@ export default function BookingPage() {
               <div className="text-muted small">
                 <div className="d-flex align-items-center gap-2 mb-2">
                   <i className="bi bi-shield-check text-success fs-5"></i>
-                  <span>Free cancellation up to 48 hours</span>
+                  <span>See booking terms before paying</span>
                 </div>
-                <div className="d-flex align-items-center gap-2">
+                {!noPaymentDue && <div className="d-flex align-items-center gap-2">
                   <i className="bi bi-lock-fill text-primary fs-5"></i>
-                  <span>Encrypted 256-bit secure checkout</span>
-                </div>
+                  <span>Online payment is handled by PayPal</span>
+                </div>}
               </div>
             </div>
           </div>

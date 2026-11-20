@@ -11,78 +11,71 @@ import {
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-import { destinations } from '../components/home/HomeData';
-import { promotionsDemo } from '../data/promotionsDemo';
-import { getSpots, getLocations, getCategories } from '../data/adminTouristSpotsStore';
+import { listCategories, listLocations, listSpots } from '../api/touristSpotsApi.js';
 import '../styles/destinations/Destinations.css';
 
-// Demo metadata for TouristSpots, CategoryTypes and Locations.
-const DEMO_METADATA = {
-    1: { category: 'nature', coordinates: [20.9101, 107.1839] },
-    2: { category: 'culture', coordinates: [15.8801, 108.338] },
-    3: { category: 'beach', coordinates: [-8.4095, 115.1889] },
-};
+// Reference points for the areas currently supplied by the Locations API.
+const AREA_COORDINATES = new Map([
+    ['da nang', [16.04, 108.21]],
+    ['quang nam', [15.57, 108.47]],
+    ['thua thien hue', [16.46, 107.58]],
+    ['khanh hoa', [12.22, 109.20]],
+]);
 
-const BASE_CATEGORIES = [
-    { id: 'nature', label: 'Nature' },
-    { id: 'culture', label: 'Culture & Heritage' },
-    { id: 'beach', label: 'Beaches & Islands' },
-    { id: 'historical', label: 'Historical Sites' },
-];
-
-function categorySlug(name = '') {
-    const text = String(name).trim().toLowerCase();
-    if (text.includes('nature')) return 'nature';
-    if (text.includes('culture') || text.includes('heritage')) return 'culture';
-    if (text.includes('beach') || text.includes('island')) return 'beach';
-    if (text.includes('historical')) return 'historical';
-    return `custom:${text}`;
+function getMapPins(spots) {
+    const pins = new Map();
+    for (const spot of spots) {
+        if (!spot.coordinates) continue;
+        const key = spot.coordinates.join(',');
+        if (!pins.has(key)) pins.set(key, { key, coordinates: spot.coordinates, spots: [] });
+        pins.get(key).spots.push(spot);
+    }
+    return [...pins.values()];
 }
 
-function countryFromLocation(location) {
-    const name = String(location?.LocationName || '');
-    const region = String(location?.Region || '');
-    if (/indonesia|bali/i.test(`${name} ${region}`)) return 'Indonesia';
-    if (/vietnam|viet nam|quang|northern|central|southern|hoi an|ha long/i.test(`${name} ${region}`)) return 'Vietnam';
-    return region || 'Other destinations';
-}
-
-function getAdminDestinationData() {
-    const locations = getLocations();
-    const categories = getCategories();
-    const locationsById = new Map(locations.map(x => [Number(x.LocationId), x]));
-    const categoriesById = new Map(categories.map(x => [Number(x.CategoryId), x]));
-    const spots = getSpots().map(item => {
-        const location = locationsById.get(Number(item.LocationId));
-        const category = categoriesById.get(Number(item.CategoryId));
-        const categoryName = category?.CategoryName || 'Other';
-        const original = destinations.find(x => Number(x.id) === Number(item.SpotId));
-        const coordinates = DEMO_METADATA[item.SpotId]?.coordinates || null;
+async function loadDestinations() {
+    const [records, locations, categories] = await Promise.all([
+        listSpots(), listLocations(), listCategories(),
+    ]);
+    const locationsById = new Map(locations.map((location) => [location.LocationId, location]));
+    const spots = records.map((record) => {
+        const location = locationsById.get(record.LocationId);
+        const exactCoordinates = Number.isFinite(record.Latitude) && Number.isFinite(record.Longitude)
+            ? [record.Latitude, record.Longitude]
+            : null;
+        const area = (location?.LocationName || record.LocationName || '').trim().toLowerCase();
         return {
-            id: item.SpotId,
-            name: item.SpotName,
-            country: countryFromLocation(location),
-            description: item.Description || '',
-            image: item.ThumbnailUrl || original?.image || '',
-            category: categorySlug(categoryName),
-            categoryLabel: categoryName,
-            coordinates,
-            promotion: getSpotPromotion(item.SpotId),
-            createdAt: item.CreatedAt || '',
-            rating: item.Rating == null || item.Rating === '' ? null : Number(item.Rating),
+            id: record.SpotId,
+            name: record.SpotName,
+            location: record.LocationName,
+            locationId: String(record.LocationId),
+            featured: record.IsFeatured,
+            description: record.Description || '',
+            image: record.ThumbnailUrl,
+            category: String(record.CategoryId),
+            categoryLabel: record.CategoryName,
+            coordinates: exactCoordinates ?? AREA_COORDINATES.get(area),
+            approximate: !exactCoordinates,
+            rating: record.AverageRating,
+            reviewCount: record.ReviewCount,
         };
     });
-    const availableCategories = [
-        { id: 'all', label: 'All types' },
-        ...Array.from(new Map([
-            ...BASE_CATEGORIES,
-            ...categories.map(c => ({ id: categorySlug(c.CategoryName), label: c.CategoryName })),
-        ].map(c => [c.id, c])).values()),
-    ];
-    return { spots, availableCategories };
+    return {
+        spots,
+        locations: locations.map((item) => ({ id: String(item.LocationId), label: item.LocationName })),
+        categories: categories.map((item) => ({ id: String(item.CategoryId), label: item.CategoryName })),
+    };
+}
+
+function DestinationImage({ src, name }) {
+    const [failed, setFailed] = useState(false);
+    return src && !failed
+        ? <img src={src} alt={name} loading="lazy" onError={() => setFailed(true)} />
+        : <span className="dest-image-empty">No image available</span>;
 }
 
 const PAGE_SIZE = 9;
+const EMPTY_LIST = [];
 
 const markerIcon = L.divIcon({
     className: 'dest-map-pin',
@@ -91,13 +84,11 @@ const markerIcon = L.divIcon({
     iconAnchor: [15, 15],
 });
 
-function FitMapToSpots({ spots }) {
+function FitMapToPins({ pins }) {
     const map = useMap();
 
     useEffect(() => {
-        const points = spots
-            .map((spot) => spot.coordinates)
-            .filter(Boolean);
+        const points = pins.map((pin) => pin.coordinates);
 
         if (points.length === 1) {
             map.setView(points[0], 9);
@@ -109,62 +100,9 @@ function FitMapToSpots({ spots }) {
         } else {
             map.setView([12, 108], 4);
         }
-    }, [map, spots]);
+    }, [map, pins]);
 
     return null;
-}
-
-// Check whether a promotion is currently valid.
-function isPromotionActive(promotion) {
-    if (!promotion?.IsActive) return false;
-
-    const now = new Date();
-    const start = new Date(promotion.StartDate);
-    const end = new Date(promotion.EndDate);
-
-    return (
-        !Number.isNaN(start.getTime()) &&
-        !Number.isNaN(end.getTime()) &&
-        now >= start &&
-        now <= end
-    );
-}
-
-// Generate the promotional label.
-
-function getDiscountLabel(promotion) {
-    const percent = Number(promotion.DiscountPercent);
-
-    if (percent > 0) {
-        return `Save ${percent}% on tours`;
-    }
-
-    const amount = Number(promotion.DiscountAmount);
-
-    if (amount > 0) {
-        return `Save ${amount.toLocaleString('vi-VN')} VND on tours`;
-    }
-
-    return null;
-}
-
-
-// Match promotions to tourist spots through TourPackages.SpotId.
-function getSpotPromotion(spotId) {
-    const matching = promotionsDemo
-        .filter(isPromotionActive)
-        .filter((promotion) =>
-            promotion.TourPackages?.some(
-                (tour) => Number(tour.SpotId) === Number(spotId)
-            )
-        )
-        .map((promotion) => ({
-            promotion,
-            label: getDiscountLabel(promotion),
-        }))
-        .filter((item) => item.label);
-
-    return matching[0] || null;
 }
 
 export default function Destinations() {
@@ -173,45 +111,49 @@ export default function Destinations() {
     const [keyword, setKeyword] = useState(
         searchParams.get('search') || ''
     );
-    const [country, setCountry] = useState('All');
+    const [location, setLocation] = useState(searchParams.get('location') || 'all');
     const [rating, setRating] = useState('');
     const [category, setCategory] = useState('all');
     const [sort, setSort] = useState('default');
     const [page, setPage] = useState(1);
     const [showMap, setShowMap] = useState(true);
-    const [adminData, setAdminData] = useState(getAdminDestinationData);
+    const [data, setData] = useState(null);
+    const [loadError, setLoadError] = useState('');
+    const [retry, setRetry] = useState(0);
 
     useEffect(() => {
         const value = searchParams.get('search') || '';
         setKeyword(value);
+        setLocation(searchParams.get('location') || 'all');
         setPage(1);
     }, [searchParams]);
 
-    // Refresh when the user returns from Admin or changes local demo data.
     useEffect(() => {
-        const refresh = () => setAdminData(getAdminDestinationData());
+        const refresh = () => setRetry((version) => version + 1);
         window.addEventListener('focus', refresh);
-        window.addEventListener('storage', refresh);
-        window.addEventListener('pageshow', refresh);
-        return () => {
-            window.removeEventListener('focus', refresh);
-            window.removeEventListener('storage', refresh);
-            window.removeEventListener('pageshow', refresh);
-        };
+        return () => window.removeEventListener('focus', refresh);
     }, []);
 
-    const CATEGORIES = adminData.availableCategories;
-    const spots = adminData.spots;
+    useEffect(() => {
+        let active = true;
+        loadDestinations()
+            .then((result) => {
+                if (!active) return;
+                setData(result);
+                setLoadError('');
+            })
+            .catch(() => {
+                if (active) setLoadError('Unable to load destinations. Please try again.');
+            });
+        return () => { active = false; };
+    }, [retry]);
 
-    const countries = useMemo(
-        () => [
-            'All',
-            ...new Set(
-                spots.map((item) => item.country).filter(Boolean)
-            ),
-        ],
-        [spots]
-    );
+    const categories = data?.categories ?? EMPTY_LIST;
+    const spots = data?.spots ?? EMPTY_LIST;
+    const hasRatings = spots.some((spot) => Number.isFinite(spot.rating));
+    const mapVisible = showMap;
+
+    const locations = data?.locations ?? EMPTY_LIST;
 
     const filtered = useMemo(() => {
         const q = keyword.trim().toLocaleLowerCase();
@@ -222,7 +164,7 @@ export default function Destinations() {
 
             const haystack = [
                 item.name,
-                item.country,
+                item.location,
                 item.description,
                 categoryLabel,
             ]
@@ -232,7 +174,7 @@ export default function Destinations() {
 
             return (
                 haystack.includes(q) &&
-                (country === 'All' || item.country === country) &&
+                (location === 'all' || item.locationId === location) &&
                 (category === 'all' || item.category === category) &&
                 (!rating || (Number.isFinite(item.rating) && item.rating >= Number(rating)))
             );
@@ -247,13 +189,15 @@ export default function Destinations() {
         }
 
         return result;
-    }, [spots, keyword, country, category, rating, sort]);
+    }, [spots, keyword, location, category, rating, sort]);
 
+    const mapPins = useMemo(() => getMapPins(filtered), [filtered]);
     const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
 
+    const currentPage = Math.min(page, Math.max(totalPages, 1));
     const visible = filtered.slice(
-        (page - 1) * PAGE_SIZE,
-        page * PAGE_SIZE
+        (currentPage - 1) * PAGE_SIZE,
+        currentPage * PAGE_SIZE
     );
 
     const changeFilter = (setter, value) => {
@@ -263,7 +207,7 @@ export default function Destinations() {
 
     const clearFilters = () => {
         setKeyword('');
-        setCountry('All');
+        setLocation('all');
         setCategory('all');
         setRating('');
         setSort('default');
@@ -291,23 +235,27 @@ export default function Destinations() {
                         </label>
                         <label className="dest-search">
                             <span><i className="bi bi-geo-alt-fill" /> Destination</span>
-                            <select value={country} onChange={e => changeFilter(setCountry, e.target.value)}>
-                                {countries.map(c => <option key={c} value={c}>{c === 'All' ? 'All Destinations' : c}</option>)}
+                            <select value={location} onChange={e => changeFilter(setLocation, e.target.value)}>
+                                <option value="all">All locations</option>
+                                {locations.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
                             </select>
                         </label>
                         <label className="dest-search">
                             <span><i className="bi bi-compass" /> Travel type</span>
                             <select value={category} onChange={e => changeFilter(setCategory, e.target.value)}>
-                                {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                                <option value="all">All types</option>
+                                {categories.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                             </select>
                         </label>
-                        <label className="dest-search">
-                            <span><i className="bi bi-star-fill" /> Rating</span>
-                            <select value={rating} onChange={e => changeFilter(setRating, e.target.value)}>
-                                <option value="">All ratings</option>
-                                {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{'★'.repeat(n)} ({n}+ Stars)</option>)}
-                            </select>
-                        </label>
+                        {hasRatings && (
+                            <label className="dest-search">
+                                <span><i className="bi bi-star-fill" /> Rating</span>
+                                <select value={rating} onChange={e => changeFilter(setRating, e.target.value)}>
+                                    <option value="">All ratings</option>
+                                    {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{'★'.repeat(n)} ({n}+ Stars)</option>)}
+                                </select>
+                            </label>
+                        )}
                         <button type="button" className="dest-reset-button" onClick={clearFilters} title="Reset filters" aria-label="Reset filters"><i className="bi bi-arrow-counterclockwise" /></button>
                     </div>
                 </div>
@@ -333,11 +281,21 @@ export default function Destinations() {
                 </div>
 
                 <div
-                    className={`dest-layout ${showMap ? '' : 'no-map'
+                    className={`dest-layout ${mapVisible ? '' : 'no-map'
                         }`}
                 >
                     <div className="dest-list-column">
-                        {visible.length ? (
+                        {loadError ? (
+                            <div className="dest-empty">
+                                <p role="alert">{loadError}</p>
+                                <button type="button" className="dest-empty-reset" onClick={() => {
+                                    setLoadError('');
+                                    setRetry((value) => value + 1);
+                                }}>Try again</button>
+                            </div>
+                        ) : !data ? (
+                            <p className="dest-empty" role="status">Loading destinations…</p>
+                        ) : visible.length ? (
                             <div className="dest-grid">
                                 {visible.map((item) => (
                                     <Link
@@ -346,35 +304,28 @@ export default function Destinations() {
                                         key={item.id}
                                     >
                                         <div className="dest-card-image">
-                                            {item.image ? (
-                                                <img src={item.image} alt={item.name} loading="lazy" />
-                                            ) : (
-                                                <span className="dest-image-empty">No image available</span>
-                                            )}
+                                            <DestinationImage key={item.image} src={item.image} name={item.name} />
 
+                                            {item.featured && <span className="dest-featured">Featured</span>}
                                             <span className="dest-card-arrow">
                                                 <i className="bi bi-arrow-up-right" />
                                             </span>
 
-                                            {/* NEW: Tour promotion label */}
-                                            {item.promotion && (
-                                                <span className="dest-promo-badge">
-                                                    <i
-                                                        className="bi bi-tag-fill"
-                                                        aria-hidden="true"
-                                                    />
-                                                    {item.promotion.label}
-                                                </span>
-                                            )}
                                         </div>
 
                                         <div className="dest-card-info">
                                             <span className="dest-card-country">
                                                 <i className="bi bi-geo-alt" />
-                                                {item.country}
+                                                {item.location}
                                             </span>
 
                                             <h3>{item.name}</h3>
+                                            {Number.isFinite(item.reviewCount) && <small>
+                                                {item.reviewCount > 0 ? <>
+                                                    <i className="bi bi-star-fill text-warning me-1" aria-hidden="true" />
+                                                    {item.rating.toFixed(1)} / 5 · {item.reviewCount} {item.reviewCount === 1 ? 'review' : 'reviews'}
+                                                </> : 'No reviews yet'}
+                                            </small>}
 
                                             <span className="dest-card-category">
                                                 <i
@@ -384,7 +335,8 @@ export default function Destinations() {
                                                 {item.categoryLabel || 'Other'}
                                             </span>
 
-                                            <p>{item.description}</p>
+                                            {item.description && <p>{item.description}</p>}
+                                            <span className="dest-card-details">View details <i className="bi bi-arrow-right" aria-hidden="true" /></span>
                                         </div>
                                     </Link>
                                 ))}
@@ -399,7 +351,7 @@ export default function Destinations() {
                                 <h3>No destinations found</h3>
 
                                 <p>
-                                    Try another keyword, country,
+                                    Try another keyword, location,
                                     or travel type.
                                 </p>
 
@@ -413,7 +365,7 @@ export default function Destinations() {
                             </div>
                         )}
 
-                        {totalPages > 1 && (
+                        {!loadError && totalPages > 1 && (
                             <nav
                                 className="dest-pagination"
                                 aria-label="Pagination"
@@ -426,12 +378,12 @@ export default function Destinations() {
                                         type="button"
                                         key={number}
                                         aria-current={
-                                            page === number
+                                            currentPage === number
                                                 ? 'page'
                                                 : undefined
                                         }
                                         className={
-                                            page === number
+                                            currentPage === number
                                                 ? 'is-active'
                                                 : ''
                                         }
@@ -446,13 +398,16 @@ export default function Destinations() {
                         )}
                     </div>
 
-                    {showMap && (
+                    {mapVisible && (
                         <aside className="dest-map-column">
                             <div className="dest-map-heading">
                                 <i className="bi bi-geo-alt-fill" />
                                 Explore on map
                             </div>
 
+                            {data && !loadError && mapPins.length === 0 && (
+                                <p className="dest-map-note">No mapped locations for these results.</p>
+                            )}
                             <MapContainer
                                 center={[12, 108]}
                                 zoom={4}
@@ -464,35 +419,23 @@ export default function Destinations() {
                                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                                 />
 
-                                <FitMapToSpots spots={filtered} />
+                                <FitMapToPins pins={mapPins} />
 
-                                {filtered.map(
-                                    (item) =>
-                                        item.coordinates && (
-                                            <Marker
-                                                key={item.id}
-                                                position={item.coordinates}
-                                                icon={markerIcon}
-                                            >
-                                                <Popup>
-                                                    <div className="dest-map-popup">
+                                {mapPins.map((pin) => (
+                                    <Marker key={pin.key} position={pin.coordinates} icon={markerIcon}>
+                                        <Popup>
+                                            <div className="dest-map-popup">
+                                                {pin.spots.map((item) => (
+                                                    <div key={item.id}>
                                                         <strong>{item.name}</strong>
-
-                                                        <p>
-                                                            {item.country} ·{' '}
-                                                            {item.categoryLabel}
-                                                        </p>
-
-                                                        <Link
-                                                            to={`/destinations/${item.id}`}
-                                                        >
-                                                            View details
-                                                        </Link>
+                                                        <p>{item.location}{item.approximate && ' · Approximate area'}</p>
+                                                        <Link to={`/destinations/${item.id}`}>View details</Link>
                                                     </div>
-                                                </Popup>
-                                            </Marker>
-                                        )
-                                )}
+                                                ))}
+                                            </div>
+                                        </Popup>
+                                    </Marker>
+                                ))}
                             </MapContainer>
                         </aside>
                     )}
