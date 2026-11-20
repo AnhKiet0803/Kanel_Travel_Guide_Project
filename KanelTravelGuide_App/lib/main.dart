@@ -1,12 +1,13 @@
-// Temporary app shell: a bottom navigation bar with the screens that exist so far
-// (About, Contact, Feedback, Notifications). The shared foundation (theme, navigation, sign-in) is
-// Giáp's task; when it lands, replace this shell and keep the screens in lib/screens.
+// App shell: a bottom navigation bar with the screens for the mobile app
+// Includes Stays & Search (Tiến), About, Contact, Feedback, Notifications (Dũng), and Auth/Theme (Giáp)
 import 'package:flutter/material.dart';
 
 import 'screens/about_screen.dart';
 import 'screens/contact_screen.dart';
 import 'screens/feedback_screen.dart';
 import 'screens/notifications_screen.dart';
+import 'screens/search_screen.dart';
+import 'screens/services_screen.dart';
 import 'services/api_client.dart';
 import 'services/karnel_api.dart';
 
@@ -60,6 +61,8 @@ class _HomeShellState extends State<HomeShell> {
           index: _index,
           children: [
             const AboutScreen(),
+            ServicesScreen(api: widget.api),
+            SearchScreen(api: widget.api),
             ContactScreen(api: widget.api),
             FeedbackScreen(api: widget.api),
             NotificationsScreen(api: widget.api),
@@ -70,11 +73,36 @@ class _HomeShellState extends State<HomeShell> {
         selectedIndex: _index,
         onDestinationSelected: (value) => setState(() => _index = value),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.info_outline), selectedIcon: Icon(Icons.info), label: 'About'),
-          NavigationDestination(icon: Icon(Icons.mail_outline), selectedIcon: Icon(Icons.mail), label: 'Contact'),
-          NavigationDestination(icon: Icon(Icons.star_border), selectedIcon: Icon(Icons.star), label: 'Feedback'),
           NavigationDestination(
-              icon: Icon(Icons.notifications_none), selectedIcon: Icon(Icons.notifications), label: 'Alerts'),
+            icon: Icon(Icons.info_outline),
+            selectedIcon: Icon(Icons.info),
+            label: 'About',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.hotel_outlined),
+            selectedIcon: Icon(Icons.hotel),
+            label: 'Stays',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.search_outlined),
+            selectedIcon: Icon(Icons.search),
+            label: 'Search',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.mail_outline),
+            selectedIcon: Icon(Icons.mail),
+            label: 'Contact',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.star_border),
+            selectedIcon: Icon(Icons.star),
+            label: 'Feedback',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.notifications_none),
+            selectedIcon: Icon(Icons.notifications),
+            label: 'Alerts',
+          ),
         ],
       ),
     );
