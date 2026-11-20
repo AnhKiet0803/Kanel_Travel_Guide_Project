@@ -1,5 +1,7 @@
 // App shell: a bottom navigation bar with the screens for the mobile app
 // Includes Stays & Search (Tiến), About, Contact, Feedback, Notifications (Dũng), and Auth/Theme (Giáp)
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 import 'screens/about_screen.dart';
@@ -33,6 +35,14 @@ class KarnelApp extends StatelessWidget {
           tertiary: const Color(0xFFF4A340),
         ),
         useMaterial3: true,
+      ),
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        dragDevices: {
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.touch,
+          PointerDeviceKind.stylus,
+          PointerDeviceKind.trackpad,
+        },
       ),
       home: HomeShell(api: api),
     );

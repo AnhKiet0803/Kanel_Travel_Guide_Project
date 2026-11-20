@@ -124,24 +124,27 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
         const SizedBox(height: 12),
 
-        // Suggestion chips
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              const Text(
-                'Suggestions: ',
-                style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
-              ),
-              _buildSuggestionChip('Da Nang'),
-              const SizedBox(width: 6),
-              _buildSuggestionChip('Hoi An'),
-              const SizedBox(width: 6),
-              _buildSuggestionChip('Hotel'),
-              const SizedBox(width: 6),
-              _buildSuggestionChip('Beach'),
-            ],
-          ),
+        // Suggestion chips (1 balanced row)
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Suggestions',
+              style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                _buildSuggestionButton('Da Nang', Icons.location_on_outlined),
+                const SizedBox(width: 6),
+                _buildSuggestionButton('Hoi An', Icons.temple_buddhist_outlined),
+                const SizedBox(width: 6),
+                _buildSuggestionButton('Hotel', Icons.hotel_outlined),
+                const SizedBox(width: 6),
+                _buildSuggestionButton('Beach', Icons.beach_access_outlined),
+              ],
+            ),
+          ],
         ),
         const SizedBox(height: 16),
 
@@ -220,14 +223,42 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildSuggestionChip(String label) {
-    return ActionChip(
-      label: Text(label, style: const TextStyle(fontSize: 12)),
-      visualDensity: VisualDensity.compact,
-      onPressed: () {
-        _searchController.text = label;
-        _performSearch();
-      },
+  Widget _buildSuggestionButton(String label, IconData icon) {
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          _searchController.text = label;
+          _performSearch();
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 2),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 12, color: const Color(0xFF123B5D)),
+              const SizedBox(width: 2),
+              Flexible(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF123B5D),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

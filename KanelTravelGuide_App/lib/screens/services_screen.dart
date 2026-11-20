@@ -119,20 +119,17 @@ class _ServicesScreenState extends State<ServicesScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Category Filter Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildFilterChip('All Stays', '', Icons.grid_view),
-                const SizedBox(width: 8),
-                _buildFilterChip('Hotels', 'Hotel', Icons.hotel_outlined),
-                const SizedBox(width: 8),
-                _buildFilterChip('Restaurants', 'Restaurant', Icons.restaurant_outlined),
-                const SizedBox(width: 8),
-                _buildFilterChip('Resorts', 'Resort', Icons.park_outlined),
-              ],
-            ),
+          // Category Filter Buttons (1 aesthetic balanced row)
+          Row(
+            children: [
+              _buildFilterButton('All', '', Icons.grid_view),
+              const SizedBox(width: 6),
+              _buildFilterButton('Hotels', 'Hotel', Icons.hotel_outlined),
+              const SizedBox(width: 6),
+              _buildFilterButton('Dining', 'Restaurant', Icons.restaurant_outlined),
+              const SizedBox(width: 6),
+              _buildFilterButton('Resorts', 'Resort', Icons.park_outlined),
+            ],
           ),
           const SizedBox(height: 16),
 
@@ -173,29 +170,59 @@ class _ServicesScreenState extends State<ServicesScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label, String type, IconData icon) {
+  Widget _buildFilterButton(String label, String type, IconData icon) {
     final isSelected = _selectedCategory == type;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
-    return FilterChip(
-      selected: isSelected,
-      label: Text(label),
-      avatar: Icon(
-        icon,
-        size: 16,
-        color: isSelected ? colorScheme.onPrimary : colorScheme.primary,
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          setState(() => _selectedCategory = type);
+          _loadServices();
+        },
+        borderRadius: BorderRadius.circular(10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF123B5D) : Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? const Color(0xFF123B5D) : Colors.grey.shade300,
+              width: 1,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF123B5D).withOpacity(0.2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected ? Colors.white : const Color(0xFF123B5D),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected ? Colors.white : const Color(0xFF123B5D),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
       ),
-      selectedColor: colorScheme.primary,
-      labelStyle: TextStyle(
-        color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        fontSize: 13,
-      ),
-      onSelected: (_) {
-        setState(() => _selectedCategory = type);
-        _loadServices();
-      },
     );
   }
 

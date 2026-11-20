@@ -104,9 +104,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Stay & Dining Services'), findsOneWidget);
-    expect(find.text('All Stays'), findsOneWidget);
+    expect(find.text('All'), findsOneWidget);
     expect(find.text('Hotels'), findsOneWidget);
-    expect(find.text('Restaurants'), findsOneWidget);
+    expect(find.text('Dining'), findsOneWidget);
     expect(find.text('Resorts'), findsOneWidget);
 
     expect(find.text('Karnel Beach Luxury Hotel'), findsOneWidget);
@@ -129,7 +129,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Travel Search'), findsOneWidget);
-    expect(find.text('Suggestions: '), findsOneWidget);
+    expect(find.text('Suggestions'), findsOneWidget);
 
     await tester.enterText(find.byKey(const Key('search-query-field')), 'Da Nang');
     await tester.testTextInput.receiveAction(TextInputAction.done);
