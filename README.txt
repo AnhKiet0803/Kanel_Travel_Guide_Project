@@ -17,6 +17,7 @@ Team members:
 - VU HOANG GIAP - 1673940
 - PHAM THI ANH HUYEN - 1654103
 - NGUYEN CONG TIEN - 1652949
+- DOAN ANH KIET - 1652946
 
 This project provides travel information and booking services for tours,
 hotels, resorts, dining and transportation. It includes a customer website,
