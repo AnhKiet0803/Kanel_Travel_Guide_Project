@@ -1,121 +1,171 @@
+// App shell: a bottom navigation bar with the screens for the mobile app
+// Includes Stays & Search (Tiến), About, Contact, Feedback, Notifications (Dũng), and Auth/Theme (Giáp)
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
+import 'screens/about_screen.dart';
+import 'screens/home_screen.dart';
+import 'screens/booking_receipt_screen.dart';
+import 'screens/sign_in_screen.dart';
+import 'screens/contact_screen.dart';
+import 'screens/feedback_screen.dart';
+import 'screens/notifications_screen.dart';
+import 'screens/search_screen.dart';
+import 'screens/services_screen.dart';
+import 'services/api_client.dart';
+import 'services/karnel_api.dart';
+
 void main() {
-  runApp(const MyApp());
+  runApp(KarnelApp(api: KarnelApi(ApiClient())));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class KarnelApp extends StatelessWidget {
+  const KarnelApp({super.key, required this.api});
 
-  // This widget is the root of your application.
+  final KarnelApi api;
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Karnel Travel Guide',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        // Same palette as the website (variables.css): navy primary, teal secondary, orange accent.
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF123B5D),
+          secondary: const Color(0xFF19A7A0),
+          tertiary: const Color(0xFFF4A340),
+        ),
+        useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        dragDevices: {
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.touch,
+          PointerDeviceKind.stylus,
+          PointerDeviceKind.trackpad,
+        },
+      ),
+      home: HomeShell(api: api),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class HomeShell extends StatefulWidget {
+  const HomeShell({super.key, required this.api});
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+  final KarnelApi api;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<HomeShell> createState() => _HomeShellState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+class _HomeShellState extends State<HomeShell> {
+  int _index = 0;
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        title: const Row(
           children: [
-            const Text('You have pushed the button this many times:'),
+            Icon(Icons.travel_explore, color: Color(0xFF078C88)),
+            SizedBox(width: 9),
             Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+              'Karnel Travels',
+              style: TextStyle(
+                color: Color(0xFF123B5D),
+                fontWeight: FontWeight.w800,
+                fontSize: 20,
+              ),
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            tooltip: 'My bookings',
+            icon: const Icon(Icons.receipt_long_outlined),
+            onPressed: () async {
+              if (!await requireTourSignIn(context, widget.api) ||
+                  !context.mounted) {
+                return;
+              }
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => MyBookingsScreen(api: widget.api),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            tooltip: 'About Karnel Travels',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => Scaffold(
+                  appBar: AppBar(title: const Text('About Karnel Travels')),
+                  body: const SafeArea(child: AboutScreen()),
+                ),
+              ),
+            ),
+            icon: const Icon(Icons.info_outline),
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+      body: SafeArea(
+        // IndexedStack keeps each screen alive, so a half-filled form survives switching tabs.
+        child: IndexedStack(
+          index: _index,
+          children: [
+            HomeScreen(api: widget.api),
+            ServicesScreen(api: widget.api),
+            SearchScreen(api: widget.api),
+            ContactScreen(api: widget.api),
+            FeedbackScreen(api: widget.api),
+            NotificationsScreen(api: widget.api),
+          ],
+        ),
+      ),
+      bottomNavigationBar: NavigationBar(
+        backgroundColor: Colors.white,
+        indicatorColor: const Color(0xFFD9F5DF),
+        surfaceTintColor: Colors.transparent,
+        selectedIndex: _index,
+        onDestinationSelected: (value) => setState(() => _index = value),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.hotel_outlined),
+            selectedIcon: Icon(Icons.hotel),
+            label: 'Stays',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.search_outlined),
+            selectedIcon: Icon(Icons.search),
+            label: 'Search',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.mail_outline),
+            selectedIcon: Icon(Icons.mail),
+            label: 'Contact',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.star_border),
+            selectedIcon: Icon(Icons.star),
+            label: 'Feedback',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.notifications_none),
+            selectedIcon: Icon(Icons.notifications),
+            label: 'Alerts',
+          ),
+        ],
       ),
     );
   }

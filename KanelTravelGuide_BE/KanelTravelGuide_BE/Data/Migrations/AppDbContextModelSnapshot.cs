@@ -811,6 +811,10 @@ namespace KanelTravelGuide_BE.Data.Migrations
                         .HasColumnType("time")
                         .HasColumnName("departure_time");
 
+                    b.Property<TimeOnly?>("ReturnTime")
+                        .HasColumnType("time")
+                        .HasColumnName("return_time");
+
                     b.Property<DateOnly>("ReturnDate")
                         .HasColumnType("date")
                         .HasColumnName("return_date");
@@ -828,6 +832,14 @@ namespace KanelTravelGuide_BE.Data.Migrations
 
             modelBuilder.Entity("KanelTravelGuide_BE.Models.TourPackage", b =>
                 {
+                    b.Property<string>("MeetingPoint").HasMaxLength(255).HasColumnType("nvarchar(255)").HasColumnName("meeting_point");
+                    b.Property<string>("EndPoint").HasMaxLength(255).HasColumnType("nvarchar(255)").HasColumnName("end_point");
+                    b.Property<string>("TransportDescription").HasMaxLength(2000).HasColumnType("nvarchar(2000)").HasColumnName("transport_description");
+                    b.Property<string>("AccommodationDescription").HasMaxLength(2000).HasColumnType("nvarchar(2000)").HasColumnName("accommodation_description");
+                    b.Property<string>("GuideDescription").HasMaxLength(2000).HasColumnType("nvarchar(2000)").HasColumnName("guide_description");
+                    b.Property<string>("MealsDescription").HasMaxLength(2000).HasColumnType("nvarchar(2000)").HasColumnName("meals_description");
+                    b.Property<string>("IncludedServices").HasMaxLength(4000).HasColumnType("nvarchar(4000)").HasColumnName("included_services");
+                    b.Property<string>("ExcludedServices").HasMaxLength(4000).HasColumnType("nvarchar(4000)").HasColumnName("excluded_services");
                     b.Property<int>("TourId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
@@ -882,6 +894,25 @@ namespace KanelTravelGuide_BE.Data.Migrations
                     b.HasIndex("SpotId");
 
                     b.ToTable("TourPackages", (string)null);
+                });
+
+            modelBuilder.Entity("KanelTravelGuide_BE.Models.TourExtraOption", b =>
+                {
+                    b.Property<int>("OptionId").ValueGeneratedOnAdd().HasColumnType("int").HasColumnName("option_id");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OptionId"));
+                    b.Property<int>("TourId").HasColumnType("int").HasColumnName("tour_id");
+                    b.Property<int?>("ServiceItemId").HasColumnType("int").HasColumnName("service_item_id");
+                    b.Property<int?>("ScheduleId").HasColumnType("int").HasColumnName("schedule_id");
+                    b.Property<bool>("IsEnabled").HasColumnType("bit").HasColumnName("is_enabled");
+                    b.HasKey("OptionId");
+                    b.HasIndex("ServiceItemId");
+                    b.HasIndex("ScheduleId");
+                    b.HasIndex("TourId", "ServiceItemId").IsUnique().HasFilter("[service_item_id] IS NOT NULL");
+                    b.HasIndex("TourId", "ScheduleId").IsUnique().HasFilter("[schedule_id] IS NOT NULL");
+                    b.ToTable("TourExtraOptions", table => table.HasCheckConstraint("CK_TourExtraOptions_Target", "([service_item_id] IS NOT NULL AND [schedule_id] IS NULL) OR ([service_item_id] IS NULL AND [schedule_id] IS NOT NULL)"));
+                    b.HasOne("KanelTravelGuide_BE.Models.TourPackage", null).WithMany().HasForeignKey("TourId").OnDelete(DeleteBehavior.Cascade).IsRequired();
+                    b.HasOne("KanelTravelGuide_BE.Models.ServiceItem", null).WithMany().HasForeignKey("ServiceItemId").OnDelete(DeleteBehavior.Cascade);
+                    b.HasOne("KanelTravelGuide_BE.Models.Schedule", null).WithMany().HasForeignKey("ScheduleId").OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("KanelTravelGuide_BE.Models.TouristSpot", b =>

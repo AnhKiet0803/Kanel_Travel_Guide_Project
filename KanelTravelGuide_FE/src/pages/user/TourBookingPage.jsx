@@ -127,15 +127,14 @@ function TourBooking({ id, initialDepartureId, initialAdults, initialChildren, i
     }, [id, scheduleVersion]);
 
     const extraDate = departureResult?.items?.find((item) => item.tourDepartureId === initialDepartureId)?.departureDate;
-    const extraLocation = result?.tour?.locationId;
     useEffect(() => {
-        if (!initialExtras.length || !extraDate || !extraLocation) return;
+        if (!initialExtras.length || !extraDate) return;
         const requestScope = new AbortController();
-        loadTourExtras(extraLocation, extraDate)
+        loadTourExtras(id, extraDate)
             .then((items) => { if (!requestScope.signal.aborted) setExtrasResult({ date: extraDate, items }); })
             .catch((failure) => { if (!requestScope.signal.aborted) setExtrasResult({ date: extraDate, error: failure.message }); });
         return () => requestScope.abort();
-    }, [extraDate, extraLocation, initialExtras, scheduleVersion]);
+    }, [id, extraDate, initialExtras, scheduleVersion]);
 
     if (!result || authLoading) return <main className="ktd-state" role="status">Loading booking…</main>;
     if (result.error) return <main className="ktd-state"><p role="alert">{result.error}</p><Link to="/tours">Browse tours</Link></main>;

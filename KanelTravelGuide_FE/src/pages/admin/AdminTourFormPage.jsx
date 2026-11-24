@@ -1,9 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { listSpots } from '../../api/touristSpotsApi.js';
-import { listTourPromotions, readTourItinerary, tourService, writeTourItinerary } from '../../services/tourService.js';
+import { listTourPromotions, readTourItinerary, tourService } from '../../services/tourService.js';
 import AdminTourDepartures from './AdminTourDepartures.jsx';
+import AdminTourExtras from './AdminTourExtras.jsx';
 import '../../styles/admin/AdminTours.css';
+
+const travelFields = [
+    ['transportDescription', 'Transport', 2000, 'Included vehicles, routes and pickup arrangements'],
+    ['accommodationDescription', 'Accommodation', 2000, 'Included nights, room type, sharing arrangements or accommodation not included'],
+    ['guideDescription', 'Guide', 2000, 'Guide language and which days are guided'],
+    ['mealsDescription', 'Meals', 2000, 'Included meals, dietary arrangements and meals paid separately'],
+    ['includedServices', 'Additional included services', 4000, 'Entrance tickets, activities and other included services'],
+    ['excludedServices', 'Not included', 4000, 'Optional activities, personal expenses and additional charges'],
+];
 
 export default function AdminTourFormPage() {
     const { id } = useParams();
@@ -48,7 +58,10 @@ function TourForm({ id }) {
                 salePrice,
                 spotId: Number(values.get('spotId')) || null,
                 promotionId: Number(values.get('promotionId')) || null,
-                itineraryDetail: writeTourItinerary(values.get('meetingPoint').trim(), values.get('itineraryDetail').trim()),
+                itineraryDetail: values.get('itineraryDetail').trim(),
+                meetingPoint: values.get('meetingPoint').trim(),
+                endPoint: values.get('endPoint').trim(),
+                ...Object.fromEntries(travelFields.map(([name]) => [name, values.get(name).trim()])),
                 isFeatured: values.has('isFeatured'),
             }, id);
             navigate(`/admin/tours/${tour.tourId}`, { replace: true });
@@ -83,13 +96,21 @@ function TourForm({ id }) {
                             {result.promotions.map((promo) => <option key={promo.promotionId} value={promo.promotionId}>{promo.title}{promo.promoCode ? ' (' + promo.promoCode + ')' : ''}{!promo.isActive ? ' · Inactive' : ''}</option>)}
                         </select></label>
                         <label className="at-wide">Meeting point
-                            <input name="meetingPoint" maxLength={255} defaultValue={meetingPoint} placeholder="Location name and address" />
+                            <input name="meetingPoint" maxLength={255} defaultValue={tour?.meetingPoint ?? meetingPoint} placeholder="Location name and address" />
                             <small className="at-hint">Set the start time for each departure in the schedule below.</small>
+                        </label>
+                        <label className="at-wide">Drop-off / end point
+                            <input name="endPoint" maxLength={255} defaultValue={tour?.endPoint ?? ''} placeholder="Final location, address and onward travel instructions" />
                         </label>
                         <label className="at-wide">Itinerary
                             <textarea name="itineraryDetail" rows={8} defaultValue={itinerary} placeholder={'Day 1: Meet the guide\nVisit the first stop\nFinish at the drop-off point'} />
                             <small className="at-hint">Use Day 1, Day 2 and so on, with each activity on its own line.</small>
                         </label>
+                        {travelFields.map(([name, label, maxLength, placeholder]) => (
+                            <label className="at-wide" key={name}>{label}
+                                <textarea name={name} rows={3} maxLength={maxLength} defaultValue={tour?.[name] ?? ''} placeholder={placeholder} />
+                            </label>
+                        ))}
                     </div>
                     <label className="at-check"><input name="isFeatured" type="checkbox" defaultChecked={tour?.isFeatured} /> Feature this tour</label>
                     <p className="at-hint">Base prices are shown in the catalog. Set the fare customers pay for each departure {tour ? 'below.' : 'after saving this tour.'}</p>
@@ -100,6 +121,7 @@ function TourForm({ id }) {
                 </form>
             )}
             {tour && <AdminTourDepartures tourId={tour.id} defaultPrice={tour.price} />}
+            {tour ? <AdminTourExtras tourId={tour.id} /> : result && !result.error && <p className="at-hint">Save the tour first, then add departure dates and optional services with prices.</p>}
         </main>
     );
 }

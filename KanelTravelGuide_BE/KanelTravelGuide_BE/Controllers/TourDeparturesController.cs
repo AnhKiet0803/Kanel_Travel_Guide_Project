@@ -26,6 +26,7 @@ public class TourDeparturesController(AppDbContext db, IConfiguration config) : 
                 item.DepartureDate,
                 item.DepartureTime,
                 item.ReturnDate,
+                item.ReturnTime,
                 item.Capacity,
                 item.AdultPrice,
                 Reserved = db.Bookings.Where(booking => booking.TourDepartureId == item.TourDepartureId
@@ -39,6 +40,7 @@ public class TourDeparturesController(AppDbContext db, IConfiguration config) : 
             item.DepartureDate,
             item.DepartureTime,
             item.ReturnDate,
+            item.ReturnTime,
             item.Capacity,
             item.AdultPrice,
             childPrice = TourPricing.ChildPrice(item.AdultPrice, config),
@@ -57,6 +59,8 @@ public class TourDeparturesController(AppDbContext db, IConfiguration config) : 
             return NotFound(new { message = "Tour not found." });
 
         var item = new TourDeparture { TourId = tourId };
+        if (InvalidReturnTime(input.DepartureDate, input.DepartureTime, input.ReturnDate, input.ReturnTime))
+            return BadRequest(new { message = "Return time must be after departure time for a same-day tour." });
         Apply(item, input);
         db.TourDepartures.Add(item);
         await db.SaveChangesAsync();
@@ -74,9 +78,14 @@ public class TourDeparturesController(AppDbContext db, IConfiguration config) : 
         var item = await LockDeparture(tourId, id);
         if (item == null) return NotFound(new { message = "Departure not found." });
 
+        var returnTime = input.ReturnTimeSpecified ? input.ReturnTime : item.ReturnTime;
+        if (InvalidReturnTime(input.DepartureDate, input.DepartureTime, input.ReturnDate, returnTime))
+            return BadRequest(new { message = "Return time must be after departure time for a same-day tour." });
+
         var bookings = db.Bookings.Where(booking => booking.TourDepartureId == id);
         var changesSchedule = input.DepartureDate != item.DepartureDate || input.ReturnDate != item.ReturnDate
-            || item.DepartureTime.HasValue && input.DepartureTime != item.DepartureTime;
+            || item.DepartureTime.HasValue && input.DepartureTime != item.DepartureTime
+            || item.ReturnTime.HasValue && returnTime != item.ReturnTime;
         if (changesSchedule && await bookings.AnyAsync())
             return Conflict(new { message = "Dates or a published departure time cannot change once a booking references this departure." });
 
@@ -119,15 +128,27 @@ public class TourDeparturesController(AppDbContext db, IConfiguration config) : 
         item.DepartureDate = input.DepartureDate;
         item.DepartureTime = input.DepartureTime;
         item.ReturnDate = input.ReturnDate;
+        if (input.ReturnTimeSpecified) item.ReturnTime = input.ReturnTime;
         item.Capacity = input.Capacity;
         item.AdultPrice = input.AdultPrice;
     }
+
+    private static bool InvalidReturnTime(DateOnly departureDate, TimeOnly? departureTime, DateOnly returnDate, TimeOnly? returnTime)
+        => departureDate == returnDate && departureTime.HasValue && returnTime.HasValue && returnTime <= departureTime;
 
     public class DepartureRequest
     {
         public DateOnly DepartureDate { get; set; }
         public TimeOnly? DepartureTime { get; set; }
         public DateOnly ReturnDate { get; set; }
+        private TimeOnly? _returnTime;
+        public TimeOnly? ReturnTime
+        {
+            get => _returnTime;
+            set { _returnTime = value; ReturnTimeSpecified = true; }
+        }
+        [System.Text.Json.Serialization.JsonIgnore]
+        public bool ReturnTimeSpecified { get; private set; }
         [Range(1, 10000)] public int Capacity { get; set; }
         [Range(0, 1000000000)] public decimal AdultPrice { get; set; }
     }

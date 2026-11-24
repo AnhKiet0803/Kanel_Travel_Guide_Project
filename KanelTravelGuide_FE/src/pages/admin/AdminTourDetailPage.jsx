@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { money, tourService } from '../../services/tourService.js';
 import AdminTourDepartures from './AdminTourDepartures.jsx';
+import AdminTourExtras from './AdminTourExtras.jsx';
 import '../../styles/admin/AdminTours.css';
 
 export default function AdminTourDetailPage() {
@@ -42,9 +43,16 @@ function TourRecord({ id }) {
                         <div className="at-info-row"><dt>Sale price</dt><dd>{tour.salePrice == null ? '—' : money(tour.salePrice)}</dd></div>
                         <div className="at-info-row"><dt>Featured</dt><dd>{tour.isFeatured ? 'Yes' : 'No'}</dd></div>
                     </dl>
+                    {[
+                        ['Meeting point', tour.meetingPoint], ['Drop-off / end point', tour.endPoint],
+                        ['Transport', tour.transportDescription], ['Accommodation', tour.accommodationDescription],
+                        ['Guide', tour.guideDescription], ['Meals', tour.mealsDescription],
+                        ['Additional included services', tour.includedServices], ['Not included', tour.excludedServices],
+                    ].map(([label, value]) => <div className="at-itinerary-detail" key={label}><h2>{label}</h2><p>{value || 'Not specified'}</p></div>)}
                     <div className="at-itinerary-detail"><h2>Itinerary</h2><p>{tour.itineraryDetail || 'No itinerary yet.'}</p></div>
                 </section>
                 <AdminTourDepartures tourId={tour.id} defaultPrice={tour.price} />
+                <AdminTourExtras tourId={tour.id} />
             </>}
         </main>
     );

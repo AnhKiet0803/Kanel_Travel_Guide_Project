@@ -54,7 +54,7 @@ export default function TourDepartureOverview({ departures, selectedId, onSelect
                                 <div>
                                     <span className="tour-muted">Departure – return</span>
                                     <h3><time dateTime={item.departureDate}>{formatDate(item.departureDate)}</time>{item.departureTime ? ' · ' + item.departureTime.slice(0, 5) : ''}
-                                        {' – '}<time dateTime={item.returnDate}>{formatDate(item.returnDate)}</time></h3>
+                                        {' – '}<time dateTime={item.returnDate}>{formatDate(item.returnDate)}</time>{item.returnTime ? ' · ' + item.returnTime.slice(0, 5) : ''}</h3>
                                 </div>
                                 <span className={item.seatsLeft > 0 ? 'tour-seats' : 'tour-seats tour-seats-sold'}>
                                     {item.seatsLeft > 0 ? item.seatsLeft + (item.seatsLeft === 1 ? ' seat left' : ' seats left') : 'Sold out'}

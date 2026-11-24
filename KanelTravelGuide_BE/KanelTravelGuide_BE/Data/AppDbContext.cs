@@ -22,6 +22,7 @@ public class AppDbContext : DbContext
     public DbSet<Promotion> Promotions => Set<Promotion>();
     public DbSet<TourPackage> TourPackages => Set<TourPackage>();
     public DbSet<TourDeparture> TourDepartures => Set<TourDeparture>();
+    public DbSet<TourExtraOption> TourExtraOptions => Set<TourExtraOption>();
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<BookingDetail> BookingDetails => Set<BookingDetail>();
     public DbSet<Notification> Notifications => Set<Notification>();
@@ -167,6 +168,18 @@ public class AppDbContext : DbContext
             entity.Property(x => x.IsFeatured).HasDefaultValue(false);
             entity.HasOne(x => x.TouristSpot).WithMany(x => x.TourPackages).HasForeignKey(x => x.SpotId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.Promotion).WithMany(x => x.TourPackages).HasForeignKey(x => x.PromotionId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<TourExtraOption>(entity =>
+        {
+            entity.ToTable("TourExtraOptions", table => table.HasCheckConstraint("CK_TourExtraOptions_Target",
+                "([service_item_id] IS NOT NULL AND [schedule_id] IS NULL) OR ([service_item_id] IS NULL AND [schedule_id] IS NOT NULL)"));
+            entity.HasKey(x => x.OptionId);
+            entity.HasIndex(x => new { x.TourId, x.ServiceItemId }).IsUnique().HasFilter("[service_item_id] IS NOT NULL");
+            entity.HasIndex(x => new { x.TourId, x.ScheduleId }).IsUnique().HasFilter("[schedule_id] IS NOT NULL");
+            entity.HasOne<TourPackage>().WithMany().HasForeignKey(x => x.TourId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<ServiceItem>().WithMany().HasForeignKey(x => x.ServiceItemId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<Schedule>().WithMany().HasForeignKey(x => x.ScheduleId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<TourDeparture>(entity =>

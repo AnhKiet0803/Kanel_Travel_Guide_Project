@@ -80,7 +80,6 @@ function TourArticle({ id, params, hash }) {
     const priceHeading = useRef(null);
     const itineraryRef = useRef(null);
     const selectionDate = result?.departures?.find((item) => item.tourDepartureId === departureId)?.departureDate;
-    const locationId = result?.tour?.locationId;
 
     useEffect(() => {
         let active = true;
@@ -97,13 +96,13 @@ function TourArticle({ id, params, hash }) {
     }, [id, params]);
 
     useEffect(() => {
-        if (!locationId || !selectionDate) return;
+        if (!selectionDate) return;
         const requestScope = new AbortController();
-        loadTourExtras(locationId, selectionDate)
+        loadTourExtras(id, selectionDate)
             .then((items) => { if (!requestScope.signal.aborted) setExtrasResult({ date: selectionDate, items }); })
             .catch((error) => { if (!requestScope.signal.aborted) setExtrasResult({ date: selectionDate, error: error.message }); });
         return () => requestScope.abort();
-    }, [locationId, selectionDate]);
+    }, [id, selectionDate]);
 
     useEffect(() => {
         if (result?.tour && ['#tour-departures', '#tour-itinerary', '#tour-extra-services', '#tour-reviews-heading'].includes(hash))
@@ -157,7 +156,15 @@ function TourArticle({ id, params, hash }) {
     const rangeParams = new URLSearchParams();
     if (fromDate) rangeParams.set('fromDate', fromDate);
     if (toDate) rangeParams.set('toDate', toDate);
-    const { meetingPoint, itinerary: itineraryText } = readTourItinerary(tour.itineraryDetail);
+    const { meetingPoint: legacyMeetingPoint, itinerary: itineraryText } = readTourItinerary(tour.itineraryDetail);
+    const meetingPoint = tour.meetingPoint ?? legacyMeetingPoint;
+    const inclusionItems = [
+        ['bi-map', 'Tour program', tour.includedServices],
+        ['bi-building', 'Accommodation', tour.accommodationDescription],
+        ['bi-bus-front', 'Transport', tour.transportDescription],
+        ['bi-person-badge', 'Guide', tour.guideDescription],
+        ['bi-cup-hot', 'Meals', tour.mealsDescription],
+    ];
     const stages = itineraryStages(itineraryText);
     const nextDeparture = departure ?? bookable[0];
     const photos = [...new Set([tour.image, ...(/hoi an/i.test(tour.destination ?? '') ? hoiAnPhotos : [])].filter(Boolean))];
@@ -232,7 +239,8 @@ function TourArticle({ id, params, hash }) {
                                             <dl className="tr-meeting">
                                                 <div><dt>Meeting point</dt><dd>{meetingPoint || 'Contact the operator to confirm the meeting point and address.'}</dd></div>
                                                 <div><dt>{departure ? 'Selected departure' : 'Next available departure'}</dt><dd>{nextDeparture ? formatDate(nextDeparture.departureDate) + (nextDeparture.departureTime ? ' · ' + nextDeparture.departureTime.slice(0, 5) : ' · Start time to be confirmed') : 'Choose a departure below.'}</dd></div>
-                                                <div><dt>Return date</dt><dd>{nextDeparture ? formatDate(nextDeparture.returnDate) : 'Shown with your selected departure.'}</dd></div>
+                                                <div><dt>Return date</dt><dd>{nextDeparture ? formatDate(nextDeparture.returnDate) + (nextDeparture.returnTime ? ' · ' + nextDeparture.returnTime.slice(0, 5) : '') : 'Shown with your selected departure.'}</dd></div>
+                                                {tour.endPoint && <div><dt>Drop-off / end point</dt><dd>{tour.endPoint}</dd></div>}
                                             </dl>
                                         </div>
                                     </details>
@@ -254,9 +262,11 @@ function TourArticle({ id, params, hash }) {
                         <section className="tr-section">
                             <h2>What's included</h2>
                             <div className="tr-inclusions">
-                                <details><summary><i className="bi bi-map" aria-hidden="true" /><strong>Tour program</strong><i className="bi bi-chevron-down" aria-hidden="true" /></summary><p>Review the itinerary for the published stops and activities. Confirm entrance tickets, meals and transfers with the operator before booking.</p></details>
-                                <details><summary><i className="bi bi-building" aria-hidden="true" /><strong>Accommodation</strong><i className="bi bi-chevron-down" aria-hidden="true" /></summary><p>Contact the operator to confirm which overnight stays are included in this tour. Additional rooms selected below are charged at their published price.</p></details>
-                                <details><summary><i className="bi bi-bus-front" aria-hidden="true" /><strong>Transport</strong><i className="bi bi-chevron-down" aria-hidden="true" /></summary><p>Confirm pickup, drop-off and included transfers with the operator. Optional transport tickets are shown separately in your price breakdown.</p></details>
+                                {inclusionItems.map(([icon, label, content]) => <details key={label}>
+                                    <summary><i className={'bi ' + icon} aria-hidden="true" /><strong>{label}</strong><i className="bi bi-chevron-down" aria-hidden="true" /></summary>
+                                    <p style={{ whiteSpace: 'pre-wrap' }}>{content || 'See the itinerary and confirm arrangements with the operator before booking.'}</p>
+                                </details>)}
+                                {tour.excludedServices && <details><summary><i className="bi bi-dash-circle" aria-hidden="true" /><strong>What is not included</strong><i className="bi bi-chevron-down" aria-hidden="true" /></summary><p style={{ whiteSpace: 'pre-wrap' }}>{tour.excludedServices}</p></details>}
                             </div>
                         </section>
 

@@ -1,5 +1,6 @@
-import { getServiceById, getServices } from '../api/servicesApi.js';
-import { getRoutes, getSchedules } from '../api/transportApi.js';
+import { getServiceById } from '../api/servicesApi.js';
+import { getSchedules } from '../api/transportApi.js';
+import { listTourExtras } from '../api/tourExtrasApi.js';
 
 export function parseTourExtras(value) {
     if (!value) return [];
@@ -22,26 +23,25 @@ export function parseTourExtras(value) {
 
 export const extraKey = (item) => item.kind + ':' + item.id;
 
-export async function loadTourExtras(locationId, date) {
-    if (!locationId || !date) return [];
-    const [providers, routes] = await Promise.all([
-        getServices({ locationId }),
-        getRoutes({ destinationLocationId: locationId }),
-    ]);
+export async function loadTourExtras(tourId, date) {
+    if (!tourId || !date) return [];
+    const options = await listTourExtras(tourId);
+    const providerIds = [...new Set(options.map((option) => option.providerId).filter(Boolean))];
+    const serviceIds = new Set(options.map((option) => option.serviceItemId).filter(Boolean));
+    const scheduleIds = new Set(options.map((option) => option.scheduleId).filter(Boolean));
     const [details, schedules] = await Promise.all([
-        Promise.all(providers.map((provider) => getServiceById(provider.providerId, { date }))),
-        routes.length ? getSchedules({ date, status: 'Running' }) : [],
+        Promise.all(providerIds.map((providerId) => getServiceById(providerId, { date }))),
+        scheduleIds.size ? getSchedules({ date, status: 'Running' }) : [],
     ]);
     const services = details.flatMap((provider) => provider.items
-        .filter((item) => item.isAvailable && item.price > 0 && item.remainingQuantity > 0)
+        .filter((item) => serviceIds.has(item.itemId) && item.isAvailable && item.price > 0 && item.remainingQuantity > 0)
         .map((item) => ({
             kind: 'service', id: item.itemId, label: item.itemName, provider: provider.providerName,
             price: item.price, available: item.remainingQuantity, capacity: item.capacity,
             category: provider.serviceType === 'Restaurant' ? 'Dining' : 'Accommodation',
             unit: provider.serviceType === 'Restaurant' ? 'option' : 'room / night',
         })));
-    const routeIds = new Set(routes.map((route) => route.routeId));
-    const transport = schedules.filter((item) => routeIds.has(item.routeId)
+    const transport = schedules.filter((item) => scheduleIds.has(item.scheduleId)
         && item.status === 'Running' && item.ticketPrice > 0 && item.remainingSeats > 0)
         .map((item) => ({
             kind: 'transport', id: item.scheduleId, label: item.vehicleName,

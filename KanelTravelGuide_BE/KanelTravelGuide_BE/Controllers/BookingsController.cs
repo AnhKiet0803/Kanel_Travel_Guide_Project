@@ -152,6 +152,12 @@ public class BookingsController : ControllerBase
         {
             decimal unitPrice = detailReq.UnitPrice ?? 0;
 
+            if (departure != null && (detailReq.ServiceItemId.HasValue || detailReq.ScheduleId.HasValue)
+                && !await _db.TourExtraOptions.AnyAsync(option => option.TourId == departure.TourId
+                && option.IsEnabled && ((detailReq.ServiceItemId.HasValue && option.ServiceItemId == detailReq.ServiceItemId)
+                    || (detailReq.ScheduleId.HasValue && option.ScheduleId == detailReq.ScheduleId))))
+                return BadRequest(new { message = "An additional service is no longer offered for this tour. Return to the tour to update your selection." });
+
             if (detailReq.TourId.HasValue)
             {
                 var tour = await _db.TourPackages.FindAsync(detailReq.TourId.Value);

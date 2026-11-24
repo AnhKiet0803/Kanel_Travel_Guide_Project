@@ -8,3 +8,6 @@ docker-compose.mac.yml
 **/node_modules/
 **/.env
 **/.env.local
+
+# Local Flutter Android build reports
+KanelTravelGuide_App/android/build/

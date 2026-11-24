@@ -37,14 +37,21 @@ export default function AdminTourDepartures({ tourId, defaultPrice }) {
         const form = new FormData(event.currentTarget);
         const departureDate = form.get('departureDate');
         const returnDate = form.get('returnDate');
+        const departureTime = form.get('departureTime');
+        const returnTime = form.get('returnTime');
         if (returnDate < departureDate) {
             setError('Return date must be on or after the departure date.');
+            return;
+        }
+        if (returnDate === departureDate && departureTime && returnTime && returnTime <= departureTime) {
+            setError('Return time must be after departure time for a same-day tour.');
             return;
         }
         run(() => saveTourDeparture(tourId, {
             departureDate,
             departureTime: form.get('departureTime') ? form.get('departureTime') + ':00' : null,
             returnDate,
+            returnTime: returnTime ? returnTime + ':00' : null,
             capacity: Number(form.get('capacity')),
             adultPrice: Number(form.get('adultPrice')),
         }, editing.tourDepartureId));
@@ -65,7 +72,7 @@ export default function AdminTourDepartures({ tourId, defaultPrice }) {
                         <thead><tr><th>Departure</th><th>Return</th><th>Seats left</th><th>Adult</th><th>Child</th><th>Actions</th></tr></thead>
                         <tbody>
                             {rows.map((row) => <tr key={row.tourDepartureId}>
-                                <td>{row.departureDate}{row.departureTime ? ' · ' + row.departureTime.slice(0, 5) : ''}</td><td>{row.returnDate}</td>
+                                <td>{row.departureDate}{row.departureTime ? ' · ' + row.departureTime.slice(0, 5) : ''}</td><td>{row.returnDate}{row.returnTime ? ' · ' + row.returnTime.slice(0, 5) : ''}</td>
                                 <td>{row.seatsLeft} / {row.capacity}</td>
                                 <td>{money(row.adultPrice)}</td><td>{money(row.childPrice)}</td>
                                 <td><div className="at-actions">
@@ -88,6 +95,7 @@ export default function AdminTourDepartures({ tourId, defaultPrice }) {
                         <label>Departure date<input type="date" name="departureDate" required defaultValue={editing.departureDate} /></label>
                         <label>Departure time (optional)<input type="time" name="departureTime" defaultValue={editing.departureTime?.slice(0, 5)} /></label>
                         <label>Return date<input type="date" name="returnDate" required defaultValue={editing.returnDate} /></label>
+                        <label>Return time (optional)<input type="time" name="returnTime" defaultValue={editing.returnTime?.slice(0, 5)} /></label>
                         <label>Seat capacity<input type="number" name="capacity" min="1" max="10000" step="1" required defaultValue={editing.capacity} /></label>
                         <label>Adult fare (VND)<input type="number" name="adultPrice" min="0" max="1000000000" step="0.01" required defaultValue={editing.adultPrice} /></label>
                     </div>
